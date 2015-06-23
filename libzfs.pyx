@@ -178,7 +178,6 @@ class ScanState(enum.IntEnum):
 
 class SendFlags(enum.IntEnum):
     EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
-    LARGE_BLOCK = libzfs.LZC_SEND_FLAG_LARGE_BLOCK
 
 
 class ZFSException(RuntimeError):

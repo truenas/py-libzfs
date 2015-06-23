@@ -32,7 +32,6 @@ from types cimport *
 cdef extern from "libzfs_core.h":
     enum lzc_send_flags:
         LZC_SEND_FLAG_EMBED_DATA
-        LZC_SEND_FLAG_LARGE_BLOCK
 
 
 cdef extern from "libzfs.h":
