@@ -309,10 +309,10 @@ cdef class ZFS(object):
 cdef class ZPoolProperty(object):
     cdef libzfs.libzfs_handle_t* _root
     cdef libzfs.zpool_handle_t* _zpool
-    cdef zfs.zpool_prop_t _propid
+    cdef int _propid
     cdef readonly object name
 
-    def __init__(self, ZFS root, ZFSPool pool, zfs.zpool_prop_t propid):
+    def __init__(self, ZFS root, ZFSPool pool, int propid):
         self._root = <libzfs.libzfs_handle_t*>root.handle()
         self._zpool = <libzfs.zpool_handle_t*>pool.handle()
         self._propid = propid
@@ -356,11 +356,11 @@ cdef class ZPoolProperty(object):
 cdef class ZFSProperty(object):
     cdef libzfs.libzfs_handle_t* _root
     cdef libzfs.zfs_handle_t* _dataset
-    cdef zfs.zfs_prop_t _propid
+    cdef int _propid
     cdef readonly object parent
     cdef readonly object name
 
-    def __init__(self, ZFS root, ZFSDataset dataset, zfs.zfs_prop_t propid):
+    def __init__(self, ZFS root, ZFSDataset dataset, int propid):
         self.parent = dataset
         self._root = <libzfs.libzfs_handle_t*>root.handle()
         self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
