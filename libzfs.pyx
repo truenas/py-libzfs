@@ -309,10 +309,10 @@ cdef class ZFS(object):
 cdef class ZPoolProperty(object):
     cdef libzfs.libzfs_handle_t* _root
     cdef libzfs.zpool_handle_t* _zpool
-    cdef zfs.zpool_prop_t _propid
+    cdef int _propid
     cdef readonly object name
 
-    def __init__(self, ZFS root, ZFSPool pool, zfs.zpool_prop_t propid):
+    def __init__(self, ZFS root, ZFSPool pool, int propid):
         self._root = <libzfs.libzfs_handle_t*>root.handle()
         self._zpool = <libzfs.zpool_handle_t*>pool.handle()
         self._propid = propid
@@ -356,11 +356,11 @@ cdef class ZPoolProperty(object):
 cdef class ZFSProperty(object):
     cdef libzfs.libzfs_handle_t* _root
     cdef libzfs.zfs_handle_t* _dataset
-    cdef zfs.zfs_prop_t _propid
+    cdef int _propid
     cdef readonly object parent
     cdef readonly object name
 
-    def __init__(self, ZFS root, ZFSDataset dataset, zfs.zfs_prop_t propid):
+    def __init__(self, ZFS root, ZFSDataset dataset, int propid):
         self.parent = dataset
         self._root = <libzfs.libzfs_handle_t*>root.handle()
         self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
@@ -405,6 +405,36 @@ cdef class ZFSProperty(object):
 
     def reset(self):
         pass
+
+
+cdef class ZFSUserProperty(ZFSProperty):
+    cdef readonly object nvlist
+
+    def __init__(self, ZFS root, ZFSDataset dataset, name, nvprop):
+        self.parent = dataset
+        self._root = <libzfs.libzfs_handle_t*>root.handle()
+        self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
+        self.name = name
+        self.nvlist = nvprop
+
+    property value:
+        def __get__(self):
+            import pprint
+            if "value" not in self.nvlist:
+                return None
+
+            return self.nvlist["value"]
+
+        def __set__(self, value):
+            if libzfs.zfs_prop_set(self._dataset, self.name, value) != 0:
+                raise ZFSException(
+                    Error(libzfs.libzfs_errno(self._root)),
+                    libzfs.libzfs_error_description(self._root)
+                )
+
+    property source:
+        def __get__(self):
+            pass
 
 
 cdef class ZFSVdev(object):
@@ -820,9 +850,16 @@ cdef class ZFSDataset(object):
 
     property properties:
         def __get__(self):
+            cdef nvpair.nvlist_t *nvlist
             proptypes = []
             libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
-            return {p.name: p for p in [ZFSProperty(self.root, self, x) for x in proptypes]}
+            nvlist = libzfs.zfs_get_user_props(self._handle)
+            nvl = nvpair.NVList(<uintptr_t>nvlist)
+            ret = {p.name: p for p in [ZFSProperty(self.root, self, x) for x in proptypes]}
+            for k in nvl.keys():
+                ret[k] = ZFSUserProperty(self.root, self, k, nvl[k])
+
+            return ret
 
     property mountpoint:
         def __get__(self):

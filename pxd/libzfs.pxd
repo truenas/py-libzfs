@@ -189,13 +189,13 @@ cdef extern from "libzfs.h":
     extern int zpool_label_disk(libzfs_handle_t *, zpool_handle_t *, const char *)
 
     extern int zpool_set_prop(zpool_handle_t *, const char *, const char *)
-    extern int zpool_get_prop(zpool_handle_t *, zfs.zpool_prop_t, char *,
+    extern int zpool_get_prop(zpool_handle_t *, int prop, char *,
         size_t proplen, zfs.zprop_source_t *, int)
-    extern uint64_t zpool_get_prop_int(zpool_handle_t *, zfs.zpool_prop_t,
+    extern uint64_t zpool_get_prop_int(zpool_handle_t *, int prop,
         zfs.zprop_source_t *)
 
-    extern const char *zpool_prop_to_name(zfs.zpool_prop_t)
-    extern const char *zpool_prop_values(zfs.zpool_prop_t)
+    extern const char *zpool_prop_to_name(int prop)
+    extern const char *zpool_prop_values(int prop)
 
     ctypedef enum zpool_status_t:
         ZPOOL_STATUS_CORRUPT_CACHE
@@ -275,21 +275,21 @@ cdef extern from "libzfs.h":
     extern const char *zfs_get_name(const zfs_handle_t *)
     extern zpool_handle_t *zfs_get_pool_handle(const zfs_handle_t *)
 
-    extern const char *zfs_prop_default_string(zfs_prop_t)
-    extern uint64_t zfs_prop_default_numeric(zfs_prop_t)
-    extern const char *zfs_prop_column_name(zfs_prop_t)
-    extern int zfs_prop_align_right(zfs_prop_t)
+    extern const char *zfs_prop_default_string(int prop)
+    extern uint64_t zfs_prop_default_numeric(int prop)
+    extern const char *zfs_prop_column_name(int prop)
+    extern int zfs_prop_align_right(int prop)
 
     extern nvpair.nvlist_t *zfs_valid_proplist(libzfs_handle_t *, zfs_type_t,
         nvpair.nvlist_t *, uint64_t, zfs_handle_t *, const char *)
 
-    extern const char *zfs_prop_to_name(zfs.zfs_prop_t)
+    extern const char *zfs_prop_to_name(int prop)
     extern int zfs_prop_set(zfs_handle_t *, const char *, const char *)
-    extern int zfs_prop_get(zfs_handle_t *, zfs.zfs_prop_t, char *, size_t,
+    extern int zfs_prop_get(zfs_handle_t *, int prop, char *, size_t,
         zfs.zprop_source_t *, char *, size_t, int)
     extern int zfs_prop_get_recvd(zfs_handle_t *, const char *, char *, size_t,
         int)
-    extern int zfs_prop_get_numeric(zfs_handle_t *, zfs_prop_t, uint64_t *,
+    extern int zfs_prop_get_numeric(zfs_handle_t *, int prop, uint64_t *,
         zfs.zprop_source_t *, char *, size_t)
     extern int zfs_prop_get_userquota_int(zfs_handle_t *zhp, const char *propname,
         uint64_t *propvalue)
@@ -301,10 +301,10 @@ cdef extern from "libzfs.h":
         char *propbuf, int proplen, int literal)
     extern int zfs_prop_get_feature(zfs_handle_t *zhp, const char *propname,
         char *buf, size_t len)
-    extern uint64_t zfs_prop_get_int(zfs_handle_t *, zfs_prop_t)
+    extern uint64_t zfs_prop_get_int(zfs_handle_t *, int prop)
     extern int zfs_prop_inherit(zfs_handle_t *, const char *, int)
-    extern const char *zfs_prop_values(zfs_prop_t)
-    extern int zfs_prop_is_string(zfs.zfs_prop_t prop)
+    extern const char *zfs_prop_values(int prop)
+    extern int zfs_prop_is_string(int prop)
     extern nvpair.nvlist_t *zfs_get_user_props(zfs_handle_t *)
     extern nvpair.nvlist_t *zfs_get_recvd_props(zfs_handle_t *)
     extern nvpair.nvlist_t *zfs_get_clones_nvl(zfs_handle_t *)
@@ -335,10 +335,10 @@ cdef extern from "libzfs.h":
     extern int zpool_expand_proplist(zpool_handle_t *, zprop_list_t **)
     extern int zpool_prop_get_feature(zpool_handle_t *, const char *, char *,
         size_t)
-    extern const char *zpool_prop_default_string(zpool_prop_t)
-    extern uint64_t zpool_prop_default_numeric(zpool_prop_t)
-    extern const char *zpool_prop_column_name(zpool_prop_t)
-    extern int zpool_prop_align_right(zpool_prop_t)
+    extern const char *zpool_prop_default_string(int prop)
+    extern uint64_t zpool_prop_default_numeric(int prop)
+    extern const char *zpool_prop_column_name(int prop)
+    extern int zpool_prop_align_right(int prop)
 
     extern int zprop_iter(zfs.zprop_func func, void *cb, int show_all,
         int ordered, zfs.zfs_type_t type)

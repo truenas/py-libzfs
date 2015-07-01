@@ -239,6 +239,7 @@ cdef extern from "nvpair.h":
 
 	void fnvlist_remove(nvlist_t *, const char *);
 	void fnvlist_remove_nvpair(nvlist_t *, nvpair_t *);
+	void dump_nvlist(nvlist_t *, int);
 
 	nvpair_t *fnvlist_lookup_nvpair(nvlist_t *nvl, const char *name);
 	boolean_t fnvlist_lookup_boolean(nvlist_t *nvl, const char *name);

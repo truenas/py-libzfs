@@ -52,80 +52,6 @@ cdef extern from "sys/fs/zfs.h":
     #define	ZAP_MAXVALUELEN (1024 * 8)
     #define	ZAP_OLDMAXVALUELEN 1024
     
-    ctypedef enum zfs_prop_t:
-        ZFS_PROP_TYPE
-        ZFS_PROP_CREATION
-        ZFS_PROP_USED
-        ZFS_PROP_AVAILABLE
-        ZFS_PROP_REFERENCED
-        ZFS_PROP_COMPRESSRATIO
-        ZFS_PROP_MOUNTED
-        ZFS_PROP_ORIGIN
-        ZFS_PROP_QUOTA
-        ZFS_PROP_RESERVATION
-        ZFS_PROP_VOLSIZE
-        ZFS_PROP_VOLBLOCKSIZE
-        ZFS_PROP_RECORDSIZE
-        ZFS_PROP_MOUNTPOINT
-        ZFS_PROP_SHARENFS
-        ZFS_PROP_CHECKSUM
-        ZFS_PROP_COMPRESSION
-        ZFS_PROP_ATIME
-        ZFS_PROP_DEVICES
-        ZFS_PROP_EXEC
-        ZFS_PROP_SETUID
-        ZFS_PROP_READONLY
-        ZFS_PROP_ZONED
-        ZFS_PROP_SNAPDIR
-        ZFS_PROP_ACLMODE
-        ZFS_PROP_ACLINHERIT
-        ZFS_PROP_CREATETXG
-        ZFS_PROP_NAME
-        ZFS_PROP_CANMOUNT
-        ZFS_PROP_ISCSIOPTIONS
-        ZFS_PROP_XATTR
-        ZFS_PROP_NUMCLONES
-        ZFS_PROP_COPIES
-        ZFS_PROP_VERSION
-        ZFS_PROP_UTF8ONLY
-        ZFS_PROP_NORMALIZE
-        ZFS_PROP_CASE
-        ZFS_PROP_VSCAN
-        ZFS_PROP_NBMAND
-        ZFS_PROP_SHARESMB
-        ZFS_PROP_REFQUOTA
-        ZFS_PROP_REFRESERVATION
-        ZFS_PROP_GUID
-        ZFS_PROP_PRIMARYCACHE
-        ZFS_PROP_SECONDARYCACHE
-        ZFS_PROP_USEDSNAP
-        ZFS_PROP_USEDDS
-        ZFS_PROP_USEDCHILD
-        ZFS_PROP_USEDREFRESERV
-        ZFS_PROP_USERACCOUNTING
-        ZFS_PROP_STMF_SHAREINFO
-        ZFS_PROP_DEFER_DESTROY
-        ZFS_PROP_USERREFS
-        ZFS_PROP_LOGBIAS
-        ZFS_PROP_UNIQUE
-        ZFS_PROP_OBJSETID
-        ZFS_PROP_DEDUP
-        ZFS_PROP_MLSLABEL
-        ZFS_PROP_SYNC
-        ZFS_PROP_REFRATIO
-        ZFS_PROP_WRITTEN
-        ZFS_PROP_CLONES
-        ZFS_PROP_LOGICALUSED
-        ZFS_PROP_LOGICALREFERENCED
-        ZFS_PROP_INCONSISTENT
-        ZFS_PROP_VOLMODE
-        ZFS_PROP_FILESYSTEM_LIMIT
-        ZFS_PROP_SNAPSHOT_LIMIT
-        ZFS_PROP_FILESYSTEM_COUNT
-        ZFS_PROP_SNAPSHOT_COUNT
-        ZFS_PROP_REDUNDANT_METADATA
-        ZFS_PROP_PREV_SNAP
-    
     ctypedef enum zfs_userquota_prop_t:
         ZFS_PROP_USERUSED
         ZFS_PROP_USERQUOTA
@@ -133,34 +59,6 @@ cdef extern from "sys/fs/zfs.h":
         ZFS_PROP_GROUPQUOTA
     
     extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS];
-
-    ctypedef enum zpool_prop_t:
-        ZPOOL_PROP_NAME
-        ZPOOL_PROP_SIZE
-        ZPOOL_PROP_CAPACITY
-        ZPOOL_PROP_ALTROOT
-        ZPOOL_PROP_HEALTH
-        ZPOOL_PROP_GUID
-        ZPOOL_PROP_VERSION
-        ZPOOL_PROP_BOOTFS
-        ZPOOL_PROP_DELEGATION
-        ZPOOL_PROP_AUTOREPLACE
-        ZPOOL_PROP_CACHEFILE
-        ZPOOL_PROP_FAILUREMODE
-        ZPOOL_PROP_LISTSNAPS
-        ZPOOL_PROP_AUTOEXPAND
-        ZPOOL_PROP_DEDUPDITTO
-        ZPOOL_PROP_DEDUPRATIO
-        ZPOOL_PROP_FREE
-        ZPOOL_PROP_ALLOCATED
-        ZPOOL_PROP_READONLY
-        ZPOOL_PROP_COMMENT
-        ZPOOL_PROP_EXPANDSZ
-        ZPOOL_PROP_FREEING
-        ZPOOL_PROP_FRAGMENTATION
-        ZPOOL_PROP_LEAKED
-        ZPOOL_PROP_MAXBLOCKSIZE
-        ZPOOL_NUM_PROPS
 
     enum:
         ZPROP_CONT = -2
@@ -181,30 +79,30 @@ cdef extern from "sys/fs/zfs.h":
     
     ctypedef int (*zprop_func)(int, void *);
     
-    const char *zfs_prop_default_string(zfs_prop_t);
-    uint64_t zfs_prop_default_numeric(zfs_prop_t);
-    boolean_t zfs_prop_readonly(zfs_prop_t);
-    boolean_t zfs_prop_inheritable(zfs_prop_t);
-    boolean_t zfs_prop_setonce(zfs_prop_t);
-    const char *zfs_prop_to_name(zfs_prop_t);
-    zfs_prop_t zfs_name_to_prop(const char *);
+    const char *zfs_prop_default_string(int);
+    uint64_t zfs_prop_default_numeric(int);
+    boolean_t zfs_prop_readonly(int);
+    boolean_t zfs_prop_inheritable(int);
+    boolean_t zfs_prop_setonce(int);
+    const char *zfs_prop_to_name(int);
+    int zfs_name_to_prop(const char *);
     boolean_t zfs_prop_user(const char *);
     boolean_t zfs_prop_userquota(const char *);
-    int zfs_prop_index_to_string(zfs_prop_t, uint64_t, const char **);
-    int zfs_prop_string_to_index(zfs_prop_t, const char *, uint64_t *);
-    uint64_t zfs_prop_random_value(zfs_prop_t, uint64_t seed);
+    int zfs_prop_index_to_string(int, uint64_t, const char **);
+    int zfs_prop_string_to_index(int, const char *, uint64_t *);
+    uint64_t zfs_prop_random_value(int, uint64_t seed);
     boolean_t zfs_prop_valid_for_type(int, zfs_type_t);
     
-    zpool_prop_t zpool_name_to_prop(const char *);
-    const char *zpool_prop_to_name(zpool_prop_t);
-    const char *zpool_prop_default_string(zpool_prop_t);
-    uint64_t zpool_prop_default_numeric(zpool_prop_t);
-    boolean_t zpool_prop_readonly(zpool_prop_t);
+    int zpool_name_to_prop(const char *);
+    const char *zpool_prop_to_name(int);
+    const char *zpool_prop_default_string(int);
+    uint64_t zpool_prop_default_numeric(int);
+    boolean_t zpool_prop_readonly(int);
     boolean_t zpool_prop_feature(const char *);
     boolean_t zpool_prop_unsupported(const char *name);
-    int zpool_prop_index_to_string(zpool_prop_t, uint64_t, const char **);
-    int zpool_prop_string_to_index(zpool_prop_t, const char *, uint64_t *);
-    uint64_t zpool_prop_random_value(zpool_prop_t, uint64_t seed);
+    int zpool_prop_index_to_string(int, uint64_t, const char **);
+    int zpool_prop_string_to_index(int, const char *, uint64_t *);
+    uint64_t zpool_prop_random_value(int, uint64_t seed);
 
     ctypedef enum zfs_deleg_who_type_t:
         ZFS_DELEG_WHO_UNKNOWN
@@ -291,72 +189,6 @@ cdef extern from "sys/fs/zfs.h":
         uint64_t	zrp_maxdata;	
         uint64_t	zrp_txg;	
 
-    #define	ZPOOL_CONFIG_VERSION		"version"
-    #define	ZPOOL_CONFIG_POOL_NAME		"name"
-    #define	ZPOOL_CONFIG_POOL_STATE		"state"
-    #define	ZPOOL_CONFIG_POOL_TXG		"txg"
-    #define	ZPOOL_CONFIG_POOL_GUID		"pool_guid"
-    #define	ZPOOL_CONFIG_CREATE_TXG		"create_txg"
-    #define	ZPOOL_CONFIG_TOP_GUID		"top_guid"
-    #define	ZPOOL_CONFIG_VDEV_TREE		"vdev_tree"
-    #define	ZPOOL_CONFIG_TYPE		"type"
-    #define	ZPOOL_CONFIG_CHILDREN		"children"
-    #define	ZPOOL_CONFIG_ID			"id"
-    #define	ZPOOL_CONFIG_GUID		"guid"
-    #define	ZPOOL_CONFIG_PATH		"path"
-    #define	ZPOOL_CONFIG_DEVID		"devid"
-    #define	ZPOOL_CONFIG_METASLAB_ARRAY	"metaslab_array"
-    #define	ZPOOL_CONFIG_METASLAB_SHIFT	"metaslab_shift"
-    #define	ZPOOL_CONFIG_ASHIFT		"ashift"
-    #define	ZPOOL_CONFIG_ASIZE		"asize"
-    #define	ZPOOL_CONFIG_DTL		"DTL"
-    #define	ZPOOL_CONFIG_SCAN_STATS		"scan_stats"	
-    #define	ZPOOL_CONFIG_VDEV_STATS		"vdev_stats"	
-    #define	ZPOOL_CONFIG_WHOLE_DISK		"whole_disk"
-    #define	ZPOOL_CONFIG_ERRCOUNT		"error_count"
-    #define	ZPOOL_CONFIG_NOT_PRESENT	"not_present"
-    #define	ZPOOL_CONFIG_SPARES		"spares"
-    #define	ZPOOL_CONFIG_IS_SPARE		"is_spare"
-    #define	ZPOOL_CONFIG_NPARITY		"nparity"
-    #define	ZPOOL_CONFIG_HOSTID		"hostid"
-    #define	ZPOOL_CONFIG_HOSTNAME		"hostname"
-    #define	ZPOOL_CONFIG_LOADED_TIME	"initial_load_time"
-    #define	ZPOOL_CONFIG_UNSPARE		"unspare"
-    #define	ZPOOL_CONFIG_PHYS_PATH		"phys_path"
-    #define	ZPOOL_CONFIG_IS_LOG		"is_log"
-    #define	ZPOOL_CONFIG_L2CACHE		"l2cache"
-    #define	ZPOOL_CONFIG_HOLE_ARRAY		"hole_array"
-    #define	ZPOOL_CONFIG_VDEV_CHILDREN	"vdev_children"
-    #define	ZPOOL_CONFIG_IS_HOLE		"is_hole"
-    #define	ZPOOL_CONFIG_DDT_HISTOGRAM	"ddt_histogram"
-    #define	ZPOOL_CONFIG_DDT_OBJ_STATS	"ddt_object_stats"
-    #define	ZPOOL_CONFIG_DDT_STATS		"ddt_stats"
-    #define	ZPOOL_CONFIG_SPLIT		"splitcfg"
-    #define	ZPOOL_CONFIG_ORIG_GUID		"orig_guid"
-    #define	ZPOOL_CONFIG_SPLIT_GUID		"split_guid"
-    #define	ZPOOL_CONFIG_SPLIT_LIST		"guid_list"
-    #define	ZPOOL_CONFIG_REMOVING		"removing"
-    #define	ZPOOL_CONFIG_RESILVER_TXG	"resilver_txg"
-    #define	ZPOOL_CONFIG_COMMENT		"comment"
-    #define	ZPOOL_CONFIG_SUSPENDED		"suspended"	
-    #define	ZPOOL_CONFIG_TIMESTAMP		"timestamp"	
-    #define	ZPOOL_CONFIG_BOOTFS		"bootfs"	
-    #define	ZPOOL_CONFIG_MISSING_DEVICES	"missing_vdevs"	
-    #define	ZPOOL_CONFIG_LOAD_INFO		"load_info"	
-    #define	ZPOOL_CONFIG_REWIND_INFO	"rewind_info"	
-    #define	ZPOOL_CONFIG_UNSUP_FEAT		"unsup_feat"	
-    #define	ZPOOL_CONFIG_ENABLED_FEAT	"enabled_feat"	
-    #define	ZPOOL_CONFIG_CAN_RDONLY		"can_rdonly"	
-    #define	ZPOOL_CONFIG_FEATURES_FOR_READ	"features_for_read"
-    #define	ZPOOL_CONFIG_FEATURE_STATS	"feature_stats"
-    #define	ZPOOL_CONFIG_OFFLINE		"offline"
-    #define	ZPOOL_CONFIG_FAULTED		"faulted"
-    #define	ZPOOL_CONFIG_DEGRADED		"degraded"
-    #define	ZPOOL_CONFIG_REMOVED		"removed"
-    #define	ZPOOL_CONFIG_FRU		"fru"
-    #define	ZPOOL_CONFIG_AUX_STATE		"aux_state"
-    
-    
     #define	ZPOOL_REWIND_POLICY		"rewind-policy"
     #define	ZPOOL_REWIND_REQUEST		"rewind-request"
     #define	ZPOOL_REWIND_REQUEST_TXG	"rewind-request-txg"
