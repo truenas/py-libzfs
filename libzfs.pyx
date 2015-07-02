@@ -841,7 +841,7 @@ cdef class ZFSDataset(object):
         if libzfs.zfs_destroy(self._handle, True) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
-    def destroy_snaps(self, name):
+    def destroy_snapshot(self, name):
         if libzfs.zfs_destroy_snaps(self._handle, name, True) !=0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
