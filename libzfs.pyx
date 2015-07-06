@@ -327,7 +327,7 @@ cdef class ZPoolProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
-            if libzfs.zpool_get_prop(self._zpool, self._propid, cstr, sizeof(cstr), NULL, False) != 0:
+            if libzfs.zpool_get_prop(self._zpool, self._propid, cstr, sizeof(cstr), NULL, True) != 0:
                 return '-'
 
             return cstr
@@ -342,7 +342,7 @@ cdef class ZPoolProperty(object):
     property source:
         def __get__(self):
             cdef zfs.zprop_source_t src
-            libzfs.zpool_get_prop(self._zpool, self._propid, NULL, 0, &src, False)
+            libzfs.zpool_get_prop(self._zpool, self._propid, NULL, 0, &src, True)
             return PropertySource(src)
 
     property allowed_values:
@@ -376,7 +376,7 @@ cdef class ZFSProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[64]
-            if libzfs.zfs_prop_get(self._dataset, self._propid, cstr, 64, NULL, NULL, 0, False) != 0:
+            if libzfs.zfs_prop_get(self._dataset, self._propid, cstr, 64, NULL, NULL, 0, True) != 0:
                 return None
 
             return cstr
@@ -394,7 +394,7 @@ cdef class ZFSProperty(object):
             cdef char val[64]
             cdef char cstr[64]
             cdef zfs.zprop_source_t source
-            if libzfs.zfs_prop_get(self._dataset, self._propid, val, 64, &source, cstr, 64, False) != 0:
+            if libzfs.zfs_prop_get(self._dataset, self._propid, val, 64, &source, cstr, 64, True) != 0:
                 return None
 
             return PropertySource(<int>source)
