@@ -736,6 +736,15 @@ cdef class ZFSPool(object):
             <nvpair.nvlist_t*>cfsopts) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
+    def createvol(self, name, fsopts):
+        cdef uintptr_t cfsopts = fsopts.handle()
+        if libzfs.zfs_create(
+            <libzfs.libzfs_handle_t*>self.root.handle(),
+            name,
+            zfs.ZFS_TYPE_VOLUME,
+            <nvpair.nvlist_t*>cfsopts) != 0:
+            raise ZFSException(self.root.errno, self.root.errstr)
+
     def destroy(self, name):
         pass
 
