@@ -273,7 +273,7 @@ cdef class ZFS(object):
             raise ZFSException(self.errno, self.errstr)
 
     def get_dataset(self, name):
-        cdef libzfs.zfs_handle_t *handle = libzfs.zfs_open(self._root, name, zfs.ZFS_TYPE_FILESYSTEM)
+        cdef libzfs.zfs_handle_t *handle = libzfs.zfs_open(self._root, name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
         cdef libzfs.zpool_handle_t *pool
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Dataset {0} not found'.format(name))
