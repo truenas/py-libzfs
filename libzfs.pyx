@@ -878,6 +878,10 @@ cdef class ZFSDataset(object):
         if libzfs.zfs_destroy(self._handle, True) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
+    def destroy_snapshot(self, name):
+        if libzfs.zfs_destroy_snaps(self._handle, name, True) !=0:
+            raise ZFSException(self.root.errno, self.root.errstr)
+
     def mount(self):
         if libzfs.zfs_mount(self._handle, NULL, 0) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
@@ -893,6 +897,15 @@ cdef class ZFSDataset(object):
 
     def send(self, fd):
         if libzfs.zfs_send_one(self._handle, NULL, fd, 0) != 0:
+            raise ZFSException(self.root.errno, self.root.errstr)
+
+    def snapshot(self, name, fsopts):
+        cdef uintptr_t cfsopts = fsopts.handle()
+        if libzfs.zfs_snapshot(
+            <libzfs.libzfs_handle_t*>self.root.handle(),
+            name,
+            True,
+            <nvpair.nvlist_t*>cfsopts) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
     def receive(self, fd, force=False, nomount=False):
