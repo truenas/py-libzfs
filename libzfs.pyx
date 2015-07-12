@@ -277,11 +277,13 @@ cdef class ZFS(object):
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
+        cdef NVList copts = NVList(otherdict=opts)
+        
         if libzfs.zpool_import_props(
             self.handle,
             pool.config.handle,
             newname,
-            opts.handle,
+            copts.handle,
             False
         ) != 0:
             raise self.get_error()
@@ -343,6 +345,7 @@ cdef class ZPoolProperty(object):
     def __getstate__(self):
         return {
             'value': self.value,
+            'rawvalue': self.rawvalue,
             'source': self.source.name
         }
 
@@ -354,12 +357,12 @@ cdef class ZPoolProperty(object):
 
     property name:
         def __get__(self):
-            return libzfs.zpool_prop_to_name(self._propid)
+            return libzfs.zpool_prop_to_name(self.propid)
 
     property value:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
-            if libzfs.zpool_get_prop(self.pool.handle, self._propid, cstr, sizeof(cstr), NULL, True) != 0:
+            if libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, False) != 0:
                 return '-'
 
             return cstr
@@ -368,10 +371,18 @@ cdef class ZPoolProperty(object):
             if libzfs.zpool_set_prop(self.pool.handle, self.name, value) != 0:
                 raise self.pool.root.get_error()
 
+    property rawvalue:
+        def __get__(self):
+            cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
+            if libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, True) != 0:
+                return '-'
+
+            return cstr
+
     property source:
         def __get__(self):
             cdef zfs.zprop_source_t src
-            libzfs.zpool_get_prop(self.pool.handle, self._propid, NULL, 0, &src, True)
+            libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True)
             return PropertySource(src)
 
     property allowed_values:
@@ -393,6 +404,7 @@ cdef class ZFSProperty(object):
     def __getstate__(self):
         return {
             'value': self.value,
+            'rawvalue': self.rawvalue,
             'source': self.source.name if self.source else None
         }
 
@@ -409,7 +421,7 @@ cdef class ZFSProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[64]
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, True) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, False) != 0:
                 return None
 
             return cstr
@@ -418,6 +430,13 @@ cdef class ZFSProperty(object):
             if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
                 raise self.dataset.root.get_error()
 
+    property rawvalue:
+        def __get__(self):
+            cdef char cstr[64]
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, True) != 0:
+                return None
+
+            return cstr
 
     property source:
         def __get__(self):
