@@ -262,6 +262,7 @@ cdef class ZFS(object):
         return pool
 
     def find_import(self):
+        cdef ZFSImportablePool pool
         cdef const char* paths = "/dev"
         cdef nvpair.nvlist_t* result
 
@@ -271,17 +272,16 @@ cdef class ZFS(object):
 
         nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items():
-            yield ZFSImportablePool(self, name, config)
+            pool = ZFSImportablePool.__new__(ZFSImportablePool)
+            pool.config = nv
+            yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
-        cdef uintptr_t config = pool.config.handle
-        cdef uintptr_t options = opts.handle
-
         if libzfs.zpool_import_props(
             self.handle,
-            <nvpair.nvlist_t*>config,
+            pool.config.handle,
             newname,
-            <nvpair.nvlist_t*>options,
+            opts.handle,
             False
         ) != 0:
             raise self.get_error()
@@ -818,17 +818,11 @@ cdef class ZFSPool(object):
 
 
 cdef class ZFSImportablePool(ZFSPool):
-    cdef readonly object _config
-
-    def __init__(self, ZFS root, name, config):
-        self.handle = NULL
-        self._config = config
-        self.name = name
-        self.free = False
+    cdef NVList config
 
     property config:
         def __get__(self):
-            return self._config
+            return dict(self.config)
 
     property properties:
         def __get__(self):
