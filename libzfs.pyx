@@ -894,9 +894,6 @@ cdef class ZFSDataset(object):
             'children': [i.__getstate__() for i in self.children]
         }
 
-    cdef uintptr_t handle(self):
-        return <uintptr_t>self.handle
-
     @staticmethod
     cdef int __iterate_props(int proptype, void* arg):
         proptypes = <object>arg
@@ -938,6 +935,7 @@ cdef class ZFSDataset(object):
                 snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                 snapshot.root = self.root
                 snapshot.pool = self.pool
+                snapshot.parent = self
                 snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
                 yield snapshot
 
@@ -1032,8 +1030,14 @@ cdef class ZFSDataset(object):
 
 
 cdef class ZFSSnapshot(ZFSDataset):
+    cdef readonly ZFSDataset parent
+
     def __str__(self):
         return "<libzfs.ZFSSnapshot name '{0}'>".format(self.name)
 
     def __repr__(self):
         return str(self)
+
+    def rollback(self, force=False):
+        if libzfs.zfs_rollback(self.parent.handle, self.handle, force) != 0:
+            raise self.root.get_error()
