@@ -24,15 +24,17 @@
 # SUCH DAMAGE.
 #
 
-from libc.stdint cimport uintptr_t
 import enum
 import datetime
-import nvpair
-cimport nvpair
+from libc.stdint cimport uintptr_t
 cimport libzfs
 cimport zfs
+cimport nvpair
 from libc.string cimport memset
 from libc.stdlib cimport free
+
+
+include "nvpair.pxi"
 
 
 class Error(enum.IntEnum):
@@ -206,7 +208,8 @@ cdef class ZFS(object):
         pools = <object>arg
         pools.append(<uintptr_t>handle)
 
-    def make_vdev_tree(self, topology):
+    cdef ZFSVdev make_vdev_tree(self, topology):
+        print dict(topology)
         root = ZFSVdev(self)
         root.type = 'root'
         root.children = topology.get('data', [])
@@ -247,11 +250,11 @@ cdef class ZFS(object):
         cdef const char* paths = "/dev"
         cdef nvpair.nvlist_t* result
 
-        result = libzfs.zpool_find_import(self._root, 1, &paths)
+        result = libzfs.zpool_find_import(self._root, 1, <char **>&paths)
         if result is NULL:
             return
 
-        nv = nvpair.NVList(nvlist=<uintptr_t>result)
+        nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items():
             yield ZFSImportablePool(self, name, config)
 
@@ -282,23 +285,24 @@ cdef class ZFS(object):
         return ZFSDataset(self, ZFSPool(self, <uintptr_t>pool, False), <uintptr_t>handle)
 
     def create(self, name, topology, opts, fsopts):
-        root = self.make_vdev_tree(topology)
-        cdef uintptr_t croot = root.nvlist.handle()
-        cdef uintptr_t copts = opts.handle()
-        cdef uintptr_t cfsopts = fsopts.handle()
+        cdef NVList root = self.make_vdev_tree(topology).nvlist
+        cdef NVList copts = NVList(otherdict=opts)
+        cdef NVList cfsopts = NVList(otherdict=fsopts)
+
+        print repr(dict(root))
 
         if libzfs.zpool_create(
             self._root,
             name,
-            <nvpair.nvlist_t*>croot,
-            <nvpair.nvlist_t*>copts,
-            <nvpair.nvlist_t*>cfsopts) != 0:
+            root.handle(),
+            copts.handle(),
+            cfsopts.handle()) != 0:
             raise ZFSException(self.errno, self.errstr)
 
         return self.get(name)
 
     def destroy(self, name):
-        cdef libzfs.zpool_handle_t *handle = libzfs.zpool_open(self._root, name)
+        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self._root, name)
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
 
@@ -440,20 +444,20 @@ cdef class ZFSUserProperty(ZFSProperty):
 cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
-    cdef readonly object nvlist
     cdef readonly uint64_t guid
+    cdef NVList nvlist
 
     def __init__(self, ZFS root, ZFSPool pool=None, nvlist=None):
         self.root = root
         self.zpool = pool
-        self.nvlist = nvlist
+        self.nvlist = None
 
         if nvlist:
+            nvlist = NVList(otherdict=nvlist)
             self.guid = nvlist['guid']
         else:
             self.guid = 0
-            self.nvlist = nvpair.NVList()
-            self.nvlist['children'] = []
+            self.nvlist = NVList()
 
     def __getstate__(self):
         return {
@@ -466,7 +470,7 @@ cdef class ZFSVdev(object):
 
     def add_child_vdev(self, vdev):
         if 'children' not in self.nvlist:
-            self.nvlist.set('children', [], nvpair.NVType.DATA_TYPE_NVLIST_ARRAY)
+            self.nvlist.set('children', [], nvpair.DATA_TYPE_NVLIST_ARRAY)
 
         self.nvlist['children'].append(vdev)
 
@@ -513,7 +517,7 @@ cdef class ZFSVdev(object):
                 yield ZFSVdev(self.root, self.zpool, i)
 
         def __set__(self, value):
-            self.nvlist['children'] = [i.nvlist for i in value]
+            self.nvlist['children'] = [(<ZFSVdev>i).nvlist for i in value]
 
     property disks:
         def __get__(self):
@@ -706,7 +710,7 @@ cdef class ZFSPool(object):
     property config:
         def __get__(self):
             cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self._zpool, NULL)
-            return nvpair.NVList(nvl)
+            return dict(NVList(nvl))
 
     property properties:
         def __get__(self):
@@ -728,24 +732,22 @@ cdef class ZFSPool(object):
             return ZPoolScrub(self.root, self)
 
     def create(self, name, fsopts):
-        cdef uintptr_t cfsopts = fsopts.handle()
+        cdef NVList cfsopts = NVList(fsopts)
+
         if libzfs.zfs_create(
             <libzfs.libzfs_handle_t*>self.root.handle(),
             name,
             zfs.ZFS_TYPE_FILESYSTEM,
-            <nvpair.nvlist_t*>cfsopts) != 0:
+            cfsopts.handle()) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
     def destroy(self, name):
         pass
 
     def attach_vdevs(self, vdevs_tree):
-        cdef nvpair.nvlist_t* nvl
+        cdef ZFSVdev vd = self.root.make_vdev_tree(NVList(otherdict=vdevs_tree))
 
-        vd = self.root.make_vdev_tree(vdevs_tree)
-        nvl = <nvpair.nvlist_t*><uintptr_t>vd.nvlist.handle()
-
-        if libzfs.zpool_add(self._zpool, nvl) != 0:
+        if libzfs.zpool_add(self._zpool, vd.nvlist.handle()) != 0:
             raise ZFSException(self.root.errno, self.root.errstr)
 
     def delete(self):
@@ -854,7 +856,7 @@ cdef class ZFSDataset(object):
             proptypes = []
             libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
             nvlist = libzfs.zfs_get_user_props(self._handle)
-            nvl = nvpair.NVList(<uintptr_t>nvlist)
+            nvl = NVList(<uintptr_t>nvlist)
             ret = {p.name: p for p in [ZFSProperty(self.root, self, x) for x in proptypes]}
             for k in nvl.keys():
                 ret[k] = ZFSUserProperty(self.root, self, k, nvl[k])

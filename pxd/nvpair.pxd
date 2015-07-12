@@ -40,11 +40,11 @@ cdef extern from "nvpair.h":
 	ctypedef int hrtime_t
 
 	ctypedef enum:
-		NV_UNIQUE_NAME = 0x1,
-		NV_UNIQUE_NAME_TYPE = 0x2
+		NV_UNIQUE_NAME
+		NV_UNIQUE_NAME_TYPE
 
 	ctypedef enum data_type_t:
-		DATA_TYPE_UNKNOWN = 0,
+		DATA_TYPE_UNKNOWN,
 		DATA_TYPE_BOOLEAN,
 		DATA_TYPE_BYTE,
 		DATA_TYPE_INT16,
@@ -122,7 +122,7 @@ cdef extern from "nvpair.h":
 	int nvlist_add_uint32_array(nvlist_t *, const char *, uint32_t *, uint_t);
 	int nvlist_add_int64_array(nvlist_t *, const char *, int64_t *, uint_t);
 	int nvlist_add_uint64_array(nvlist_t *, const char *, uint64_t *, uint_t);
-	int nvlist_add_string_array(nvlist_t *, const char *, char *const *, uint_t);
+	int nvlist_add_string_array(nvlist_t *, const char *, char * const *, uint_t);
 	int nvlist_add_nvlist_array(nvlist_t *, const char *, nvlist_t **, uint_t);
 	int nvlist_add_hrtime(nvlist_t *, const char *, hrtime_t);
 	int nvlist_add_double(nvlist_t *, const char *, double);
@@ -239,7 +239,6 @@ cdef extern from "nvpair.h":
 
 	void fnvlist_remove(nvlist_t *, const char *);
 	void fnvlist_remove_nvpair(nvlist_t *, nvpair_t *);
-	void dump_nvlist(nvlist_t *, int);
 
 	nvpair_t *fnvlist_lookup_nvpair(nvlist_t *nvl, const char *name);
 	boolean_t fnvlist_lookup_boolean(nvlist_t *nvl, const char *name);

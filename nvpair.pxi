@@ -27,42 +27,13 @@
 cimport nvpair
 import collections
 import numbers
-import enum
-from libc.stdint cimport *
+import cython
+from types cimport *
+from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 
 
-class NVType(enum.IntEnum):
-    DATA_TYPE_UNKNOWN = nvpair.DATA_TYPE_UNKNOWN
-    DATA_TYPE_BOOLEAN = nvpair.DATA_TYPE_BOOLEAN
-    DATA_TYPE_BYTE = nvpair.DATA_TYPE_BYTE
-    DATA_TYPE_INT16 = nvpair.DATA_TYPE_INT16
-    DATA_TYPE_UINT16 = nvpair.DATA_TYPE_UINT16
-    DATA_TYPE_INT32 = nvpair.DATA_TYPE_INT32
-    DATA_TYPE_UINT32 = nvpair.DATA_TYPE_UINT32
-    DATA_TYPE_INT64 = nvpair.DATA_TYPE_INT64
-    DATA_TYPE_UINT64 = nvpair.DATA_TYPE_UINT64
-    DATA_TYPE_STRING = nvpair.DATA_TYPE_STRING
-    DATA_TYPE_BYTE_ARRAY = nvpair.DATA_TYPE_BYTE_ARRAY
-    DATA_TYPE_INT16_ARRAY = nvpair.DATA_TYPE_INT16_ARRAY
-    DATA_TYPE_UINT16_ARRAY = nvpair.DATA_TYPE_UINT16_ARRAY
-    DATA_TYPE_INT32_ARRAY = nvpair.DATA_TYPE_INT32_ARRAY
-    DATA_TYPE_UINT32_ARRAY = nvpair.DATA_TYPE_UINT32_ARRAY
-    DATA_TYPE_INT64_ARRAY = nvpair.DATA_TYPE_INT64_ARRAY
-    DATA_TYPE_UINT64_ARRAY = nvpair.DATA_TYPE_UINT64_ARRAY
-    DATA_TYPE_STRING_ARRAY = nvpair.DATA_TYPE_STRING_ARRAY
-    DATA_TYPE_HRTIME = nvpair.DATA_TYPE_HRTIME
-    DATA_TYPE_NVLIST = nvpair.DATA_TYPE_NVLIST
-    DATA_TYPE_NVLIST_ARRAY = nvpair.DATA_TYPE_NVLIST_ARRAY
-    DATA_TYPE_BOOLEAN_VALUE = nvpair.DATA_TYPE_BOOLEAN_VALUE
-    DATA_TYPE_INT8 = nvpair.DATA_TYPE_INT8
-    DATA_TYPE_UINT8 = nvpair.DATA_TYPE_UINT8
-    DATA_TYPE_BOOLEAN_ARRAY = nvpair.DATA_TYPE_BOOLEAN_ARRAY
-    DATA_TYPE_INT8_ARRAY = nvpair.DATA_TYPE_INT8_ARRAY
-    DATA_TYPE_UINT8_ARRAY = nvpair.DATA_TYPE_UINT8_ARRAY
-    DATA_TYPE_DOUBLE = nvpair.DATA_TYPE_DOUBLE
-
-
+@cython.internal
 cdef class NVList(object):
     cdef nvpair.nvlist_t* _nvlist
     cdef int _foreign
@@ -79,12 +50,13 @@ cdef class NVList(object):
             for k, v in otherdict.items():
                 self[k] = v
 
+
     def __dealloc__(self):
         if not self._foreign:
             nvpair.nvlist_free(self._nvlist)
 
-    cpdef uintptr_t handle(self):
-        return <uintptr_t>self._nvlist
+    cdef nvpair.nvlist_t* handle(self):
+        return self._nvlist
 
     cdef nvpair.nvpair_t* __get_pair(self, key) except NULL:
         cdef nvpair.nvpair_t* pair
@@ -191,11 +163,11 @@ cdef class NVList(object):
 
         if datatype == nvpair.DATA_TYPE_NVLIST:
             nvpair.nvpair_value_nvlist(pair, &nested)
-            return NVList(<uintptr_t>nested)
+            return dict(NVList(<uintptr_t>nested))
 
         if datatype == nvpair.DATA_TYPE_NVLIST_ARRAY:
             nvpair.nvpair_value_nvlist_array(pair, <nvpair.nvlist_t***>&carray, &carraylen)
-            return [NVList(x) for x in (<uintptr_t *>carray)[:carraylen]]
+            return [dict(NVList(x)) for x in (<uintptr_t *>carray)[:carraylen]]
 
     def __contains__(self, key):
         return nvpair.nvlist_exists(self._nvlist, key)
@@ -279,9 +251,13 @@ cdef class NVList(object):
         if isinstance(value, NVList):
             if typeid == nvpair.DATA_TYPE_NVLIST:
                 cnvlist = <NVList>value
-                cptr = cnvlist.handle()
-                nvpair.nvlist_add_nvlist(self._nvlist, key, <nvpair.nvlist_t*>cptr)
+                nvpair.nvlist_add_nvlist(self._nvlist, key, cnvlist.handle())
                 return
+
+        if isinstance(value, dict):
+            if typeid == nvpair.DATA_TYPE_NVLIST:
+                cnvlist = NVList(otherdict=value)
+                nvpair.nvlist_add_nvlist(self._nvlist, key, cnvlist.handle())
 
         if isinstance(value, collections.Sequence):
             if typeid == nvpair.DATA_TYPE_STRING_ARRAY:
@@ -366,8 +342,7 @@ cdef class NVList(object):
                 carray = malloc(len(value) * sizeof(nvpair.nvlist_t*))
                 for idx, i in enumerate(value):
                     cnvlist = <NVList>i
-                    cptr = cnvlist.handle()
-                    (<uintptr_t*>carray)[idx] = cptr
+                    (<uintptr_t*>carray)[idx] = <uintptr_t>cnvlist.handle()
 
                 nvpair.nvlist_add_nvlist_array(self._nvlist, key, <nvpair.nvlist_t**>carray, len(value))
 
@@ -417,6 +392,9 @@ cdef class NVList(object):
 
             if type(value[0]) is str:
                 self.set(key, value, nvpair.DATA_TYPE_STRING_ARRAY)
+
+        if type(value) is dict:
+            self.set(key, value, nvpair.DATA_TYPE_NVLIST)
 
     def get_type(self, key):
         pair = self.__get_pair(key)

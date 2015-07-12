@@ -35,7 +35,6 @@ cdef extern from "libzfs_core.h":
 
 
 cdef extern from "libzfs.h":
-    ctypedef int int
     cdef enum:
         MAXNAMELEN
         MAXPATHLEN

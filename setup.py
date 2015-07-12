@@ -55,15 +55,6 @@ setup(
     cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension(
-            "nvpair",
-            ["nvpair.pyx"],
-            libraries=["nvpair"],
-            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g"],
-            cython_include_dirs=["./pxd"],
-            include_dirs=system_includes,
-            extra_link_args=["-g"]
-        ),
-        Extension(
             "libzfs",
             ["libzfs.pyx"],
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
