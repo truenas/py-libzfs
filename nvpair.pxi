@@ -35,16 +35,16 @@ from libc.stdlib cimport malloc, free
 
 @cython.internal
 cdef class NVList(object):
-    cdef nvpair.nvlist_t* _nvlist
-    cdef int _foreign
+    cdef nvpair.nvlist_t* handle
+    cdef int foreign
 
     def __init__(self, uintptr_t nvlist=0, otherdict=None):
         if nvlist:
-            self._foreign = True
-            self._nvlist = <nvpair.nvlist_t*>nvlist
+            self.foreign = True
+            self.handle = <nvpair.nvlist_t*>nvlist
         else:
-            self._foreign = False
-            nvpair.nvlist_alloc(&self._nvlist, nvpair.NV_UNIQUE_NAME, 0)
+            self.foreign = False
+            nvpair.nvlist_alloc(&self.handle, nvpair.NV_UNIQUE_NAME, 0)
 
         if otherdict:
             for k, v in otherdict.items():
@@ -52,16 +52,13 @@ cdef class NVList(object):
 
 
     def __dealloc__(self):
-        if not self._foreign:
-            nvpair.nvlist_free(self._nvlist)
-            self._nvlist = NULL
-
-    cdef nvpair.nvlist_t* handle(self):
-        return self._nvlist
+        if not self.foreign:
+            nvpair.nvlist_free(self.handle)
+            self.handle = NULL
 
     cdef nvpair.nvpair_t* __get_pair(self, key) except NULL:
         cdef nvpair.nvpair_t* pair
-        if nvpair.nvlist_lookup_nvpair(self._nvlist, key, &pair) != 0:
+        if nvpair.nvlist_lookup_nvpair(self.handle, key, &pair) != 0:
             raise ValueError('Key {0} not found'.format(key))
 
         return pair
@@ -171,15 +168,15 @@ cdef class NVList(object):
             return [dict(NVList(x)) for x in (<uintptr_t *>carray)[:carraylen]]
 
     def __contains__(self, key):
-        return nvpair.nvlist_exists(self._nvlist, key)
+        return nvpair.nvlist_exists(self.handle, key)
 
     def __delitem__(self, key):
-        nvpair.nvlist_remove(self._nvlist, key, self.type(key))
+        nvpair.nvlist_remove(self.handle, key, self.type(key))
 
     def __iter__(self):
         cdef nvpair.nvpair_t *pair = NULL
         while True:
-            pair = nvpair.nvlist_next_nvpair(self._nvlist, pair)
+            pair = nvpair.nvlist_next_nvpair(self.handle, pair)
             if pair is NULL:
                 return
 
@@ -204,61 +201,61 @@ cdef class NVList(object):
 
         if isinstance(value, (str, unicode)):
             if typeid == nvpair.DATA_TYPE_STRING:
-                nvpair.nvlist_add_string(self._nvlist, key, value)
+                nvpair.nvlist_add_string(self.handle, key, value)
                 return
 
         if isinstance(value, bool):
             if typeid == nvpair.DATA_TYPE_BOOLEAN:
-                nvpair.nvlist_add_boolean_value(self._nvlist, key, <boolean_t>value)
+                nvpair.nvlist_add_boolean_value(self.handle, key, <boolean_t>value)
                 return
 
         if isinstance(value, numbers.Number):
             if typeid == nvpair.DATA_TYPE_BYTE:
-                nvpair.nvlist_add_byte(self._nvlist, key, <char>value)
+                nvpair.nvlist_add_byte(self.handle, key, <char>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_UINT8:
-                nvpair.nvlist_add_uint8(self._nvlist, key, <uint8_t>value)
+                nvpair.nvlist_add_uint8(self.handle, key, <uint8_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_INT8:
-                nvpair.nvlist_add_int8(self._nvlist, key, <int8_t>value)
+                nvpair.nvlist_add_int8(self.handle, key, <int8_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_UINT16:
-                nvpair.nvlist_add_uint16(self._nvlist, key, <uint16_t>value)
+                nvpair.nvlist_add_uint16(self.handle, key, <uint16_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_INT16:
-                nvpair.nvlist_add_int16(self._nvlist, key, <int16_t>value)
+                nvpair.nvlist_add_int16(self.handle, key, <int16_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_UINT32:
-                nvpair.nvlist_add_uint32(self._nvlist, key, <uint32_t>value)
+                nvpair.nvlist_add_uint32(self.handle, key, <uint32_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_INT32:
-                nvpair.nvlist_add_int32(self._nvlist, key, <int32_t>value)
+                nvpair.nvlist_add_int32(self.handle, key, <int32_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_UINT64:
-                nvpair.nvlist_add_uint64(self._nvlist, key, <uint64_t>value)
+                nvpair.nvlist_add_uint64(self.handle, key, <uint64_t>value)
                 return
 
             if typeid == nvpair.DATA_TYPE_INT64:
-                nvpair.nvlist_add_int64(self._nvlist, key, <int64_t>value)
+                nvpair.nvlist_add_int64(self.handle, key, <int64_t>value)
                 return
 
         if isinstance(value, NVList):
             if typeid == nvpair.DATA_TYPE_NVLIST:
                 cnvlist = <NVList>value
-                nvpair.nvlist_add_nvlist(self._nvlist, key, cnvlist.handle())
+                nvpair.nvlist_add_nvlist(self.handle, key, cnvlist.handle)
                 return
 
         if isinstance(value, dict):
             if typeid == nvpair.DATA_TYPE_NVLIST:
                 cnvlist = NVList(otherdict=value)
-                nvpair.nvlist_add_nvlist(self._nvlist, key, cnvlist.handle())
+                nvpair.nvlist_add_nvlist(self.handle, key, cnvlist.handle)
 
         if isinstance(value, collections.Sequence):
             if typeid == nvpair.DATA_TYPE_STRING_ARRAY:
@@ -266,42 +263,42 @@ cdef class NVList(object):
                 for idx, i in enumerate(value):
                     (<char**>carray)[idx] = i
 
-                nvpair.nvlist_add_string_array(self._nvlist, key, <char**>carray, len(value))
+                nvpair.nvlist_add_string_array(self.handle, key, <char**>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_BOOLEAN_ARRAY:
                 carray = malloc(len(value) * sizeof(char*))
                 for idx, i in enumerate(value):
                     (<boolean_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_boolean_array(self._nvlist, key, <boolean_t*>carray, len(value))
+                nvpair.nvlist_add_boolean_array(self.handle, key, <boolean_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_BYTE_ARRAY:
                 carray = malloc(len(value) * sizeof(char))
                 for idx, i in enumerate(value):
                     (<char*>carray)[idx] = i
 
-                nvpair.nvlist_add_byte_array(self._nvlist, key, <uchar_t*>carray, len(value))
+                nvpair.nvlist_add_byte_array(self.handle, key, <uchar_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_UINT8_ARRAY:
                 carray = malloc(len(value) * sizeof(uint8_t))
                 for idx, i in enumerate(value):
                     (<uint8_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_uint8_array(self._nvlist, key, <uint8_t*>carray, len(value))
+                nvpair.nvlist_add_uint8_array(self.handle, key, <uint8_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_INT8_ARRAY:
                 carray = malloc(len(value) * sizeof(int8_t))
                 for idx, i in enumerate(value):
                     (<int8_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_int8_array(self._nvlist, key, <int8_t*>carray, len(value))
+                nvpair.nvlist_add_int8_array(self.handle, key, <int8_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_UINT16_ARRAY:
                 carray = malloc(len(value) * sizeof(uint16_t))
                 for idx, i in enumerate(value):
                     (<uint16_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_uint16_array(self._nvlist, key, <uint16_t*>carray, len(value))
+                nvpair.nvlist_add_uint16_array(self.handle, key, <uint16_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_INT16_ARRAY:
                 carray = malloc(len(value) * sizeof(int16_t))
@@ -309,43 +306,43 @@ cdef class NVList(object):
                     (<uint16_t*>carray)[idx] = i
 
 
-                nvpair.nvlist_add_int16_array(self._nvlist, key, <int16_t*>carray, len(value))
+                nvpair.nvlist_add_int16_array(self.handle, key, <int16_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_UINT32_ARRAY:
                 carray = malloc(len(value) * sizeof(uint32_t))
                 for idx, i in enumerate(value):
                     (<uint32_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_uint32_array(self._nvlist, key, <uint32_t*>carray, len(value))
+                nvpair.nvlist_add_uint32_array(self.handle, key, <uint32_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_INT32_ARRAY:
                 carray = malloc(len(value) * sizeof(int32_t))
                 for idx, i in enumerate(value):
                     (<int32_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_int32_array(self._nvlist, key, <int32_t*>carray, len(value))
+                nvpair.nvlist_add_int32_array(self.handle, key, <int32_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_UINT64_ARRAY:
                 carray = malloc(len(value) * sizeof(uint64_t))
                 for idx, i in enumerate(value):
                     (<uint64_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_uint64_array(self._nvlist, key, <uint64_t*>carray, len(value))
+                nvpair.nvlist_add_uint64_array(self.handle, key, <uint64_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_INT64_ARRAY:
                 carray = malloc(len(value) * sizeof(int64_t))
                 for idx, i in enumerate(value):
                     (<int64_t*>carray)[idx] = i
 
-                nvpair.nvlist_add_int64_array(self._nvlist, key, <int64_t*>carray, len(value))
+                nvpair.nvlist_add_int64_array(self.handle, key, <int64_t*>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_NVLIST_ARRAY:
                 carray = malloc(len(value) * sizeof(nvpair.nvlist_t*))
                 for idx, i in enumerate(value):
                     cnvlist = <NVList>i
-                    (<uintptr_t*>carray)[idx] = <uintptr_t>cnvlist.handle()
+                    (<uintptr_t*>carray)[idx] = <uintptr_t>cnvlist.handle
 
-                nvpair.nvlist_add_nvlist_array(self._nvlist, key, <nvpair.nvlist_t**>carray, len(value))
+                nvpair.nvlist_add_nvlist_array(self.handle, key, <nvpair.nvlist_t**>carray, len(value))
 
             if carray != NULL:
                 free(carray)
@@ -410,7 +407,7 @@ cdef class NVList(object):
     def items(self):
         cdef nvpair.nvpair_t *pair = NULL
         while True:
-            pair = nvpair.nvlist_next_nvpair(self._nvlist, pair)
+            pair = nvpair.nvlist_next_nvpair(self.handle, pair)
             if pair is NULL:
                 return
 

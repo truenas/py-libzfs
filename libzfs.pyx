@@ -189,16 +189,13 @@ class ZFSException(RuntimeError):
 
 
 cdef class ZFS(object):
-    cdef libzfs.libzfs_handle_t *_root
+    cdef libzfs.libzfs_handle_t* handle
 
     def __cinit__(self):
-        self._root = libzfs.libzfs_init()
+        self.handle = libzfs.libzfs_init()
 
     def __dealloc__(self):
-        libzfs.libzfs_fini(self._root)
-
-    cdef uintptr_t handle(self):
-        return <uintptr_t>self._root
+        libzfs.libzfs_fini(self.handle)
 
     def __getstate__(self):
         return [p.__getstate__() for p in self.pools]
@@ -207,6 +204,12 @@ cdef class ZFS(object):
     cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg):
         pools = <object>arg
         pools.append(<uintptr_t>handle)
+
+    cdef object get_error(self):
+        return ZFSException(
+            Error(libzfs.libzfs_errno(self.handle)),
+            libzfs.libzfs_error_description(self.handle)
+        )
 
     cdef ZFSVdev make_vdev_tree(self, topology):
         print dict(topology)
@@ -227,27 +230,27 @@ cdef class ZFS(object):
 
     property errno:
         def __get__(self):
-            return Error(libzfs.libzfs_errno(self._root))
+            return Error(libzfs.libzfs_errno(self.handle))
 
     property errstr:
         def __get__(self):
-            return libzfs.libzfs_error_description(self._root)
+            return libzfs.libzfs_error_description(self.handle)
 
     property pools:
         def __get__(self):
             cdef ZFSPool pool
 
             pools = []
-            libzfs.zpool_iter(self._root, self.__iterate_pools, <void*>pools)
+            libzfs.zpool_iter(self.handle, self.__iterate_pools, <void*>pools)
 
             for h in pools:
                 pool = ZFSPool.__new__(ZFSPool)
                 pool.root = self
-                pool._zpool = <libzfs.zpool_handle_t*><uintptr_t>h
+                pool.handle = <libzfs.zpool_handle_t*><uintptr_t>h
                 yield pool
 
     def get(self, name):
-        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self._root, name)
+        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
         cdef ZFSPool pool
 
         if handle == NULL:
@@ -255,14 +258,14 @@ cdef class ZFS(object):
 
         pool = ZFSPool.__new__(ZFSPool)
         pool.root = self
-        pool._zpool = handle
+        pool.handle = handle
         return pool
 
     def find_import(self):
         cdef const char* paths = "/dev"
         cdef nvpair.nvlist_t* result
 
-        result = libzfs.zpool_find_import(self._root, 1, <char **>&paths)
+        result = libzfs.zpool_find_import(self.handle, 1, <char **>&paths)
         if result is NULL:
             return
 
@@ -271,30 +274,38 @@ cdef class ZFS(object):
             yield ZFSImportablePool(self, name, config)
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
-        cdef uintptr_t config = pool.config.handle()
-        cdef uintptr_t options = opts.handle()
+        cdef uintptr_t config = pool.config.handle
+        cdef uintptr_t options = opts.handle
 
         if libzfs.zpool_import_props(
-            self._root,
+            self.handle,
             <nvpair.nvlist_t*>config,
             newname,
             <nvpair.nvlist_t*>options,
             False
         ) != 0:
-            raise ZFSException(self.errno, self.errstr)
+            raise self.get_error()
 
     def export_pool(self, ZFSPool pool):
-        if libzfs.zpool_export(pool._zpool, True, "export") != 0:
-            raise ZFSException(self.errno, self.errstr)
+        if libzfs.zpool_export(pool.handle, True, "export") != 0:
+            raise self.get_error()
 
     def get_dataset(self, name):
-        cdef libzfs.zfs_handle_t *handle = libzfs.zfs_open(self._root, name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
-        cdef libzfs.zpool_handle_t *pool
+        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_open(self.handle, name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
+        cdef ZFSPool pool
+        cdef ZFSDataset dataset
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Dataset {0} not found'.format(name))
 
-        pool = libzfs.zfs_get_pool_handle(handle)
-        return ZFSDataset(self, ZFSPool(self, <uintptr_t>pool, False), <uintptr_t>handle)
+        pool = ZFSPool.__new__(ZFSPool)
+        pool.root = self
+        pool.free = False
+        pool.handle = libzfs.zfs_get_pool_handle(handle)
+        dataset = ZFSDataset.__new__(ZFSDataset)
+        dataset.root = self
+        dataset.pool = pool
+        dataset.handle = handle
+        return dataset
 
     def create(self, name, topology, opts, fsopts):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
@@ -304,17 +315,17 @@ cdef class ZFS(object):
         print repr(dict(root))
 
         if libzfs.zpool_create(
-            self._root,
+            self.handle,
             name,
-            root.handle(),
-            copts.handle(),
-            cfsopts.handle()) != 0:
+            root.handle,
+            copts.handle,
+            cfsopts.handle) != 0:
             raise ZFSException(self.errno, self.errstr)
 
         return self.get(name)
 
     def destroy(self, name):
-        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self._root, name)
+        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
 
@@ -323,16 +334,11 @@ cdef class ZFS(object):
 
 
 cdef class ZPoolProperty(object):
-    cdef libzfs.libzfs_handle_t* _root
-    cdef libzfs.zpool_handle_t* _zpool
-    cdef int _propid
-    cdef readonly object name
+    cdef int propid
+    cdef readonly ZFSPool pool
 
-    def __init__(self, ZFS root, ZFSPool pool, int propid):
-        self._root = <libzfs.libzfs_handle_t*>root.handle()
-        self._zpool = <libzfs.zpool_handle_t*>pool.handle()
-        self._propid = propid
-        self.name = libzfs.zpool_prop_to_name(self._propid)
+    def __init__(self):
+        raise RuntimeError('ZPoolProperty cannot be instantiated by the user')
 
     def __getstate__(self):
         return {
@@ -346,25 +352,26 @@ cdef class ZPoolProperty(object):
     def __repr__(self):
         return str(self)
 
+    property name:
+        def __get__(self):
+            return libzfs.zpool_prop_to_name(self._propid)
+
     property value:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
-            if libzfs.zpool_get_prop(self._zpool, self._propid, cstr, sizeof(cstr), NULL, True) != 0:
+            if libzfs.zpool_get_prop(self.pool.handle, self._propid, cstr, sizeof(cstr), NULL, True) != 0:
                 return '-'
 
             return cstr
 
         def __set__(self, value):
-            if libzfs.zpool_set_prop(self._zpool, self.name, value) != 0:
-                raise ZFSException(
-                    Error(libzfs.libzfs_errno(self._root)),
-                    libzfs.libzfs_error_description(self._root)
-                )
+            if libzfs.zpool_set_prop(self.pool.handle, self.name, value) != 0:
+                raise self.pool.root.get_error()
 
     property source:
         def __get__(self):
             cdef zfs.zprop_source_t src
-            libzfs.zpool_get_prop(self._zpool, self._propid, NULL, 0, &src, True)
+            libzfs.zpool_get_prop(self.pool.handle, self._propid, NULL, 0, &src, True)
             return PropertySource(src)
 
     property allowed_values:
@@ -376,18 +383,12 @@ cdef class ZPoolProperty(object):
 
 
 cdef class ZFSProperty(object):
-    cdef libzfs.libzfs_handle_t* _root
-    cdef libzfs.zfs_handle_t* _dataset
-    cdef int _propid
-    cdef readonly object parent
-    cdef readonly object name
+    cdef readonly ZFSDataset dataset
+    cdef libzfs.zfs_handle_t* handle
+    cdef int propid
 
-    def __init__(self, ZFS root, ZFSDataset dataset, int propid):
-        self.parent = dataset
-        self._root = <libzfs.libzfs_handle_t*>root.handle()
-        self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
-        self._propid = propid
-        self.name = libzfs.zfs_prop_to_name(self._propid)
+    def __init__(self):
+        raise RuntimeError('ZFSProperty cannot be instantiated by the user')
 
     def __getstate__(self):
         return {
@@ -401,20 +402,21 @@ cdef class ZFSProperty(object):
     def __repr__(self):
         return str(self)
 
+    property name:
+        def __get__(self):
+            return libzfs.zfs_prop_to_name(self.propid)
+
     property value:
         def __get__(self):
             cdef char cstr[64]
-            if libzfs.zfs_prop_get(self._dataset, self._propid, cstr, 64, NULL, NULL, 0, True) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, True) != 0:
                 return None
 
             return cstr
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self._dataset, self.name, value) != 0:
-                raise ZFSException(
-                    Error(libzfs.libzfs_errno(self._root)),
-                    libzfs.libzfs_error_description(self._root)
-                )
+            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+                raise self.dataset.root.get_error()
 
 
     property source:
@@ -422,7 +424,7 @@ cdef class ZFSProperty(object):
             cdef char val[64]
             cdef char cstr[64]
             cdef zfs.zprop_source_t source
-            if libzfs.zfs_prop_get(self._dataset, self._propid, val, 64, &source, cstr, 64, True) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, val, 64, &source, cstr, 64, True) != 0:
                 return None
 
             return PropertySource(<int>source)
@@ -437,19 +439,13 @@ cdef class ZFSProperty(object):
 
 cdef class ZFSUserProperty(ZFSProperty):
     cdef NVList nvlist
+    cdef readonly name
 
     def __str__(self):
         return "<libzfs.ZFSUserProperty name '{0}' value '{1}'>".format(self.name, self.value)
 
     def __repr__(self):
         return str(self)
-
-    def __init__(self, ZFS root, ZFSDataset dataset, name, NVList nvprop):
-        self.parent = dataset
-        self._root = <libzfs.libzfs_handle_t*>root.handle()
-        self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
-        self.name = name
-        self.nvlist = nvprop
 
     property value:
         def __get__(self):
@@ -459,11 +455,8 @@ cdef class ZFSUserProperty(ZFSProperty):
             return self.nvlist["value"]
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self._dataset, self.name, value) != 0:
-                raise ZFSException(
-                    Error(libzfs.libzfs_errno(self._root)),
-                    libzfs.libzfs_error_description(self._root)
-                )
+            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+                raise self.dataset.root.get_error()
 
     property source:
         def __get__(self):
@@ -651,7 +644,7 @@ cdef class ZPoolScrub(object):
 
 
 cdef class ZFSPool(object):
-    cdef libzfs.zpool_handle_t* _zpool
+    cdef libzfs.zpool_handle_t* handle
     cdef bint free
     cdef readonly ZFS root
 
@@ -663,8 +656,8 @@ cdef class ZFSPool(object):
 
     def __dealloc__(self):
         if self.free:
-            libzfs.zpool_close(self._zpool)
-            self._zpool = NULL
+            libzfs.zpool_close(self.handle)
+            self.handle = NULL
 
     def __str__(self):
         return "<libzfs.ZFSPool name '{0}' guid '{1}'>".format(self.name, self.guid)
@@ -688,9 +681,6 @@ cdef class ZFSPool(object):
             },
         }
 
-    cdef uintptr_t handle(self):
-        return <uintptr_t>self._zpool
-
     @staticmethod
     cdef int __iterate_props(int proptype, void* arg):
         proptypes = <object>arg
@@ -699,10 +689,11 @@ cdef class ZFSPool(object):
 
     property root_dataset:
         def __get__(self):
+            cdef ZFSDataset dataset
             cdef libzfs.zfs_handle_t* handle
 
             handle = libzfs.zfs_open(
-                <libzfs.libzfs_handle_t*>self.root.handle(),
+                self.root.handle,
                 self.name,
                 zfs.ZFS_TYPE_FILESYSTEM
             )
@@ -710,7 +701,11 @@ cdef class ZFSPool(object):
             if handle == NULL:
                 raise ZFSException(Error.OPENFAILED, 'Cannot open root dataset')
 
-            return ZFSDataset(self.root, self, <uintptr_t>handle)
+            dataset = ZFSDataset.__new__(ZFSDataset)
+            dataset.root = self.root
+            dataset.pool = self
+            dataset.handle = handle
+            return dataset
 
     property data_vdevs:
         def __get__(self):
@@ -742,7 +737,7 @@ cdef class ZFSPool(object):
 
     property name:
         def __get__(self):
-            return libzfs.zpool_get_name(self._zpool)
+            return libzfs.zpool_get_name(self.handle)
 
     property guid:
         def __get__(self):
@@ -759,14 +754,23 @@ cdef class ZFSPool(object):
 
     property config:
         def __get__(self):
-            cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self._zpool, NULL)
+            cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
             return dict(NVList(nvl))
 
     property properties:
         def __get__(self):
+            cdef ZPoolProperty prop
             proptypes = []
+            result = {}
             libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_POOL)
-            return {p.name: p for p in [ZPoolProperty(self.root, self, x) for x in proptypes]}
+
+            for x in proptypes:
+                prop = ZPoolProperty.__new__(ZPoolProperty)
+                prop.pool = self
+                prop.propid = x
+                result[prop.name] = prop
+
+            return result
 
     property disks:
         def __get__(self):
@@ -785,11 +789,11 @@ cdef class ZFSPool(object):
         cdef NVList cfsopts = NVList(fsopts)
 
         if libzfs.zfs_create(
-            <libzfs.libzfs_handle_t*>self.root.handle(),
+            self.root.handle,
             name,
             zfs.ZFS_TYPE_FILESYSTEM,
-            cfsopts.handle()) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+            cfsopts.handle) != 0:
+            raise self.root.get_error()
 
     def destroy(self, name):
         pass
@@ -797,27 +801,27 @@ cdef class ZFSPool(object):
     def attach_vdevs(self, vdevs_tree):
         cdef ZFSVdev vd = self.root.make_vdev_tree(NVList(otherdict=vdevs_tree))
 
-        if libzfs.zpool_add(self._zpool, vd.nvlist.handle()) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
+            raise self.root.get_error()
 
     def delete(self):
-        if libzfs.zpool_destroy(self._zpool, "destroy") != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zpool_destroy(self.handle, "destroy") != 0:
+            raise self.root.get_error()
 
     def start_scrub(self):
-        if libzfs.zpool_scan(self._zpool, zfs.POOL_SCAN_SCRUB) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB) != 0:
+            raise self.root.get_error()
 
     def stop_scrub(self):
-        if libzfs.zpool_scan(self._zpool, zfs.POOL_SCAN_NONE) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE) != 0:
+            raise self.root.get_error()
 
 
 cdef class ZFSImportablePool(ZFSPool):
     cdef readonly object _config
 
     def __init__(self, ZFS root, name, config):
-        self._zpool = NULL
+        self.handle = NULL
         self._config = config
         self.name = name
         self.free = False
@@ -845,22 +849,15 @@ cdef class ZFSImportablePool(ZFSPool):
 
 
 cdef class ZFSDataset(object):
-    cdef libzfs.libzfs_handle_t* _root_handle
-    cdef libzfs.zfs_handle_t* _handle
+    cdef libzfs.zfs_handle_t* handle
     cdef readonly ZFS root
     cdef readonly ZFSPool pool
-    cdef readonly object name
 
-    def __init__(self, ZFS root, ZFSPool pool, uintptr_t handle):
-        assert handle != 0
-        self.root = root
-        self.pool = pool
-        self._root_handle = <libzfs.libzfs_handle_t*>self.root.handle()
-        self._handle = <libzfs.zfs_handle_t*>handle
-        self.name = libzfs.zfs_get_name(self._handle)
+    def __init__(self):
+        raise RuntimeError('ZFSDataset cannot be instantiated by the user')
 
     def __dealloc__(self):
-        libzfs.zfs_close(self._handle)
+        libzfs.zfs_close(self.handle)
 
     def __str__(self):
         return "<libzfs.ZFSDataset name '{0}'>".format(self.name)
@@ -876,7 +873,7 @@ cdef class ZFSDataset(object):
         }
 
     cdef uintptr_t handle(self):
-        return <uintptr_t>self._handle
+        return <uintptr_t>self.handle
 
     @staticmethod
     cdef int __iterate_props(int proptype, void* arg):
@@ -894,35 +891,65 @@ cdef class ZFSDataset(object):
         snapshots = <object>arg
         snapshots.append(<uintptr_t>handle)
 
+    property name:
+        def __get__(self):
+            return libzfs.zfs_get_name(self.handle)
+
     property children:
         def __get__(self):
+            cdef ZFSDataset dataset
             datasets = []
-            libzfs.zfs_iter_filesystems(self._handle, self.__iterate_children, <void*>datasets)
-            return [ZFSDataset(self.root, self.pool, h) for h in datasets]
+            libzfs.zfs_iter_filesystems(self.handle, self.__iterate_children, <void*>datasets)
+            for h in datasets:
+                dataset = ZFSDataset.__new__(ZFSDataset)
+                dataset.root = self.root
+                dataset.pool = self.pool
+                dataset.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                yield dataset
 
     property snapshots:
         def __get__(self):
+            cdef ZFSSnapshot snapshot
             snapshots = []
-            libzfs.zfs_iter_children(self._handle, self.__iterate_snapshots, <void*>snapshots)
-            return [ZFSSnapshot(self.root, self.pool, h) for h in snapshots]
+            libzfs.zfs_iter_children(self.handle, self.__iterate_snapshots, <void*>snapshots)
+            for h in snapshots:
+                snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                snapshot.root = self.root
+                snapshot.pool = self.pool
+                snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                yield snapshot
 
     property properties:
         def __get__(self):
+            cdef ZFSProperty prop
+            cdef ZFSUserProperty userprop
             cdef nvpair.nvlist_t *nvlist
             proptypes = []
-            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
-            nvlist = libzfs.zfs_get_user_props(self._handle)
-            nvl = NVList(<uintptr_t>nvlist)
-            ret = {p.name: p for p in [ZFSProperty(self.root, self, x) for x in proptypes]}
-            for k in nvl.keys():
-                ret[k] = ZFSUserProperty(self.root, self, k, nvl[k])
+            result = {}
 
-            return ret
+            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
+            nvlist = libzfs.zfs_get_user_props(self.handle)
+            nvl = NVList(<uintptr_t>nvlist)
+
+            for x in proptypes:
+                prop = ZFSProperty.__new__(ZFSProperty)
+                prop.dataset = self
+                prop.propid = x
+                result[prop.name] = prop
+
+            for k, v in nvl.items():
+                userprop = ZFSUserProperty.__new__(ZFSUserProperty)
+                userprop.dataset = self
+                userprop.key = k
+                userprop.nvlist = v
+                result[userprop.name] = userprop
+
+            return result
 
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
-            if libzfs.zfs_is_mounted(self._handle, &mntpt) == 0:
+            if libzfs.zfs_is_mounted(self.handle, &mntpt) == 0:
                 return None
 
             result = mntpt
@@ -933,16 +960,16 @@ cdef class ZFSDataset(object):
         pass
 
     def delete(self):
-        if libzfs.zfs_destroy(self._handle, True) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zfs_destroy(self.handle, True) != 0:
+            raise self.root.get_error()
 
     def destroy_snapshot(self, name):
-        if libzfs.zfs_destroy_snaps(self._handle, name, True) !=0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zfs_destroy_snaps(self.handle, name, True) !=0:
+            raise self.root.get_error()
 
     def mount(self):
-        if libzfs.zfs_mount(self._handle, NULL, 0) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zfs_mount(self.handle, NULL, 0) != 0:
+            raise self.root.get_error()
 
     def mount_recursive(self):
         self.mount()
@@ -950,24 +977,24 @@ cdef class ZFSDataset(object):
             i.mount_recursive()
 
     def umount(self):
-        if libzfs.zfs_unmountall(self._handle, 0) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zfs_unmountall(self.handle, 0) != 0:
+            raise self.root.get_error()
 
     def send(self, fd):
-        if libzfs.zfs_send_one(self._handle, NULL, fd, 0) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+        if libzfs.zfs_send_one(self.handle, NULL, fd, 0) != 0:
+            raise self.root.get_error()
 
     def snapshot(self, name, fsopts):
-        cdef uintptr_t cfsopts = fsopts.handle()
+        cdef NVList cfsopts = NVList(otherdict=fsopts)
         if libzfs.zfs_snapshot(
-            <libzfs.libzfs_handle_t*>self.root.handle(),
+            self.root.handle,
             name,
             True,
-            <nvpair.nvlist_t*>cfsopts) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+            cfsopts.handle) != 0:
+            raise self.root.get_error()
 
     def receive(self, fd, force=False, nomount=False):
-        cdef libzfs.libzfs_handle_t *handle = <libzfs.libzfs_handle_t *>self.root.handle()
+        cdef libzfs.libzfs_handle_t *handle = self.root.handle,
         cdef libzfs.recvflags_t flags;
 
         memset(&flags, 0, sizeof(libzfs.recvflags_t))
@@ -979,8 +1006,12 @@ cdef class ZFSDataset(object):
             flags.nomount = True
 
         if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
-            raise ZFSException(self.root.errno, self.root.errstr)
+            raise self.root.get_error()
 
 
 cdef class ZFSSnapshot(ZFSDataset):
-    pass
+    def __str__(self):
+        return "<libzfs.ZFSSnapshot name '{0}'>".format(self.name)
+
+    def __repr__(self):
+        return str(self)
