@@ -328,6 +328,12 @@ cdef class ZPoolProperty(object):
             'source': self.source.name
         }
 
+    def __str__(self):
+        return "<libzfs.ZPoolProperty name '{0}' value '{1}'>".format(self.name, self.value)
+
+    def __repr__(self):
+        return str(self)
+
     property value:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
@@ -377,6 +383,12 @@ cdef class ZFSProperty(object):
             'source': self.source.name if self.source else None
         }
 
+    def __str__(self):
+        return "<libzfs.ZFSProperty name '{0}' value '{1}'>".format(self.name, self.value)
+
+    def __repr__(self):
+        return str(self)
+
     property value:
         def __get__(self):
             cdef char cstr[64]
@@ -412,9 +424,15 @@ cdef class ZFSProperty(object):
 
 
 cdef class ZFSUserProperty(ZFSProperty):
-    cdef readonly object nvlist
+    cdef NVList nvlist
 
-    def __init__(self, ZFS root, ZFSDataset dataset, name, nvprop):
+    def __str__(self):
+        return "<libzfs.ZFSUserProperty name '{0}' value '{1}'>".format(self.name, self.value)
+
+    def __repr__(self):
+        return str(self)
+
+    def __init__(self, ZFS root, ZFSDataset dataset, name, NVList nvprop):
         self.parent = dataset
         self._root = <libzfs.libzfs_handle_t*>root.handle()
         self._dataset = <libzfs.zfs_handle_t*>dataset.handle()
@@ -423,7 +441,6 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property value:
         def __get__(self):
-            import pprint
             if "value" not in self.nvlist:
                 return None
 
@@ -447,7 +464,7 @@ cdef class ZFSVdev(object):
     cdef readonly uint64_t guid
     cdef NVList nvlist
 
-    def __init__(self, ZFS root, ZFSPool pool=None, nvlist=None):
+    def __init__(self, ZFS root, typ, ZFSPool pool=None, nvlist=None):
         self.root = root
         self.zpool = pool
         self.nvlist = None
@@ -458,6 +475,17 @@ cdef class ZFSVdev(object):
         else:
             self.guid = 0
             self.nvlist = NVList()
+
+        self.type = typ
+
+    def __str__(self):
+        if self.path:
+            return "<libzfs.ZFSVdev type '{0}', path '{1}'>".format(self.type, self.path)
+
+        return "<libzfs.ZFSVdev type '{0}'>".format(self.type)
+
+    def __repr__(self):
+        return str(self)
 
     def __getstate__(self):
         return {
@@ -625,6 +653,12 @@ cdef class ZFSPool(object):
     def __dealloc__(self):
         if self.free:
             libzfs.zpool_close(self._zpool)
+
+    def __str__(self):
+        return "<libzfs.ZFSPool name '{0}' guid '{1}'>".format(self.name, self.guid)
+
+    def __repr__(self):
+        return str(self)
 
     def __getstate__(self):
         return {
@@ -811,6 +845,12 @@ cdef class ZFSDataset(object):
 
     def __dealloc__(self):
         libzfs.zfs_close(self._handle)
+
+    def __str__(self):
+        return "<libzfs.ZFSDataset name '{0}'>".format(self.name)
+
+    def __repr__(self):
+        return str(self)
 
     def __getstate__(self):
         return {
