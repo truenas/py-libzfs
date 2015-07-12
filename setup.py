@@ -58,7 +58,7 @@ setup(
             "libzfs",
             ["libzfs.pyx"],
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
-            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g"],
+            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0"],
             cython_include_dirs=["./pxd"],
             include_dirs=system_includes,
             extra_link_args=["-g"]

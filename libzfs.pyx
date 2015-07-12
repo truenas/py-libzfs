@@ -26,10 +26,10 @@
 
 import enum
 import datetime
-from libc.stdint cimport uintptr_t
 cimport libzfs
 cimport zfs
 cimport nvpair
+from libc.stdint cimport uintptr_t
 from libc.string cimport memset
 from libc.stdlib cimport free
 
@@ -235,16 +235,28 @@ cdef class ZFS(object):
 
     property pools:
         def __get__(self):
+            cdef ZFSPool pool
+
             pools = []
-            libzfs.zpool_iter(self._root, self.__iterate_pools, <void *>pools)
-            return [ZFSPool(self, h) for h in pools]
+            libzfs.zpool_iter(self._root, self.__iterate_pools, <void*>pools)
+
+            for h in pools:
+                pool = ZFSPool.__new__(ZFSPool)
+                pool.root = self
+                pool._zpool = <libzfs.zpool_handle_t*><uintptr_t>h
+                yield pool
 
     def get(self, name):
-        cdef libzfs.zpool_handle_t *handle = libzfs.zpool_open(self._root, name)
+        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self._root, name)
+        cdef ZFSPool pool
+
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
 
-        return ZFSPool(self, <uintptr_t>handle)
+        pool = ZFSPool.__new__(ZFSPool)
+        pool.root = self
+        pool._zpool = handle
+        return pool
 
     def find_import(self):
         cdef const char* paths = "/dev"
@@ -639,20 +651,20 @@ cdef class ZPoolScrub(object):
 
 
 cdef class ZFSPool(object):
-    cdef libzfs.zpool_handle_t *_zpool
+    cdef libzfs.zpool_handle_t* _zpool
     cdef bint free
     cdef readonly ZFS root
-    cdef readonly object name
 
-    def __init__(self, ZFS root, uintptr_t handle, bint free=True):
-        self.root = root
-        self._zpool = <libzfs.zpool_handle_t*>handle
-        self.name = libzfs.zpool_get_name(self._zpool)
-        self.free = free
+    def __cinit__(self):
+        self.free = True
+
+    def __init__(self):
+        raise RuntimeError('ZFSPool cannot be instantiated by the user')
 
     def __dealloc__(self):
         if self.free:
             libzfs.zpool_close(self._zpool)
+            self._zpool = NULL
 
     def __str__(self):
         return "<libzfs.ZFSPool name '{0}' guid '{1}'>".format(self.name, self.guid)
@@ -727,6 +739,10 @@ cdef class ZFSPool(object):
                 'log': list(self.log_vdevs),
                 'cache': list(self.cache_vdevs)
             }
+
+    property name:
+        def __get__(self):
+            return libzfs.zpool_get_name(self._zpool)
 
     property guid:
         def __get__(self):

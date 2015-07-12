@@ -54,6 +54,7 @@ cdef class NVList(object):
     def __dealloc__(self):
         if not self._foreign:
             nvpair.nvlist_free(self._nvlist)
+            self._nvlist = NULL
 
     cdef nvpair.nvlist_t* handle(self):
         return self._nvlist
