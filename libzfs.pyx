@@ -462,7 +462,7 @@ cdef class ZFSProperty(object):
 
 
 cdef class ZFSUserProperty(ZFSProperty):
-    cdef NVList nvlist
+    cdef dict values
     cdef readonly name
 
     def __str__(self):
@@ -473,10 +473,10 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property value:
         def __get__(self):
-            if "value" not in self.nvlist:
+            if "value" not in self.values:
                 return None
 
-            return self.nvlist["value"]
+            return self.values["value"]
 
         def __set__(self, value):
             if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
@@ -956,8 +956,8 @@ cdef class ZFSDataset(object):
             for k, v in nvl.items():
                 userprop = ZFSUserProperty.__new__(ZFSUserProperty)
                 userprop.dataset = self
-                userprop.key = k
-                userprop.nvlist = v
+                userprop.name = k
+                userprop.values = v
                 result[userprop.name] = userprop
 
             return result
