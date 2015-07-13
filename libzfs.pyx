@@ -482,6 +482,10 @@ cdef class ZFSUserProperty(ZFSProperty):
             if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
                 raise self.dataset.root.get_error()
 
+    property rawvalue:
+        def __get__(self):
+            return self.value
+
     property source:
         def __get__(self):
             pass
