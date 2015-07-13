@@ -37,6 +37,11 @@ from libc.stdlib cimport free
 include "nvpair.pxi"
 
 
+class DatasetType(enum.IntEnum):
+    FILESYSTEM = zfs.ZFS_TYPE_FILESYSTEM
+    VOLUME = zfs.ZFS_TYPE_VOLUME
+
+
 class Error(enum.IntEnum):
     SUCCESS = libzfs.EZFS_SUCCESS
     NOMEM = libzfs.EZFS_NOMEM
@@ -804,22 +809,13 @@ cdef class ZFSPool(object):
         def __get__(self):
             return ZPoolScrub(self.root, self)
 
-    def create(self, name, fsopts):
-        cdef NVList cfsopts = NVList(fsopts)
-
-        if libzfs.zfs_create(
-            self.root.handle,
-            name,
-            zfs.ZFS_TYPE_FILESYSTEM,
-            cfsopts.handle) != 0:
-            raise self.root.get_error()
-
-    def createvol(self, name, fsopts):
+    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
+
         if libzfs.zfs_create(
             self.root.handle,
             name,
-            zfs.ZFS_TYPE_VOLUME,
+            fstype,
             cfsopts.handle) != 0:
             raise self.root.get_error()
 
