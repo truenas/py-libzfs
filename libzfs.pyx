@@ -432,7 +432,7 @@ cdef class ZFSProperty(object):
             return cstr
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+            if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                 raise self.dataset.root.get_error()
 
     property rawvalue:
@@ -479,7 +479,7 @@ cdef class ZFSUserProperty(ZFSProperty):
             return self.values["value"]
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+            if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                 raise self.dataset.root.get_error()
 
     property rawvalue:
@@ -970,7 +970,7 @@ cdef class ZFSDataset(object):
             if type(value) is not dict:
                 raise Exception("Invalid type, expecting dict")
             for k, v in value.items():
-                if libzfs.zfs_prop_set(self.handle, k, v) != 0:
+                if libzfs.zfs_prop_set(self.handle, k, str(v)) != 0:
                     raise self.root.get_error()
 
     property mountpoint:
