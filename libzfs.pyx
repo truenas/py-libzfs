@@ -37,6 +37,11 @@ from libc.stdlib cimport free
 include "nvpair.pxi"
 
 
+class DatasetType(enum.IntEnum):
+    FILESYSTEM = zfs.ZFS_TYPE_FILESYSTEM
+    VOLUME = zfs.ZFS_TYPE_VOLUME
+
+
 class Error(enum.IntEnum):
     SUCCESS = libzfs.EZFS_SUCCESS
     NOMEM = libzfs.EZFS_NOMEM
@@ -427,7 +432,7 @@ cdef class ZFSProperty(object):
             return cstr
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+            if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                 raise self.dataset.root.get_error()
 
     property rawvalue:
@@ -457,11 +462,11 @@ cdef class ZFSProperty(object):
 
 
 cdef class ZFSUserProperty(ZFSProperty):
-    cdef object nvlist
+    cdef dict values
     cdef readonly name
 
     def __init__(self, value):
-        self.nvlist = {"value": value}
+        self.values = {"value": value}
 
     def __str__(self):
         return "<libzfs.ZFSUserProperty name '{0}' value '{1}'>".format(self.name, self.value)
@@ -471,15 +476,19 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property value:
         def __get__(self):
-            if "value" not in self.nvlist:
+            if "value" not in self.values:
                 return None
 
-            return self.nvlist["value"]
+            return self.values["value"]
 
         def __set__(self, value):
             if self.dataset:
-                if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+                if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                     raise self.dataset.root.get_error()
+
+    property rawvalue:
+        def __get__(self):
+            return self.value
 
     property source:
         def __get__(self):
@@ -808,22 +817,13 @@ cdef class ZFSPool(object):
         def __get__(self):
             return ZPoolScrub(self.root, self)
 
-    def create(self, name, fsopts):
-        cdef NVList cfsopts = NVList(fsopts)
-
-        if libzfs.zfs_create(
-            self.root.handle,
-            name,
-            zfs.ZFS_TYPE_FILESYSTEM,
-            cfsopts.handle) != 0:
-            raise self.root.get_error()
-
-    def createvol(self, name, fsopts):
+    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
+
         if libzfs.zfs_create(
             self.root.handle,
             name,
-            zfs.ZFS_TYPE_VOLUME,
+            fstype,
             cfsopts.handle) != 0:
             raise self.root.get_error()
 
@@ -911,7 +911,7 @@ cdef class ZFSPropertyDict(dict):
             userprop = ZFSUserProperty.__new__(ZFSUserProperty)
             userprop.dataset = self.parent
             userprop.name = k
-            userprop.nvlist = v
+            userprop.values = v
             self.props[userprop.name] = userprop
 
     def __delitem__(self, key):
@@ -1034,6 +1034,13 @@ cdef class ZFSDataset(object):
             d.parent = self
             d.refresh()
             return d
+
+        def __set__(self, value):
+            if type(value) is not dict:
+                raise Exception("Invalid type, expecting dict")
+            for k, v in value.items():
+                if libzfs.zfs_prop_set(self.handle, k, str(v)) != 0:
+                    raise self.root.get_error()
 
     property mountpoint:
         def __get__(self):
