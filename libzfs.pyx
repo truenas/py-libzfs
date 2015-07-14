@@ -425,7 +425,7 @@ cdef class ZFSProperty(object):
 
     property value:
         def __get__(self):
-            cdef char cstr[64]
+            cdef char cstr[1024]
             if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, False) != 0:
                 return None
 
@@ -437,7 +437,7 @@ cdef class ZFSProperty(object):
 
     property rawvalue:
         def __get__(self):
-            cdef char cstr[64]
+            cdef char cstr[1024]
             if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, True) != 0:
                 return None
 
@@ -457,8 +457,12 @@ cdef class ZFSProperty(object):
         def __get__(self):
             pass
 
-    def reset(self):
-        pass
+    def inherit(self, recursive=False, received=False):
+        if recursive:
+            raise NotImplementedError()
+
+        if libzfs.zfs_prop_inherit(self.dataset.handle, self.name, received == True) != 0:
+            raise self.dataset.root.get_error()
 
 
 cdef class ZFSUserProperty(ZFSProperty):
@@ -918,7 +922,7 @@ cdef class ZFSPropertyDict(dict):
         if key not in self.props:
             raise KeyError(key)
 
-        raise NotImplementedError()
+        self.props[key].inherit(recursive=True)
 
     def __getitem__(self, item):
         return self.props[item]
@@ -1110,3 +1114,12 @@ cdef class ZFSSnapshot(ZFSDataset):
     def rollback(self, force=False):
         if libzfs.zfs_rollback(self.parent.handle, self.handle, force) != 0:
             raise self.root.get_error()
+
+    def bookmark(self, name):
+        pass
+
+    def hold(self, tag, recursive=False):
+        pass
+
+    def release(self, tag, recursive=False):
+        pass
