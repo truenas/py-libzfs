@@ -278,7 +278,9 @@ cdef class ZFS(object):
         nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items():
             pool = ZFSImportablePool.__new__(ZFSImportablePool)
-            pool.config = nv
+            pool.name = name
+            pool.free = False
+            pool.nvlist = NVList(otherdict=config)
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
@@ -286,7 +288,7 @@ cdef class ZFS(object):
         
         if libzfs.zpool_import_props(
             self.handle,
-            pool.config.handle,
+            pool.nvlist.handle,
             newname,
             copts.handle,
             False
@@ -461,7 +463,7 @@ cdef class ZFSProperty(object):
         if recursive:
             raise NotImplementedError()
 
-        if libzfs.zfs_prop_inherit(self.dataset.handle, self.name, received == True) != 0:
+        if libzfs.zfs_prop_inherit(self.dataset.handle, self.name, received) != 0:
             raise self.dataset.root.get_error()
 
 
@@ -857,11 +859,18 @@ cdef class ZFSPool(object):
 
 
 cdef class ZFSImportablePool(ZFSPool):
-    cdef NVList config
+    cdef NVList nvlist
+    cdef public object name
+
+    def __str__(self):
+        return "<libzfs.ZFSImportablePool name '{0}' guid '{1}'>".format(self.name, self.guid)
+
+    def __repr__(self):
+        return str(self)
 
     property config:
         def __get__(self):
-            return dict(self.config)
+            return dict(self.nvlist)
 
     property properties:
         def __get__(self):
@@ -871,7 +880,7 @@ cdef class ZFSImportablePool(ZFSPool):
         def __get__(self):
             return None
 
-    def create(self, name, fsopts):
+    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
         raise NotImplementedError()
 
     def destroy(self, name):

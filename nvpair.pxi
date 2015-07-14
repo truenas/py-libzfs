@@ -256,6 +256,7 @@ cdef class NVList(object):
             if typeid == nvpair.DATA_TYPE_NVLIST:
                 cnvlist = NVList(otherdict=value)
                 nvpair.nvlist_add_nvlist(self.handle, key, cnvlist.handle)
+                return
 
         if isinstance(value, collections.Sequence):
             if typeid == nvpair.DATA_TYPE_STRING_ARRAY:
@@ -349,7 +350,7 @@ cdef class NVList(object):
 
             return
 
-        raise ValueError('Value not compatible with type specified')
+        raise ValueError('Value not compatible with type specified: {0}'.format(type(value).__name__))
 
     def __getitem__(self, str key):
         cdef nvpair.nvpair_t *pair
