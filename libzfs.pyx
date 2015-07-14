@@ -457,8 +457,11 @@ cdef class ZFSProperty(object):
 
 
 cdef class ZFSUserProperty(ZFSProperty):
-    cdef NVList nvlist
+    cdef object nvlist
     cdef readonly name
+
+    def __init__(self, value):
+        self.nvlist = {"value": value}
 
     def __str__(self):
         return "<libzfs.ZFSUserProperty name '{0}' value '{1}'>".format(self.name, self.value)
@@ -474,8 +477,9 @@ cdef class ZFSUserProperty(ZFSProperty):
             return self.nvlist["value"]
 
         def __set__(self, value):
-            if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
-                raise self.dataset.root.get_error()
+            if self.dataset:
+                if libzfs.zfs_prop_set(self.dataset.handle, self.name, value) != 0:
+                    raise self.dataset.root.get_error()
 
     property source:
         def __get__(self):
@@ -832,6 +836,9 @@ cdef class ZFSPool(object):
         if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
             raise self.root.get_error()
 
+    def extend_vdev(self, vdev, new_device):
+        pass
+
     def delete(self):
         if libzfs.zpool_destroy(self.handle, "destroy") != 0:
             raise self.root.get_error()
@@ -870,6 +877,92 @@ cdef class ZFSImportablePool(ZFSPool):
         raise NotImplementedError()
 
 
+cdef class ZFSPropertyDict(dict):
+    cdef ZFSDataset parent
+    cdef object props
+
+    @staticmethod
+    cdef int __iterate_props(int proptype, void* arg):
+        proptypes = <object>arg
+        proptypes.append(proptype)
+        return zfs.ZPROP_CONT
+
+    def __repr__(self):
+        return '{' + ', '.join(["'{0}': {1}".format(k, repr(v)) for k, v in self.items()]) + '}'
+
+    def refresh(self):
+        cdef ZFSProperty prop
+        cdef ZFSUserProperty userprop
+        cdef nvpair.nvlist_t *nvlist
+        proptypes = []
+        self.props = {}
+
+        libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
+        nvlist = libzfs.zfs_get_user_props(self.parent.handle)
+        nvl = NVList(<uintptr_t>nvlist)
+
+        for x in proptypes:
+            prop = ZFSProperty.__new__(ZFSProperty)
+            prop.dataset = self.parent
+            prop.propid = x
+            self.props[prop.name] = prop
+
+        for k, v in nvl.items():
+            userprop = ZFSUserProperty.__new__(ZFSUserProperty)
+            userprop.dataset = self.parent
+            userprop.name = k
+            userprop.nvlist = v
+            self.props[userprop.name] = userprop
+
+    def __delitem__(self, key):
+        if key not in self.props:
+            raise KeyError(key)
+
+        raise NotImplementedError()
+
+    def __getitem__(self, item):
+        return self.props[item]
+
+    def __setitem__(self, key, value):
+        cdef ZFSUserProperty userprop
+        if key in self.props:
+            raise KeyError('Cannot overwrite existing property')
+
+        if type(value) is not ZFSUserProperty:
+            raise ValueError('Value should be of type ZFSUserProperty')
+
+        userprop = <ZFSUserProperty>value
+        if userprop.dataset is None:
+            # detached user property
+            userprop.dataset = self.parent
+            if libzfs.zfs_prop_set(self.parent.handle, key, userprop.value) != 0:
+                raise self.parent.root.get_error()
+
+        self.props[key] = userprop
+
+    def __iter__(self):
+        for i in self.props:
+            yield  i
+
+    def get(self, k, d=None):
+        return self.props.get(k, d)
+
+    def setdefault(self, k, d=None):
+        pass
+
+    def keys(self):
+        return self.props.keys()
+
+    def values(self):
+        return self.props.values()
+
+    def items(self):
+        return self.props.items()
+
+    def update(self, E=None, **F):
+        raise NotImplementedError()
+
+
 cdef class ZFSDataset(object):
     cdef libzfs.zfs_handle_t* handle
     cdef readonly ZFS root
@@ -893,12 +986,6 @@ cdef class ZFSDataset(object):
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
             'children': [i.__getstate__() for i in self.children]
         }
-
-    @staticmethod
-    cdef int __iterate_props(int proptype, void* arg):
-        proptypes = <object>arg
-        proptypes.append(proptype)
-        return zfs.ZPROP_CONT
 
     @staticmethod
     cdef int __iterate_children(libzfs.zfs_handle_t* handle, void *arg):
@@ -941,30 +1028,12 @@ cdef class ZFSDataset(object):
 
     property properties:
         def __get__(self):
-            cdef ZFSProperty prop
-            cdef ZFSUserProperty userprop
-            cdef nvpair.nvlist_t *nvlist
-            proptypes = []
-            result = {}
+            cdef ZFSPropertyDict d
 
-            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
-            nvlist = libzfs.zfs_get_user_props(self.handle)
-            nvl = NVList(<uintptr_t>nvlist)
-
-            for x in proptypes:
-                prop = ZFSProperty.__new__(ZFSProperty)
-                prop.dataset = self
-                prop.propid = x
-                result[prop.name] = prop
-
-            for k, v in nvl.items():
-                userprop = ZFSUserProperty.__new__(ZFSUserProperty)
-                userprop.dataset = self
-                userprop.key = k
-                userprop.nvlist = v
-                result[userprop.name] = userprop
-
-            return result
+            d = ZFSPropertyDict.__new__(ZFSPropertyDict)
+            d.parent = self
+            d.refresh()
+            return d
 
     property mountpoint:
         def __get__(self):
