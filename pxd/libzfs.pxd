@@ -321,16 +321,6 @@ cdef extern from "libzfs.h":
         int)
     extern void zfs_prune_proplist(zfs_handle_t *, uint8_t *)
 
-    #define	ZFS_MOUNTPOINT_NONE	"none"
-    #define	ZFS_MOUNTPOINT_LEGACY	"legacy"
-
-    #define	ZFS_FEATURE_DISABLED	"disabled"
-    #define	ZFS_FEATURE_ENABLED	"enabled"
-    #define	ZFS_FEATURE_ACTIVE	"active"
-
-    #define	ZFS_UNSUPPORTED_INACTIVE	"inactive"
-    #define	ZFS_UNSUPPORTED_READONLY	"readonly"
-
     extern int zpool_expand_proplist(zpool_handle_t *, zprop_list_t **)
     extern int zpool_prop_get_feature(zpool_handle_t *, const char *, char *,
         size_t)
