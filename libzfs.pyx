@@ -1035,13 +1035,6 @@ cdef class ZFSDataset(object):
             d.refresh()
             return d
 
-        def __set__(self, value):
-            if type(value) is not dict:
-                raise Exception("Invalid type, expecting dict")
-            for k, v in value.items():
-                if libzfs.zfs_prop_set(self.handle, k, str(v)) != 0:
-                    raise self.root.get_error()
-
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
