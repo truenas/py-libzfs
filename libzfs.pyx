@@ -1055,6 +1055,13 @@ cdef class ZFSDataset(object):
                 dataset.handle = <libzfs.zfs_handle_t*><uintptr_t>h
                 yield dataset
 
+    property children_recursive:
+        def __get__(self):
+            for c in self.children:
+                yield c
+                for i in c.children_recursive:
+                    yield i
+
     property snapshots:
         def __get__(self):
             cdef ZFSSnapshot snapshot
