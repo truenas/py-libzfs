@@ -969,12 +969,23 @@ cdef class ZFSPropertyDict(dict):
     def values(self):
         return self.props.values()
 
+    def iterkeys(self):
+        return self.props.iterkeys()
+
+    def itervalues(self):
+        return self.props.itervalues()
+
+    def has_key(self, key):
+        return key in self.props
+
     def items(self):
         return self.props.items()
 
     def update(self, E=None, **F):
         raise NotImplementedError()
 
+    def __contains__(self, key):
+        return key in self.props
 
 cdef class ZFSDataset(object):
     cdef libzfs.zfs_handle_t* handle
