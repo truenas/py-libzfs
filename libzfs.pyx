@@ -218,8 +218,7 @@ cdef class ZFS(object):
 
     cdef ZFSVdev make_vdev_tree(self, topology):
         print dict(topology)
-        root = ZFSVdev(self)
-        root.type = 'root'
+        root = ZFSVdev(self, 'root')
         root.children = topology.get('data', [])
 
         if 'cache' in topology:
@@ -504,21 +503,12 @@ cdef class ZFSUserProperty(ZFSProperty):
 cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
-    cdef readonly uint64_t guid
     cdef NVList nvlist
 
-    def __init__(self, ZFS root, typ, ZFSPool pool=None, nvlist=None):
+    def __init__(self, ZFS root, typ, ZFSPool pool=None):
         self.root = root
         self.zpool = pool
-        self.nvlist = None
-
-        if nvlist:
-            nvlist = NVList(otherdict=nvlist)
-            self.guid = nvlist['guid']
-        else:
-            self.guid = 0
-            self.nvlist = NVList()
-
+        self.nvlist = NVList()
         self.type = typ
 
     def __str__(self):
@@ -562,6 +552,10 @@ cdef class ZFSVdev(object):
             if value.startswith('raidz'):
                 self.nvlist['type'] = 'raidz'
                 self.nvlist['nparity'] = long(value[-1])
+
+    property guid:
+        def __get__(self):
+            return self.nvlist.get('guid')
 
     property path:
         def __get__(self):
@@ -747,23 +741,44 @@ cdef class ZFSPool(object):
 
     property data_vdevs:
         def __get__(self):
-            for child in self.config['vdev_tree']['children']:
+            cdef ZFSVdev vdev
+            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            for child in vdev_tree.get_raw('children'):
                 if not child['is_log']:
-                    yield ZFSVdev(self.root, self, child)
+                    vdev = ZFSVdev.__new__(ZFSVdev)
+                    vdev.root = self.root
+                    vdev.zpool = self
+                    vdev.nvlist = <NVList>child
+                    yield vdev
 
     property log_vdevs:
         def __get__(self):
-            for child in self.config['vdev_tree']['children']:
+            cdef ZFSVdev vdev
+            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            for child in vdev_tree.get_raw('children'):
                 if child['is_log']:
-                    yield ZFSVdev(self.root, self, child)
+                    vdev = ZFSVdev.__new__(ZFSVdev)
+                    vdev.root = self.root
+                    vdev.zpool = self
+                    vdev.nvlist = <NVList>child
+                    yield vdev
 
     property cache_vdevs:
         def __get__(self):
-            if not 'l2cache' in self.config['vdev_tree']:
+            cdef ZFSVdev vdev
+            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            if not 'l2cache' in vdev_tree:
                 return
 
-            for child in self.config['vdev_tree']['l2cache']:
-                yield ZFSVdev(self.root, self, child)
+            for child in vdev_tree.get_raw('l2cache'):
+                    vdev = ZFSVdev.__new__(ZFSVdev)
+                    vdev.root = self.root
+                    vdev.zpool = self
+                    vdev.nvlist = <NVList>child
+                    yield vdev
 
     property groups:
         def __get__(self):
@@ -792,8 +807,7 @@ cdef class ZFSPool(object):
 
     property config:
         def __get__(self):
-            cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
-            return dict(NVList(nvl))
+            return dict(self.get_raw_config())
 
     property properties:
         def __get__(self):
@@ -822,6 +836,10 @@ cdef class ZFSPool(object):
     property scrub:
         def __get__(self):
             return ZPoolScrub(self.root, self)
+
+    cdef NVList get_raw_config(self):
+        cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
+        return NVList(nvl)
 
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
         cdef NVList cfsopts = NVList(otherdict=fsopts)

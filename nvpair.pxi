@@ -56,6 +56,10 @@ cdef class NVList(object):
             nvpair.nvlist_free(self.handle)
             self.handle = NULL
 
+    cdef object get_raw(self, key):
+        cdef nvpair.nvpair_t* pair = self.__get_pair(key)
+        return self.__get_value(pair, False)
+
     cdef nvpair.nvpair_t* __get_pair(self, key) except NULL:
         cdef nvpair.nvpair_t* pair
         if nvpair.nvlist_lookup_nvpair(self.handle, key, &pair) != 0:
@@ -63,7 +67,7 @@ cdef class NVList(object):
 
         return pair
 
-    cdef object __get_value(self, nvpair.nvpair_t* pair):
+    cdef object __get_value(self, nvpair.nvpair_t* pair, wrap_dict=True):
         cdef nvpair.nvlist_t *nested
         cdef char *cstr
         cdef void *carray
@@ -161,11 +165,11 @@ cdef class NVList(object):
 
         if datatype == nvpair.DATA_TYPE_NVLIST:
             nvpair.nvpair_value_nvlist(pair, &nested)
-            return dict(NVList(<uintptr_t>nested))
+            return dict(NVList(<uintptr_t>nested)) if wrap_dict else NVList(<uintptr_t>nested)
 
         if datatype == nvpair.DATA_TYPE_NVLIST_ARRAY:
             nvpair.nvpair_value_nvlist_array(pair, <nvpair.nvlist_t***>&carray, &carraylen)
-            return [dict(NVList(x)) for x in (<uintptr_t *>carray)[:carraylen]]
+            return [dict(NVList(x)) if wrap_dict else NVList(x) for x in (<uintptr_t *>carray)[:carraylen]]
 
     def __contains__(self, key):
         return nvpair.nvlist_exists(self.handle, key)
