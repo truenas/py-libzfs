@@ -45,7 +45,7 @@ cdef extern from "libzfs.h":
         ZFS_MAXPROPLEN = MAXPATHLEN
         ZPOOL_MAXPROPLEN = MAXPATHLEN
 
-    ctypedef enum zfs_error:
+    enum:
         EZFS_SUCCESS = 0
         EZFS_NOMEM = 2000
         EZFS_BADPROP
