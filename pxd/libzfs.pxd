@@ -28,10 +28,10 @@ cimport nvpair
 cimport zfs
 from types cimport *
 
-
-cdef extern from "libzfs_core.h":
-    enum lzc_send_flags:
-        LZC_SEND_FLAG_EMBED_DATA
+IF FREEBSD_VERSION >= 1000000:
+    cdef extern from "libzfs_core.h":
+        enum lzc_send_flags:
+            LZC_SEND_FLAG_EMBED_DATA
 
 
 cdef extern from "libzfs.h":
@@ -418,7 +418,11 @@ cdef extern from "libzfs.h":
 
     extern int zfs_send(zfs_handle_t *, const char *, const char *,
         sendflags_t *, int, snapfilter_cb_t, void *, nvpair.nvlist_t **)
-    extern int zfs_send_one(zfs_handle_t *, const char *, int, int)
+
+    IF FREEBSD_VERSION >= 1000000:
+        extern int zfs_send_one(zfs_handle_t *, const char *, int, int)
+    ELSE:
+        extern int zfs_send_one(zfs_handle_t *, const char *, int)
 
     extern int zfs_promote(zfs_handle_t *)
     extern int zfs_hold(zfs_handle_t *, const char *, const char *,

@@ -25,6 +25,7 @@
 #
 
 import os
+import subprocess
 from distutils.core import setup
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
@@ -48,6 +49,7 @@ system_includes = [
 ]
 
 system_includes = [os.path.expandvars(x) for x in system_includes]
+freebsd_version = int(subprocess.check_output("uname -K", shell=True).strip())
 
 setup(
     name='libzfs',
@@ -60,8 +62,9 @@ setup(
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
             extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0"],
             cython_include_dirs=["./pxd"],
+            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version},
             include_dirs=system_includes,
-            extra_link_args=["-g"]
+            extra_link_args=["-g"],
         )
     ]
 )
