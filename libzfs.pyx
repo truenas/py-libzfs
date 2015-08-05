@@ -181,6 +181,15 @@ class ScanState(enum.IntEnum):
     SCANNING = zfs.DSS_SCANNING
     FINISHED = zfs.DSS_FINISHED
     CANCELED = zfs.DSS_CANCELED
+    
+    
+class ZIOType(enum.IntEnum):
+    NONE = zfs.ZIO_TYPE_NULL
+    READ = zfs.ZIO_TYPE_READ
+    WRITE = zfs.ZIO_TYPE_WRITE
+    FREE = zfs.ZIO_TYPE_FREE
+    CLAIM = zfs.ZIO_TYPE_CLAIM
+    IOCTL = zfs.ZIO_TYPE_IOCTL
 
 
 class SendFlags(enum.IntEnum):
@@ -500,6 +509,69 @@ cdef class ZFSUserProperty(ZFSProperty):
             pass
 
 
+cdef class ZFSVdevStats(object):
+    cdef NVList nvlist
+
+    def __getstate__(self):
+        return {
+            'timestamp': self.timestamp,
+            'error_count': self.error_count,
+            'read_errors': self.read_errors,
+            'write_errors': self.write_errors,
+            'checksum_errors': self.checksum_errors,
+            'ops': self.ops,
+            'bytes': self.bytes,
+            'configured_ashift': self.configured_ashift,
+            'logical_ashift': self.logical_ashift,
+            'physical_ashift': self.physical_ashift,
+            'fragmentation': self.fragmentation
+        }
+
+    property timestamp:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][0]
+
+    property error_count:
+        def __get__(self):
+            return self.nvlist['error_count']
+
+    property read_errors:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][21]
+
+    property write_errors:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][22]
+
+    property checksum_errors:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][23]
+
+    property ops:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][8:13]
+
+    property bytes:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][14:19]
+
+    property configured_ashift:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][26]
+
+    property logical_ashift:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][27]
+
+    property physical_ashift:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][28]
+
+    property fragmentation:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][29]
+
+
 cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
@@ -572,6 +644,14 @@ cdef class ZFSVdev(object):
     property size:
         def __get__(self):
             return self.nvlist['asize'] << self.nvlist['ashift']
+
+    property stats:
+        def __get__(self):
+            cdef ZFSVdevStats ret
+
+            ret = ZFSVdevStats.__new__(ZFSVdevStats)
+            ret.nvlist = self.nvlist
+            return ret
 
     property children:
         def __get__(self):
