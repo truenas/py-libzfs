@@ -599,6 +599,7 @@ cdef class ZFSVdev(object):
             'path': self.path,
             'guid': str(self.guid),
             'status': self.status,
+            'stats': self.stats.__getstate__(),
             'children': [i.__getstate__() for i in self.children]
         }
 
