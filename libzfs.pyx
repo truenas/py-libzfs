@@ -192,8 +192,9 @@ class ZIOType(enum.IntEnum):
     IOCTL = zfs.ZIO_TYPE_IOCTL
 
 
-class SendFlags(enum.IntEnum):
-    EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
+IF FREEBSD_VERSION >= 1000000:
+    class SendFlags(enum.IntEnum):
+        EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
 
 
 class ZFSException(RuntimeError):
@@ -1199,8 +1200,12 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def send(self, fd):
-        if libzfs.zfs_send_one(self.handle, NULL, fd, 0) != 0:
-            raise self.root.get_error()
+        IF FREEBSD_VERSION >= 1000000:
+            if libzfs.zfs_send_one(self.handle, NULL, fd, 0) != 0:
+                raise self.root.get_error()
+        ELSE:
+            if libzfs.zfs_send_one(self.handle, NULL, fd) != 0:
+                raise self.root.get_error()
 
     def snapshot(self, name, fsopts):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
