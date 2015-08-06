@@ -516,7 +516,6 @@ cdef class ZFSVdevStats(object):
     def __getstate__(self):
         return {
             'timestamp': self.timestamp,
-            'error_count': self.error_count,
             'read_errors': self.read_errors,
             'write_errors': self.write_errors,
             'checksum_errors': self.checksum_errors,
@@ -531,10 +530,6 @@ cdef class ZFSVdevStats(object):
     property timestamp:
         def __get__(self):
             return self.nvlist['vdev_stats'][0]
-
-    property error_count:
-        def __get__(self):
-            return self.nvlist['error_count']
 
     property read_errors:
         def __get__(self):
@@ -600,6 +595,7 @@ cdef class ZFSVdev(object):
             'guid': str(self.guid),
             'status': self.status,
             'stats': self.stats.__getstate__(),
+            'error_count': self.error_count,
             'children': [i.__getstate__() for i in self.children]
         }
 
@@ -642,6 +638,10 @@ cdef class ZFSVdev(object):
         def __get__(self):
             stats = self.nvlist['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
+
+    property error_count:
+        def __get__(self):
+            return self.nvlist['error_count']
 
     property size:
         def __get__(self):
