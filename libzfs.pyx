@@ -588,16 +588,20 @@ cdef class ZFSVdev(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self):
-        return {
+    def __getstate__(self, recursive=True):
+        ret = {
             'type': self.type,
             'path': self.path,
             'guid': str(self.guid),
             'status': self.status,
             'stats': self.stats.__getstate__(),
-            'error_count': self.error_count,
-            'children': [i.__getstate__() for i in self.children]
+            'error_count': self.error_count
         }
+
+        if recursive:
+            ret['children'] = [i.__getstate__() for i in self.children]
+
+        return ret
 
     def add_child_vdev(self, vdev):
         if 'children' not in self.nvlist:
@@ -794,6 +798,7 @@ cdef class ZFSPool(object):
             'root_dataset': self.root_dataset.__getstate__() if self.root_dataset else None,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
             'scan': self.scrub.__getstate__(),
+            'root_vdev': self.root_vdev.__getstate__(False),
             'groups': {
                 'data': [i.__getstate__() for i in self.data_vdevs],
                 'log': [i.__getstate__() for i in self.log_vdevs],
