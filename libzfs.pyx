@@ -594,8 +594,7 @@ cdef class ZFSVdev(object):
             'path': self.path,
             'guid': str(self.guid),
             'status': self.status,
-            'stats': self.stats.__getstate__(),
-            'error_count': self.error_count
+            'stats': self.stats.__getstate__()
         }
 
         if recursive:
@@ -642,10 +641,6 @@ cdef class ZFSVdev(object):
         def __get__(self):
             stats = self.nvlist['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
-
-    property error_count:
-        def __get__(self):
-            return self.nvlist['error_count']
 
     property size:
         def __get__(self):
@@ -795,6 +790,7 @@ cdef class ZFSPool(object):
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
+            'error_count': self.error_count,
             'root_dataset': self.root_dataset.__getstate__() if self.root_dataset else None,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
             'scan': self.scrub.__getstate__(),
@@ -922,6 +918,10 @@ cdef class ZFSPool(object):
         def __get__(self):
             stats = self.config['vdev_tree']['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
+
+    property error_count:
+        def __get__(self):
+            return self.config['error_count']
 
     property config:
         def __get__(self):
