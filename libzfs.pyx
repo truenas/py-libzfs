@@ -802,7 +802,8 @@ cdef class ZFSPool(object):
             'groups': {
                 'data': [i.__getstate__() for i in self.data_vdevs],
                 'log': [i.__getstate__() for i in self.log_vdevs],
-                'cache': [i.__getstate__() for i in self.cache_vdevs]
+                'cache': [i.__getstate__() for i in self.cache_vdevs],
+                'spare': [i.__getstate__() for i in self.spare_vdevs]
             },
         }
 
@@ -884,12 +885,25 @@ cdef class ZFSPool(object):
                     vdev.nvlist = <NVList>child
                     yield vdev
 
+    property spare_vdevs:
+        def __get__(self):
+            cdef ZFSVdev vdev
+            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            for child in vdev_tree.get_raw('spares'):
+                    vdev = ZFSVdev.__new__(ZFSVdev)
+                    vdev.root = self.root
+                    vdev.zpool = self
+                    vdev.nvlist = <NVList>child
+                    yield vdev
+
     property groups:
         def __get__(self):
             return {
                 'data': list(self.data_vdevs),
                 'log': list(self.log_vdevs),
-                'cache': list(self.cache_vdevs)
+                'cache': list(self.cache_vdevs),
+                'spare': list(self.spare_vdevs)
             }
 
     property name:
