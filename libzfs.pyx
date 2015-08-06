@@ -871,7 +871,7 @@ cdef class ZFSPool(object):
             cdef ZFSVdev vdev
             cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
 
-            if not 'l2cache' in vdev_tree:
+            if 'l2cache' not in vdev_tree:
                 return
 
             for child in vdev_tree.get_raw('l2cache'):
@@ -885,6 +885,9 @@ cdef class ZFSPool(object):
         def __get__(self):
             cdef ZFSVdev vdev
             cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            if 'spares' not in vdev_tree:
+                return
 
             for child in vdev_tree.get_raw('spares'):
                     vdev = ZFSVdev.__new__(ZFSVdev)
