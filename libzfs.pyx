@@ -657,11 +657,17 @@ cdef class ZFSVdev(object):
 
     property children:
         def __get__(self):
+            cdef ZFSVdev vdev
+
             if 'children' not in self.nvlist:
                 return
 
-            for i in self.nvlist['children']:
-                yield ZFSVdev(self.root, self.zpool, i)
+            for i in self.nvlist.get_raw('children'):
+                vdev = ZFSVdev.__new__(ZFSVdev)
+                vdev.nvlist = i
+                vdev.zpool = self.zpool
+                vdev.root = self.root
+                yield vdev
 
         def __set__(self, value):
             self.nvlist['children'] = [(<ZFSVdev>i).nvlist for i in value]
@@ -820,6 +826,17 @@ cdef class ZFSPool(object):
             dataset.pool = self
             dataset.handle = handle
             return dataset
+
+    property root_vdev:
+        def __get__(self):
+            cdef ZFSVdev vdev
+            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            vdev = ZFSVdev.__new__(ZFSVdev)
+            vdev.root = self.root
+            vdev.zpool = self
+            vdev.nvlist = <NVList>vdev_tree
+            return vdev
 
     property data_vdevs:
         def __get__(self):
