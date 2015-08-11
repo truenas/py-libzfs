@@ -571,6 +571,7 @@ cdef class ZFSVdevStats(object):
 cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
+    cdef ZFSVdev parent
     cdef NVList nvlist
 
     def __init__(self, ZFS root, typ, ZFSPool pool=None):
@@ -607,6 +608,57 @@ cdef class ZFSVdev(object):
             self.nvlist.set('children', [], nvpair.DATA_TYPE_NVLIST_ARRAY)
 
         self.nvlist['children'].append(vdev)
+
+    def attach(self, ZFSVdev vdev):
+        cdef ZFSVdev root
+
+        if self.type not in ('mirror', 'disk', 'file'):
+            raise ZFSException(Error.NOTSUP, "Can attach disks to mirrors and stripes only")
+
+        if self.type == 'mirror':
+            first_child = next(self.children)
+        else:
+            first_child = self
+
+        root = self.root.make_vdev_tree({
+            'data': [vdev]
+        })
+
+        if libzfs.zpool_vdev_attach(
+            self.zpool.handle,
+            first_child.path,
+            vdev.path,
+            root.nvlist.handle,
+            False) != 0:
+            raise self.root.get_error()
+
+    def replace(self, disk, ZFSVdev vdev):
+        cdef ZFSVdev root
+
+        if self.type != 'mirror':
+            raise ZFSException(Error.NOTSUP, "Can replace disks in mirrors only")
+
+        root = self.root.make_vdev_tree({
+            'data': [vdev]
+        })
+
+        if libzfs.zpool_vdev_attach(
+            self.zpool.handle,
+            disk,
+            vdev.path,
+            root.nvlist.handle,
+            True) != 0:
+            raise self.root.get_error()
+
+    def detach(self):
+        if self.type not in ('file', 'disk'):
+            raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
+
+        if self.parent.type != 'mirror':
+            raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors only")
+
+        if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
+            raise self.root.get_error()
 
     property type:
         def __get__(self):
@@ -666,6 +718,7 @@ cdef class ZFSVdev(object):
                 vdev.nvlist = i
                 vdev.zpool = self.zpool
                 vdev.root = self.root
+                vdev.parent = self
                 yield vdev
 
         def __set__(self, value):
@@ -982,6 +1035,9 @@ cdef class ZFSPool(object):
             raise self.root.get_error()
 
     def extend_vdev(self, vdev, new_device):
+        pass
+
+    def replace(old_device, new_device):
         pass
 
     def delete(self):
