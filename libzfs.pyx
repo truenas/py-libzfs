@@ -148,6 +148,12 @@ class PoolState(enum.IntEnum):
     POTENTIALLY_ACTIVE = zfs.POOL_STATE_POTENTIALLY_ACTIVE
 
 
+class ScanFunction(enum.IntEnum):
+    NONE = zfs.POOL_SCAN_NONE
+    SCRUB = zfs.POOL_SCAN_SCRUB
+    RESILVER = zfs.POOL_SCAN_RESILVER
+
+
 class PoolStatus(enum.IntEnum):
     CORRUPT_CACHE = libzfs.ZPOOL_STATUS_CORRUPT_CACHE
     MISSING_DEV_R = libzfs.ZPOOL_STATUS_MISSING_DEV_R
@@ -780,6 +786,13 @@ cdef class ZPoolScrub(object):
 
             return ScanState(self.stat[1])
 
+    property function:
+        def __get__(self):
+            if not self.stat:
+                return None
+
+            return ScanFunction(self.stat[0])
+
     property start_time:
         def __get__(self):
             if not self.stat:
@@ -827,7 +840,7 @@ cdef class ZPoolScrub(object):
 
     def __getstate__(self):
         return {
-            'func': self.stat[0] if self.stat else None,
+            'function': self.function.name if self.function else None,
             'state': self.state.name if self.stat else None,
             'start_time': self.start_time,
             'end_time': self.end_time,
