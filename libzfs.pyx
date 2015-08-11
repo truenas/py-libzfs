@@ -1034,11 +1034,19 @@ cdef class ZFSPool(object):
         if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
             raise self.root.get_error()
 
-    def extend_vdev(self, vdev, new_device):
-        pass
+    def vdev_by_guid(self, guid):
+        def search_vdev(vdev, g):
+            if vdev.guid == g:
+                return vdev
 
-    def replace(old_device, new_device):
-        pass
+            for i in vdev.children:
+                ret = search_vdev(i, g)
+                if ret:
+                    return ret
+
+            return None
+
+        return search_vdev(self.root_vdev, guid)
 
     def delete(self):
         if libzfs.zpool_destroy(self.handle, "destroy") != 0:
