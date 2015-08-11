@@ -632,10 +632,13 @@ cdef class ZFSVdev(object):
             False) != 0:
             raise self.root.get_error()
 
-    def replace(self, disk, ZFSVdev vdev):
+    def replace(self, ZFSVdev vdev):
         cdef ZFSVdev root
 
-        if self.type != 'mirror':
+        if self.type not in ('disk', 'file'):
+            raise ZFSException(Error.NOTSUP, "Can replace disks only")
+
+        if self.parent.type != 'mirror':
             raise ZFSException(Error.NOTSUP, "Can replace disks in mirrors only")
 
         root = self.root.make_vdev_tree({
@@ -644,7 +647,7 @@ cdef class ZFSVdev(object):
 
         if libzfs.zpool_vdev_attach(
             self.zpool.handle,
-            disk,
+            self.path,
             vdev.path,
             root.nvlist.handle,
             True) != 0:
