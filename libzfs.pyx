@@ -663,6 +663,26 @@ cdef class ZFSVdev(object):
         if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
             raise self.root.get_error()
 
+    def offline(self, temporary=False):
+        if self.type not in ('disk', 'file'):
+            raise ZFSException(Error.NOTSUP, "Can make disks offline only")
+
+        if libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary) != 0:
+            raise self.root.get_error()
+
+    def online(self, expand=False):
+        cdef int flags = 0
+        cdef zfs.vdev_state_t newstate
+
+        if self.type not in ('disk', 'file'):
+            raise ZFSException(Error.NOTSUP, "Can make disks online only")
+
+        if expand:
+            flags |= zfs.ZFS_ONLINE_EXPAND
+
+        if libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate) != 0:
+            raise self.root.get_error()
+
     property type:
         def __get__(self):
             value = self.nvlist.get('type')
