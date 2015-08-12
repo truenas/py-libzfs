@@ -269,6 +269,13 @@ cdef class ZFS(object):
                 pool.handle = <libzfs.zpool_handle_t*><uintptr_t>h
                 yield pool
 
+    property datasets:
+        def __get__(self):
+            for p in self.pools:
+                yield p.root_dataset
+                for c in p.root_dataset.children_recursive:
+                    yield c
+
     def get(self, name):
         cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
         cdef ZFSPool pool
@@ -1238,17 +1245,23 @@ cdef class ZFSDataset(object):
         libzfs.zfs_close(self.handle)
 
     def __str__(self):
-        return "<libzfs.ZFSDataset name '{0}'>".format(self.name)
+        return "<libzfs.ZFSDataset name '{0}' type '{1}'>".format(self.name, self.type)
 
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self):
-        return {
+    def __getstate__(self, recursive=True):
+        ret = {
             'name': self.name,
+            'pool': self.pool.name,
+            'type': self.type,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
-            'children': [i.__getstate__() for i in self.children]
         }
+
+        if recursive:
+            ret['children'] = [i.__getstate__() for i in self.children]
+
+        return ret
 
     @staticmethod
     cdef int __iterate_children(libzfs.zfs_handle_t* handle, void *arg):
@@ -1263,6 +1276,10 @@ cdef class ZFSDataset(object):
     property name:
         def __get__(self):
             return libzfs.zfs_get_name(self.handle)
+
+    property type:
+        def __get__(self):
+            return self.properties['type'].value
 
     property children:
         def __get__(self):
