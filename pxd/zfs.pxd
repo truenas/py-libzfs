@@ -174,15 +174,15 @@ cdef extern from "sys/fs/zfs.h":
         ZFS_REDUNDANT_METADATA_ALL
         ZFS_REDUNDANT_METADATA_MOST
 
-    
-    #define	ZPOOL_NO_REWIND		1  
-    #define	ZPOOL_NEVER_REWIND	2  
-    #define	ZPOOL_TRY_REWIND	4  
-    #define	ZPOOL_DO_REWIND		8  
-    #define	ZPOOL_EXTREME_REWIND	16 
-    #define	ZPOOL_REWIND_MASK	28 
-    #define	ZPOOL_REWIND_POLICIES	31 
-    
+    enum:
+        ZPOOL_NO_REWIND
+        ZPOOL_NEVER_REWIND
+        ZPOOL_TRY_REWIND
+        ZPOOL_DO_REWIN
+        ZPOOL_EXTREME_REWIND
+        ZPOOL_REWIND_MASK
+        ZPOOL_REWIND_POLICIES
+
     ctypedef struct zpool_rewind_policy_t:
         uint32_t	zrp_request;	
         uint64_t	zrp_maxmeta;	

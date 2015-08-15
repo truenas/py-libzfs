@@ -1103,6 +1103,12 @@ cdef class ZFSPool(object):
         if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE) != 0:
             raise self.root.get_error()
 
+    def clear(self):
+        cdef NVList policy = NVList()
+        policy["rewind-request"] = zfs.ZPOOL_NO_REWIND
+
+        return libzfs.zpool_clear(self.handle, NULL, policy.handle) == 0
+
 
 cdef class ZFSImportablePool(ZFSPool):
     cdef NVList nvlist
