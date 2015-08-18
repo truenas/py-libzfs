@@ -276,6 +276,13 @@ cdef class ZFS(object):
                 for c in p.root_dataset.children_recursive:
                     yield c
 
+    property snapshots:
+        def __get__(self):
+            for p in self.pools:
+                yield p.root_dataset
+                for c in p.root_dataset.snapshots_recursive:
+                    yield c
+
     def get(self, name):
         cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
         cdef ZFSPool pool
@@ -1318,6 +1325,15 @@ cdef class ZFSDataset(object):
                 snapshot.parent = self
                 snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
                 yield snapshot
+
+    property snapshots_recursive:
+        def __get__(self):
+            for c in self.children:
+                for s in c.snapshots:
+                    yield s
+                for i in c.children_recursive:
+                    for s in i.snapshots:
+                        yield s
 
     property properties:
         def __get__(self):
