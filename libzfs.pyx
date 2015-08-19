@@ -40,6 +40,7 @@ include "nvpair.pxi"
 class DatasetType(enum.IntEnum):
     FILESYSTEM = zfs.ZFS_TYPE_FILESYSTEM
     VOLUME = zfs.ZFS_TYPE_VOLUME
+    SNAPSHOT = zfs.ZFS_TYPE_SNAPSHOT
 
 
 class Error(enum.IntEnum):
@@ -1267,7 +1268,7 @@ cdef class ZFSDataset(object):
         ret = {
             'name': self.name,
             'pool': self.pool.name,
-            'type': self.type,
+            'type': self.type.name,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
         }
 
@@ -1292,7 +1293,17 @@ cdef class ZFSDataset(object):
 
     property type:
         def __get__(self):
-            return self.properties['type'].value
+            t = self.properties['type'].value
+            if t == 'filesystem':
+                return DatasetType.FILESYSTEM
+
+            if t == 'volume':
+                return DatasetType.VOLUME
+
+            if t == 'snapshot':
+                return DatasetType.SNAPSHOT
+
+            raise ZFSException(Error.NOTSUP, 'Invalid dataset type')
 
     property children:
         def __get__(self):
@@ -1354,8 +1365,8 @@ cdef class ZFSDataset(object):
             free(mntpt)
             return result
 
-    def rename(self, new_name):
-        pass
+    def rename(self, new_name, recursive=False):
+        if libzfs.zfs_rename(self.handle, self.)
 
     def delete(self):
         if libzfs.zfs_destroy(self.handle, True) != 0:
