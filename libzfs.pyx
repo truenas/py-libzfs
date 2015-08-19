@@ -1066,8 +1066,16 @@ cdef class ZFSPool(object):
         cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
         return NVList(nvl)
 
-    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
+    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
+        cdef uint64_t vol_reservation
+
+        if fstype == DatasetType.VOLUME and not sparse_vol:
+            vol_reservation = libzfs.zvol_volsize_to_reservation(
+                nicestrtonum(self.root, cfsopts['volsize']),
+                cfsopts.handle)
+
+            cfsopts['refreservation'] = vol_reservation
 
         if libzfs.zfs_create(
             self.root.handle,
@@ -1450,3 +1458,12 @@ cdef class ZFSSnapshot(ZFSDataset):
 
     def release(self, tag, recursive=False):
         pass
+
+
+def nicestrtonum(ZFS zfs, value):
+    cdef uint64_t result
+
+    if libzfs.zfs_nicestrtonum(zfs.handle, value, &result) != 0:
+        raise ValueError('Cannot convert {0} to integer'.format(value))
+
+    return result
