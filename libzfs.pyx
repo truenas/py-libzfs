@@ -1152,7 +1152,7 @@ cdef class ZFSImportablePool(ZFSPool):
         def __get__(self):
             return 0
 
-    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
+    def create(self, *args, **kwargs):
         raise NotImplementedError()
 
     def destroy(self, name):
