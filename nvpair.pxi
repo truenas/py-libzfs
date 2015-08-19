@@ -363,6 +363,9 @@ cdef class NVList(object):
         return self.__get_value(pair)
 
     def __setitem__(self, key, value):
+        if type(key) is unicode:
+            key = str(key)
+
         if type(value) is bool:
             self.set(key, value, nvpair.DATA_TYPE_BOOLEAN)
 
@@ -373,7 +376,7 @@ cdef class NVList(object):
             self.set(key, value, nvpair.DATA_TYPE_UINT64)
 
         if type(value) is str or type(value) is unicode:
-            self.set(key, value, nvpair.DATA_TYPE_STRING)
+            self.set(key, str(value), nvpair.DATA_TYPE_STRING)
 
         if type(value) is NVList:
             self.set(key, value, nvpair.DATA_TYPE_NVLIST)
