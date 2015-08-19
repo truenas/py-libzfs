@@ -1148,6 +1148,10 @@ cdef class ZFSImportablePool(ZFSPool):
         def __get__(self):
             return None
 
+    property error_count:
+        def __get__(self):
+            return 0
+
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM):
         raise NotImplementedError()
 
