@@ -1259,7 +1259,7 @@ cdef class ZFSDataset(object):
         libzfs.zfs_close(self.handle)
 
     def __str__(self):
-        return "<libzfs.ZFSDataset name '{0}' type '{1}'>".format(self.name, self.type)
+        return "<libzfs.ZFSDataset name '{0}' type '{1}'>".format(self.name, self.type.name)
 
     def __repr__(self):
         return str(self)
@@ -1365,15 +1365,22 @@ cdef class ZFSDataset(object):
             free(mntpt)
             return result
 
-    def rename(self, new_name, recursive=False):
-        if libzfs.zfs_rename(self.handle, self.)
+    def rename(self, new_name, nounmount=False, forceunmount=False):
+        cdef libzfs.renameflags_t flags
+
+        flags.recurse = False
+        flags.nounmount = nounmount
+        flags.forceunmount = forceunmount
+
+        if libzfs.zfs_rename(self.handle, NULL, new_name, flags) != 0:
+            raise self.root.get_error()
 
     def delete(self):
         if libzfs.zfs_destroy(self.handle, True) != 0:
             raise self.root.get_error()
 
     def destroy_snapshot(self, name):
-        if libzfs.zfs_destroy_snaps(self.handle, name, True) !=0:
+        if libzfs.zfs_destroy_snaps(self.handle, name, True) != 0:
             raise self.root.get_error()
 
     def mount(self):
