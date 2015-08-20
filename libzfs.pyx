@@ -1174,9 +1174,6 @@ cdef class ZFSPool(object):
 
         return search_vdev(self.root_vdev, guid)
 
-    def enable_feature(self, name):
-        pass
-
     def delete(self):
         if libzfs.zpool_destroy(self.handle, "destroy") != 0:
             raise self.root.get_error()
