@@ -334,56 +334,34 @@ cdef extern from "sys/fs/zfs.h":
     ctypedef struct ddt_histogram_t:
         ddt_stat_t	ddh_stat[64];	
     
-    #define	ZVOL_DRIVER	"zvol"
-    #define	ZFS_DRIVER	"zfs"
-    #define	ZFS_DEV_NAME	"zfs"
-    #define	ZFS_DEV		"/dev/" ZFS_DEV_NAME
-    
-    #define	ZVOL_DIR		"/dev/zvol"
-    
-    #define	ZVOL_PSEUDO_DEV		"/devices/pseudo/zfs@0:"
-    
-    #define	ZVOL_FULL_DEV_DIR	ZVOL_DIR "/dsk/"
-    #define	ZVOL_FULL_RDEV_DIR	ZVOL_DIR "/rdsk/"
-    
-    #define	ZVOL_PROP_NAME		"name"
-    #define	ZVOL_DEFAULT_BLOCKSIZE	8192
 
-    #define	ZPOOL_ERR_LIST		"error list"
-    #define	ZPOOL_ERR_DATASET	"dataset"
-    #define	ZPOOL_ERR_OBJECT	"object"
-    
-    #define	HIS_MAX_RECORD_LEN	(MAXPATHLEN + MAXPATHLEN + 1)
-    
-    #define	ZPOOL_HIST_RECORD	"history record"
-    #define	ZPOOL_HIST_TIME		"history time"
-    #define	ZPOOL_HIST_CMD		"history command"
-    #define	ZPOOL_HIST_WHO		"history who"
-    #define	ZPOOL_HIST_ZONE		"history zone"
-    #define	ZPOOL_HIST_HOST		"history hostname"
-    #define	ZPOOL_HIST_TXG		"history txg"
-    #define	ZPOOL_HIST_INT_EVENT	"history internal event"
-    #define	ZPOOL_HIST_INT_STR	"history internal str"
-    #define	ZPOOL_HIST_INT_NAME	"internal_name"
-    #define	ZPOOL_HIST_IOCTL	"ioctl"
-    #define	ZPOOL_HIST_INPUT_NVL	"in_nvl"
-    #define	ZPOOL_HIST_OUTPUT_NVL	"out_nvl"
-    #define	ZPOOL_HIST_DSNAME	"dsname"
-    #define	ZPOOL_HIST_DSID		"dsid"
-    
-    #define	ZFS_ONLINE_CHECKREMOVE	0x1
-    #define	ZFS_ONLINE_UNSPARE	0x2
-    #define	ZFS_ONLINE_FORCEFAULT	0x4
-    #define	ZFS_ONLINE_EXPAND	0x8
-    #define	ZFS_OFFLINE_TEMPORARY	0x1
-    
-    #define	ZFS_IMPORT_NORMAL	0x0
-    #define	ZFS_IMPORT_VERBATIM	0x1
-    #define	ZFS_IMPORT_ANY_HOST	0x2
-    #define	ZFS_IMPORT_MISSING_LOG	0x4
-    #define	ZFS_IMPORT_ONLY		0x8
+cdef extern from "zfeature_common.h":
+    ctypedef enum spa_feature_t:
+        SPA_FEATURE_NONE
+        SPA_FEATURE_ASYNC_DESTROY
+        SPA_FEATURE_EMPTY_BPOBJ
+        SPA_FEATURE_LZ4_COMPRESS
+        SPA_FEATURE_MULTI_VDEV_CRASH_DUMP
+        SPA_FEATURE_SPACEMAP_HISTOGRAM
+        SPA_FEATURE_ENABLED_TXG
+        SPA_FEATURE_HOLE_BIRTH
+        SPA_FEATURE_EXTENSIBLE_DATASET
+        SPA_FEATURE_EMBEDDED_DATA
+        SPA_FEATURE_BOOKMARKS
+        SPA_FEATURE_FS_SS_LIMIT
+        SPA_FEATURE_LARGE_BLOCKS
+        SPA_FEATURES
 
-    #define	ZFS_EV_POOL_NAME	"pool_name"
-    #define	ZFS_EV_POOL_GUID	"pool_guid"
-    #define	ZFS_EV_VDEV_PATH	"vdev_path"
-    #define	ZFS_EV_VDEV_GUID	"vdev_guid"
+    ctypedef enum zfeature_flags_t:
+        ZFEATURE_FLAG_READONLY_COMPAT
+        ZFEATURE_FLAG_MOS
+        ZFEATURE_FLAG_ACTIVATE_ON_ENABLE
+        ZFEATURE_FLAG_PER_DATASET
+
+    ctypedef struct zfeature_info_t:
+        spa_feature_t fi_feature
+        const char* fi_uname
+        const char* fi_guid
+        const char* fi_desc
+        zfeature_flags_t fi_flags
+        const spa_feature_t* fi_depends
