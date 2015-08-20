@@ -365,3 +365,5 @@ cdef extern from "zfeature_common.h":
         const char* fi_desc
         zfeature_flags_t fi_flags
         const spa_feature_t* fi_depends
+
+    cdef zfeature_info_t* spa_feature_table

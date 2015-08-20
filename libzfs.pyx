@@ -199,6 +199,12 @@ class ZIOType(enum.IntEnum):
     IOCTL = zfs.ZIO_TYPE_IOCTL
 
 
+class FeatureState(enum.Enum):
+    DISABLED = 0
+    ENABLED = 1
+    ACTIVE = 2
+
+
 IF FREEBSD_VERSION >= 1000000:
     class SendFlags(enum.IntEnum):
         EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
@@ -428,6 +434,48 @@ cdef class ZPoolProperty(object):
 
     def reset(self):
         pass
+
+
+cdef class ZPoolFeature(object):
+    cdef readonly ZFSPool pool
+    cdef NVList nvlist
+    cdef zfs.zfeature_info_t *feature
+
+    def __getstate__(self):
+        return {
+            'name': self.name,
+            'guid': self.guid,
+            'description': self.description,
+            'state': self.state.name
+        }
+
+    property name:
+        def __get__(self):
+            return self.feature.fi_uname
+
+    property guid:
+        def __get__(self):
+            return self.feature.fi_guid
+
+    property description:
+        def __get__(self):
+            return self.feature.fi_desc
+
+    property state:
+        def __get__(self):
+            if self.guid not in self.nvlist:
+                return FeatureState.DISABLED
+
+            if self.nvlist[self.guid] == 0:
+                return FeatureState.ENABLED
+
+            if self.nvlist[self.guid] > 0:
+                return FeatureState.ACTIVE
+
+    def enable(self):
+        name = "feature@{0}".format(self.name)
+        if libzfs.zpool_set_prop(self.pool.handle, name, "enabled") != 0:
+            raise self.pool.root.get_error()
 
 
 cdef class ZFSProperty(object):
@@ -897,6 +945,7 @@ cdef class ZFSPool(object):
             'error_count': self.error_count,
             'root_dataset': self.root_dataset.__getstate__() if self.root_dataset else None,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
+            'features': [i.__getstate__() for i in self.features],
             'scan': self.scrub.__getstate__(),
             'root_vdev': self.root_vdev.__getstate__(False),
             'groups': {
@@ -1049,6 +1098,24 @@ cdef class ZFSPool(object):
 
             return result
 
+    property features:
+        def __get__(self):
+            cdef ZPoolFeature f
+            cdef NVList features_nv
+            cdef zfs.zfeature_info_t* feat
+            cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_features(self.handle)
+
+            features_nv = NVList(nvl)
+
+            for i in range(0, zfs.SPA_FEATURES):
+                feat = &zfs.spa_feature_table[i]
+                f = ZPoolFeature.__new__(ZPoolFeature)
+                f.feature = feat
+                f.pool = self
+                f.nvlist = features_nv
+                yield f
+
+
     property disks:
         def __get__(self):
             result = []
@@ -1106,6 +1173,9 @@ cdef class ZFSPool(object):
             return None
 
         return search_vdev(self.root_vdev, guid)
+
+    def enable_feature(self, name):
+        pass
 
     def delete(self):
         if libzfs.zpool_destroy(self.handle, "destroy") != 0:
