@@ -31,6 +31,7 @@ cdef extern from "sys/fs/zfs.h":
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
         ZFS_NUM_PROPS
+        SPA_VERSION
 
     ctypedef enum zfs_type_t:
         ZFS_TYPE_FILESYSTEM	= (1 << 0)
