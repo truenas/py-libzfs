@@ -240,6 +240,7 @@ cdef class ZFS(object):
         )
 
     cdef ZFSVdev make_vdev_tree(self, topology):
+        cdef ZFSVdev root
         print dict(topology)
         root = ZFSVdev(self, 'root')
         root.children = topology.get('data', [])
