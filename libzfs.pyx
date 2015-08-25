@@ -945,7 +945,7 @@ cdef class ZFSPool(object):
             'error_count': self.error_count,
             'root_dataset': self.root_dataset.__getstate__() if self.root_dataset else None,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
-            'features': [i.__getstate__() for i in self.features],
+            'features': [i.__getstate__() for i in self.features] if self.features else None,
             'scan': self.scrub.__getstate__(),
             'root_vdev': self.root_vdev.__getstate__(False),
             'groups': {
