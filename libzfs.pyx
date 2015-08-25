@@ -1227,6 +1227,10 @@ cdef class ZFSImportablePool(ZFSPool):
         def __get__(self):
             return 0
 
+    property features:
+        def __get__(self):
+            return None
+
     def create(self, *args, **kwargs):
         raise NotImplementedError()
 
