@@ -998,6 +998,9 @@ cdef class ZFSPool(object):
             cdef ZFSVdev vdev
             cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
 
+            if 'children' not in vdev_tree:
+                return
+
             for child in vdev_tree.get_raw('children'):
                 if not child['is_log']:
                     vdev = ZFSVdev.__new__(ZFSVdev)
@@ -1010,6 +1013,9 @@ cdef class ZFSPool(object):
         def __get__(self):
             cdef ZFSVdev vdev
             cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+
+            if 'children' not in vdev_tree:
+                return
 
             for child in vdev_tree.get_raw('children'):
                 if child['is_log']:
