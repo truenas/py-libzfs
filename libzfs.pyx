@@ -1231,6 +1231,9 @@ cdef class ZFSImportablePool(ZFSPool):
         def __get__(self):
             return None
 
+    cdef NVList get_raw_config(self):
+        return self.nvlist
+
     def create(self, *args, **kwargs):
         raise NotImplementedError()
 
