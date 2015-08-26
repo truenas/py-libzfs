@@ -676,7 +676,7 @@ cdef class ZFSVdev(object):
         if 'children' not in self.nvlist:
             self.nvlist.set('children', [], nvpair.DATA_TYPE_NVLIST_ARRAY)
 
-        self.nvlist['children'].append(vdev.nvlist)
+        self.nvlist['children'] = self.nvlist.get_raw('children') + [vdev.nvlist]
 
     def attach(self, ZFSVdev vdev):
         cdef ZFSVdev root
