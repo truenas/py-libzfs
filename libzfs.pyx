@@ -672,11 +672,11 @@ cdef class ZFSVdev(object):
 
         return ret
 
-    def add_child_vdev(self, vdev):
+    def add_child_vdev(self, ZFSVdev vdev):
         if 'children' not in self.nvlist:
             self.nvlist.set('children', [], nvpair.DATA_TYPE_NVLIST_ARRAY)
 
-        self.nvlist['children'].append(vdev)
+        self.nvlist['children'].append(vdev.nvlist)
 
     def attach(self, ZFSVdev vdev):
         cdef ZFSVdev root
