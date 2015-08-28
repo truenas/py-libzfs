@@ -30,6 +30,9 @@ from distutils.core import setup
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+if "FREEBSD_SRC" not in os.environ:
+	os.environ["FREEBSD_SRC"] = "/usr/src"
+
 system_includes = [
     "${FREEBSD_SRC}/cddl/lib/libumem",
     "${FREEBSD_SRC}/sys/cddl/compat/opensolaris/",
