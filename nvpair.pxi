@@ -412,11 +412,11 @@ cdef class NVList(object):
     def values(self):
         return [v for k, v in self.items()]
 
-    def items(self):
+    def items(self, raw=False):
         cdef nvpair.nvpair_t *pair = NULL
         while True:
             pair = nvpair.nvlist_next_nvpair(self.handle, pair)
             if pair is NULL:
                 return
 
-            yield (nvpair.nvpair_name(pair), self.__get_value(pair))
+            yield (nvpair.nvpair_name(pair), self.__get_value(pair, not raw))

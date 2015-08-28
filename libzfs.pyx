@@ -302,21 +302,31 @@ cdef class ZFS(object):
         pool.handle = handle
         return pool
 
-    def find_import(self):
+    def find_import(self, cachefile=None):
         cdef ZFSImportablePool pool
-        cdef const char* paths = "/dev"
+        cdef libzfs.importargs_t iargs
+        cdef char* paths = "/dev"
         cdef nvpair.nvlist_t* result
 
-        result = libzfs.zpool_find_import(self.handle, 1, <char **>&paths)
+        iargs.path = &paths
+        iargs.paths = 1
+        iargs.poolname = NULL
+        iargs.guid = 0
+        iargs.cachefile = NULL
+
+        if cachefile:
+            iargs.cachefile = cachefile
+
+        result = libzfs.zpool_search_import(self.handle, &iargs)
         if result is NULL:
             return
 
         nv = NVList(nvlist=<uintptr_t>result)
-        for name, config in nv.items():
+        for name, config in nv.items(raw=True):
             pool = ZFSImportablePool.__new__(ZFSImportablePool)
             pool.name = name
             pool.free = False
-            pool.nvlist = NVList(otherdict=config)
+            pool.nvlist = config
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
