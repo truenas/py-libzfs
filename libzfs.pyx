@@ -286,7 +286,6 @@ cdef class ZFS(object):
     property snapshots:
         def __get__(self):
             for p in self.pools:
-                yield p.root_dataset
                 for c in p.root_dataset.snapshots_recursive:
                     yield c
 
@@ -1550,6 +1549,11 @@ cdef class ZFSSnapshot(ZFSDataset):
 
     def __repr__(self):
         return str(self)
+
+    def __getstate__(self, recursive=True):
+        ret = super(ZFSSnapshot, self).__getstate__(recursive)
+        ret['holds'] = self.holds
+        return ret
 
     def rollback(self, force=False):
         if libzfs.zfs_rollback(self.parent.handle, self.handle, force) != 0:
