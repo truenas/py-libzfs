@@ -342,6 +342,9 @@ cdef class ZFS(object):
             raise self.get_error()
 
     def export_pool(self, ZFSPool pool):
+        if libzfs.zpool_disable_datasets(pool.handle, True) != 0:
+            raise self.get_error()
+        
         if libzfs.zpool_export(pool.handle, True, "export") != 0:
             raise self.get_error()
 
