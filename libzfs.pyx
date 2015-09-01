@@ -1440,7 +1440,7 @@ cdef class ZFSDataset(object):
         def __get__(self):
             cdef ZFSSnapshot snapshot
             snapshots = []
-            libzfs.zfs_iter_children(self.handle, self.__iterate_snapshots, <void*>snapshots)
+            libzfs.zfs_iter_snapshots(self.handle, True, self.__iterate_snapshots, <void*>snapshots)
             for h in snapshots:
                 snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                 snapshot.root = self.root
