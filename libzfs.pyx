@@ -344,7 +344,7 @@ cdef class ZFS(object):
     def export_pool(self, ZFSPool pool):
         if libzfs.zpool_disable_datasets(pool.handle, True) != 0:
             raise self.get_error()
-        
+
         if libzfs.zpool_export(pool.handle, True, "export") != 0:
             raise self.get_error()
 
@@ -1559,10 +1559,28 @@ cdef class ZFSSnapshot(ZFSDataset):
         pass
 
     def hold(self, tag, recursive=False):
-        pass
+        if libzfs.zfs_hold(self.parent.handle, self.snapshot_name, tag, recursive, -1) != 0:
+            raise self.root.get_error()
 
     def release(self, tag, recursive=False):
-        pass
+        if libzfs.zfs_release(self.parent.handle, self.snapshot_name, tag, recursive) != 0:
+            raise self.root.get_error()
+
+    property snapshot_name:
+        def __get__(self):
+            return self.name.partition('@')[-1]
+
+    property holds:
+        def __get__(self):
+            cdef nvpair.nvlist_t* ptr
+            cdef NVList nvl
+
+            if libzfs.zfs_get_holds(self.handle, &ptr) != 0:
+                raise self.root.get_error()
+
+            nvl = NVList(<uintptr_t>ptr)
+            return dict(nvl)
+
 
 
 def nicestrtonum(ZFS zfs, value):
