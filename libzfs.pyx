@@ -364,6 +364,23 @@ cdef class ZFS(object):
         dataset.handle = handle
         return dataset
 
+    def get_snapshot(self, name):
+        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_open(self.handle, name, zfs.ZFS_TYPE_SNAPSHOT)
+        cdef ZFSPool pool
+        cdef ZFSSnapshot snap
+        if handle == NULL:
+            raise ZFSException(Error.NOENT, 'Snapshot {0} not found'.format(name))
+
+        pool = ZFSPool.__new__(ZFSPool)
+        pool.root = self
+        pool.free = False
+        pool.handle = libzfs.zfs_get_pool_handle(handle)
+        snap = ZFSSnapshot.__new__(ZFSSnapshot)
+        snap.root = self
+        snap.pool = pool
+        snap.handle = handle
+        return snap
+
     def create(self, name, topology, opts, fsopts):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
