@@ -1397,7 +1397,7 @@ cdef class ZFSDataset(object):
         ret = {
             'name': self.name,
             'pool': self.pool.name,
-            'type': self.type.name if self.type else None,
+            'type': self.type.name,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
         }
 
