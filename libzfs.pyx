@@ -1553,8 +1553,10 @@ cdef class ZFSDataset(object):
         if nomount:
             flags.nomount = True
 
-        if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
-            raise self.root.get_error()
+        raise NotImplementedError()
+        # FIXME: commented out until final zfs_receive ABI is estabilished
+        # if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
+        #     raise self.root.get_error()
 
 
 cdef class ZFSSnapshot(ZFSDataset):
