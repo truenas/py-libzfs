@@ -534,7 +534,7 @@ cdef class ZFSProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[1024]
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, False) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 1023, NULL, NULL, 0, False) != 0:
                 return None
 
             return cstr
@@ -546,17 +546,17 @@ cdef class ZFSProperty(object):
     property rawvalue:
         def __get__(self):
             cdef char cstr[1024]
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 64, NULL, NULL, 0, True) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 1023, NULL, NULL, 0, True) != 0:
                 return None
 
             return cstr
 
     property source:
         def __get__(self):
-            cdef char val[64]
-            cdef char cstr[64]
+            cdef char val[1024]
+            cdef char cstr[256]
             cdef zfs.zprop_source_t source
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, val, 64, &source, cstr, 64, True) != 0:
+            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, val, 1023, &source, cstr, 255, True) != 0:
                 return None
 
             return PropertySource(<int>source)
