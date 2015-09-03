@@ -1298,11 +1298,14 @@ cdef class ZFSPropertyDict(dict):
         proptypes = []
         self.props = {}
 
-        libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_FILESYSTEM)
+        libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, self.parent.type)
         nvlist = libzfs.zfs_get_user_props(self.parent.handle)
         nvl = NVList(<uintptr_t>nvlist)
 
         for x in proptypes:
+            if not zfs.zfs_prop_valid_for_type(x, self.parent.type):
+                continue
+
             prop = ZFSProperty.__new__(ZFSProperty)
             prop.dataset = self.parent
             prop.propid = x
@@ -1421,17 +1424,10 @@ cdef class ZFSDataset(object):
 
     property type:
         def __get__(self):
-            t = self.properties['type'].value
-            if t == 'filesystem':
-                return DatasetType.FILESYSTEM
+            cdef zfs.zfs_type_t typ
 
-            if t == 'volume':
-                return DatasetType.VOLUME
-
-            if t == 'snapshot':
-                return DatasetType.SNAPSHOT
-
-            raise ZFSException(Error.NOTSUP, 'Invalid dataset type')
+            typ = libzfs.zfs_get_type(self.handle)
+            return DatasetType(typ)
 
     property children:
         def __get__(self):
