@@ -509,7 +509,6 @@ cdef class ZPoolFeature(object):
 
 cdef class ZFSProperty(object):
     cdef readonly ZFSDataset dataset
-    cdef libzfs.zfs_handle_t* handle
     cdef int propid
 
     def __init__(self):
