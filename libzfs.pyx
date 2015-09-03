@@ -1432,7 +1432,7 @@ cdef class ZFSDataset(object):
             if t == 'snapshot':
                 return DatasetType.SNAPSHOT
 
-            raise ZFSException(Error.NOTSUP, 'Invalid dataset type')
+            return None
 
     property children:
         def __get__(self):
