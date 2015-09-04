@@ -534,6 +534,7 @@ cdef class ZFSProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[1024]
+
             if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 1023, NULL, NULL, 0, False) != 0:
                 return None
 
@@ -1452,7 +1453,7 @@ cdef class ZFSDataset(object):
         def __get__(self):
             cdef ZFSSnapshot snapshot
             snapshots = []
-            libzfs.zfs_iter_snapshots(self.handle, True, self.__iterate_snapshots, <void*>snapshots)
+            libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_snapshots, <void*>snapshots)
             for h in snapshots:
                 snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                 snapshot.root = self.root
