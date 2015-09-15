@@ -17,7 +17,7 @@
 # ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
 # FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
 # DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# OR SERVICES
 # HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
@@ -26,12 +26,94 @@
 
 from types cimport *
 
+
+cdef extern from "sys/param.h":
+    enum:
+        MAXPATHLEN
+
+
 cdef extern from "sys/fs/zfs.h":
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
         ZFS_NUM_PROPS
         SPA_VERSION
+
+    ctypedef enum zfs_ioc_t:
+        ZFS_IOC_FIRST
+        ZFS_IOC_POOL_CREATE
+        ZFS_IOC_POOL_DESTROY
+        ZFS_IOC_POOL_IMPORT
+        ZFS_IOC_POOL_EXPORT
+        ZFS_IOC_POOL_CONFIGS
+        ZFS_IOC_POOL_STATS
+        ZFS_IOC_POOL_TRYIMPORT
+        ZFS_IOC_POOL_SCAN
+        ZFS_IOC_POOL_FREEZE
+        ZFS_IOC_POOL_UPGRADE
+        ZFS_IOC_POOL_GET_HISTORY
+        ZFS_IOC_VDEV_ADD
+        ZFS_IOC_VDEV_REMOVE
+        ZFS_IOC_VDEV_SET_STATE
+        ZFS_IOC_VDEV_ATTACH
+        ZFS_IOC_VDEV_DETACH
+        ZFS_IOC_VDEV_SETPATH
+        ZFS_IOC_VDEV_SETFRU
+        ZFS_IOC_OBJSET_STATS
+        ZFS_IOC_OBJSET_ZPLPROPS
+        ZFS_IOC_DATASET_LIST_NEXT
+        ZFS_IOC_SNAPSHOT_LIST_NEXT
+        ZFS_IOC_SET_PROP
+        ZFS_IOC_CREATE
+        ZFS_IOC_DESTROY
+        ZFS_IOC_ROLLBACK
+        ZFS_IOC_RENAME
+        ZFS_IOC_RECV
+        ZFS_IOC_SEND
+        ZFS_IOC_INJECT_FAULT
+        ZFS_IOC_CLEAR_FAULT
+        ZFS_IOC_INJECT_LIST_NEXT
+        ZFS_IOC_ERROR_LOG
+        ZFS_IOC_CLEAR
+        ZFS_IOC_PROMOTE
+        ZFS_IOC_DESTROY_SNAPS
+        ZFS_IOC_SNAPSHOT
+        ZFS_IOC_DSOBJ_TO_DSNAME
+        ZFS_IOC_OBJ_TO_PATH
+        ZFS_IOC_POOL_SET_PROPS
+        ZFS_IOC_POOL_GET_PROPS
+        ZFS_IOC_SET_FSACL
+        ZFS_IOC_GET_FSACL
+        ZFS_IOC_SHARE
+        ZFS_IOC_INHERIT_PROP
+        ZFS_IOC_SMB_ACL
+        ZFS_IOC_USERSPACE_ONE
+        ZFS_IOC_USERSPACE_MANY
+        ZFS_IOC_USERSPACE_UPGRADE
+        ZFS_IOC_HOLD
+        ZFS_IOC_RELEASE
+        ZFS_IOC_GET_HOLDS
+        ZFS_IOC_OBJSET_RECVD_PROPS
+        ZFS_IOC_VDEV_SPLIT
+        ZFS_IOC_NEXT_OBJ
+        ZFS_IOC_DIFF
+        ZFS_IOC_TMP_SNAPSHOT
+        ZFS_IOC_OBJ_TO_STATS
+        ZFS_IOC_JAIL
+        ZFS_IOC_UNJAIL
+        ZFS_IOC_POOL_REGUID
+        ZFS_IOC_SPACE_WRITTEN
+        ZFS_IOC_SPACE_SNAPS
+        ZFS_IOC_SEND_PROGRESS
+        ZFS_IOC_POOL_REOPEN
+        ZFS_IOC_LOG_HISTORY
+        ZFS_IOC_SEND_NEW
+        ZFS_IOC_SEND_SPACE
+        ZFS_IOC_CLONE
+        ZFS_IOC_BOOKMARK
+        ZFS_IOC_GET_BOOKMARKS
+        ZFS_IOC_DESTROY_BOOKMARKS
+        ZFS_IOC_LAST
 
     ctypedef enum zfs_type_t:
         ZFS_TYPE_FILESYSTEM	= (1 << 0)
@@ -59,7 +141,7 @@ cdef extern from "sys/fs/zfs.h":
         ZFS_PROP_GROUPUSED
         ZFS_PROP_GROUPQUOTA
     
-    extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS];
+    extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS]
 
     enum:
         ZPROP_CONT = -2
@@ -75,35 +157,35 @@ cdef extern from "sys/fs/zfs.h":
         ZPROP_SRC_ALL = 0x3f
     
     ctypedef enum zprop_errflags_t:
-        ZPROP_ERR_NOCLEAR = 0x1, 
+        ZPROP_ERR_NOCLEAR = 0x1
         ZPROP_ERR_NORESTORE = 0x2
     
-    ctypedef int (*zprop_func)(int, void *);
+    ctypedef int (*zprop_func)(int, void *)
     
-    const char *zfs_prop_default_string(int);
-    uint64_t zfs_prop_default_numeric(int);
-    boolean_t zfs_prop_readonly(int);
-    boolean_t zfs_prop_inheritable(int);
-    boolean_t zfs_prop_setonce(int);
-    const char *zfs_prop_to_name(int);
-    int zfs_name_to_prop(const char *);
-    boolean_t zfs_prop_user(const char *);
-    boolean_t zfs_prop_userquota(const char *);
-    int zfs_prop_index_to_string(int, uint64_t, const char **);
-    int zfs_prop_string_to_index(int, const char *, uint64_t *);
-    uint64_t zfs_prop_random_value(int, uint64_t seed);
-    boolean_t zfs_prop_valid_for_type(int, zfs_type_t);
+    const char *zfs_prop_default_string(int)
+    uint64_t zfs_prop_default_numeric(int)
+    boolean_t zfs_prop_readonly(int)
+    boolean_t zfs_prop_inheritable(int)
+    boolean_t zfs_prop_setonce(int)
+    const char *zfs_prop_to_name(int)
+    int zfs_name_to_prop(const char *)
+    boolean_t zfs_prop_user(const char *)
+    boolean_t zfs_prop_userquota(const char *)
+    int zfs_prop_index_to_string(int, uint64_t, const char **)
+    int zfs_prop_string_to_index(int, const char *, uint64_t *)
+    uint64_t zfs_prop_random_value(int, uint64_t seed)
+    boolean_t zfs_prop_valid_for_type(int, zfs_type_t)
     
-    int zpool_name_to_prop(const char *);
-    const char *zpool_prop_to_name(int);
-    const char *zpool_prop_default_string(int);
-    uint64_t zpool_prop_default_numeric(int);
-    boolean_t zpool_prop_readonly(int);
-    boolean_t zpool_prop_feature(const char *);
-    boolean_t zpool_prop_unsupported(const char *name);
-    int zpool_prop_index_to_string(int, uint64_t, const char **);
-    int zpool_prop_string_to_index(int, const char *, uint64_t *);
-    uint64_t zpool_prop_random_value(int, uint64_t seed);
+    int zpool_name_to_prop(const char *)
+    const char *zpool_prop_to_name(int)
+    const char *zpool_prop_default_string(int)
+    uint64_t zpool_prop_default_numeric(int)
+    boolean_t zpool_prop_readonly(int)
+    boolean_t zpool_prop_feature(const char *)
+    boolean_t zpool_prop_unsupported(const char *name)
+    int zpool_prop_index_to_string(int, uint64_t, const char **)
+    int zpool_prop_string_to_index(int, const char *, uint64_t *)
+    uint64_t zpool_prop_random_value(int, uint64_t seed)
 
     ctypedef enum zfs_deleg_who_type_t:
         ZFS_DELEG_WHO_UNKNOWN
@@ -185,10 +267,10 @@ cdef extern from "sys/fs/zfs.h":
         ZPOOL_REWIND_POLICIES
 
     ctypedef struct zpool_rewind_policy_t:
-        uint32_t	zrp_request;	
-        uint64_t	zrp_maxmeta;	
-        uint64_t	zrp_maxdata;	
-        uint64_t	zrp_txg;	
+        uint32_t	zrp_request
+        uint64_t	zrp_maxmeta
+        uint64_t	zrp_maxdata
+        uint64_t	zrp_txg
 
     #define	ZPOOL_REWIND_POLICY		"rewind-policy"
     #define	ZPOOL_REWIND_REQUEST		"rewind-request"
@@ -221,44 +303,44 @@ cdef extern from "sys/fs/zfs.h":
     
 
     ctypedef enum vdev_state_t:
-        VDEV_STATE_UNKNOWN = 0,	
-        VDEV_STATE_CLOSED,	
-        VDEV_STATE_OFFLINE,	
-        VDEV_STATE_REMOVED,	
-        VDEV_STATE_CANT_OPEN,	
-        VDEV_STATE_FAULTED,	
-        VDEV_STATE_DEGRADED,	
+        VDEV_STATE_UNKNOWN = 0
+        VDEV_STATE_CLOSED
+        VDEV_STATE_OFFLINE
+        VDEV_STATE_REMOVED
+        VDEV_STATE_CANT_OPEN
+        VDEV_STATE_FAULTED
+        VDEV_STATE_DEGRADED
         VDEV_STATE_HEALTHY
     
     #define	VDEV_STATE_ONLINE	VDEV_STATE_HEALTHY
     
     ctypedef enum vdev_aux_t:
-        VDEV_AUX_NONE,		
-        VDEV_AUX_OPEN_FAILED,	
-        VDEV_AUX_CORRUPT_DATA,	
-        VDEV_AUX_NO_REPLICAS,	
-        VDEV_AUX_BAD_GUID_SUM,	
-        VDEV_AUX_TOO_SMALL,	
-        VDEV_AUX_BAD_LABEL,	
-        VDEV_AUX_VERSION_NEWER,	
-        VDEV_AUX_VERSION_OLDER,	
-        VDEV_AUX_UNSUP_FEAT,	
-        VDEV_AUX_SPARED,	
-        VDEV_AUX_ERR_EXCEEDED,	
-        VDEV_AUX_IO_FAILURE,	
-        VDEV_AUX_BAD_LOG,	
-        VDEV_AUX_EXTERNAL,	
-        VDEV_AUX_SPLIT_POOL,	
+        VDEV_AUX_NONE
+        VDEV_AUX_OPEN_FAILED
+        VDEV_AUX_CORRUPT_DATA
+        VDEV_AUX_NO_REPLICAS
+        VDEV_AUX_BAD_GUID_SUM
+        VDEV_AUX_TOO_SMALL
+        VDEV_AUX_BAD_LABEL
+        VDEV_AUX_VERSION_NEWER
+        VDEV_AUX_VERSION_OLDER
+        VDEV_AUX_UNSUP_FEAT
+        VDEV_AUX_SPARED
+        VDEV_AUX_ERR_EXCEEDED
+        VDEV_AUX_IO_FAILURE
+        VDEV_AUX_BAD_LOG
+        VDEV_AUX_EXTERNAL
+        VDEV_AUX_SPLIT_POOL
         VDEV_AUX_ASHIFT_TOO_BIG
         
     ctypedef enum pool_state_t:
-        POOL_STATE_ACTIVE = 0,		
-        POOL_STATE_EXPORTED,		
-        POOL_STATE_DESTROYED,		
-        POOL_STATE_SPARE,		
-        POOL_STATE_L2CACHE,		
-        POOL_STATE_UNINITIALIZED,	
-        POOL_STATE_UNAVAIL,		
+        POOL_STATE_ACTIVE = 0
+        POOL_STATE_EXPORTED
+        POOL_STATE_DESTROYED
+        POOL_STATE_SPARE
+        POOL_STATE_L2CACHE
+        POOL_STATE_UNINITIALIZED
+        POOL_STATE_UNAVAIL
         POOL_STATE_POTENTIALLY_ACTIVE
 
     ctypedef enum pool_scan_func_t:
@@ -276,17 +358,17 @@ cdef extern from "sys/fs/zfs.h":
         ZIO_TYPE_IOCTL
 
     ctypedef struct pool_scan_stat_t:
-        uint64_t	pss_func;	
-        uint64_t	pss_state;	
-        uint64_t	pss_start_time;	
-        uint64_t	pss_end_time;	
-        uint64_t	pss_to_examine;	
-        uint64_t	pss_examined;	
-        uint64_t	pss_to_process; 
-        uint64_t	pss_processed;	
-        uint64_t	pss_errors;
-        uint64_t	pss_pass_exam;	
-        uint64_t	pss_pass_start;
+        uint64_t	pss_func
+        uint64_t	pss_state
+        uint64_t	pss_start_time
+        uint64_t	pss_end_time
+        uint64_t	pss_to_examine
+        uint64_t	pss_examined
+        uint64_t	pss_to_process
+        uint64_t	pss_processed
+        uint64_t	pss_errors
+        uint64_t	pss_pass_exam
+        uint64_t	pss_pass_start
     
     ctypedef enum dsl_scan_state_t:
         DSS_NONE
@@ -296,45 +378,51 @@ cdef extern from "sys/fs/zfs.h":
         DSS_NUM_STATES
         
     ctypedef struct vdev_stat_t:
-        hrtime_t	vs_timestamp;		
-        uint64_t	vs_state;		
-        uint64_t	vs_aux;			
-        uint64_t	vs_alloc;		
-        uint64_t	vs_space;		
-        uint64_t	vs_dspace;		
-        uint64_t	vs_rsize;		
-        uint64_t	vs_esize;		
-        uint64_t	vs_ops[ZIO_TYPES];	
-        uint64_t	vs_bytes[ZIO_TYPES];	
-        uint64_t	vs_read_errors;		
-        uint64_t	vs_write_errors;	
-        uint64_t	vs_checksum_errors;	
-        uint64_t	vs_self_healed;		
-        uint64_t	vs_scan_removing;	
-        uint64_t	vs_scan_processed;	
-        uint64_t	vs_configured_ashift;	
-        uint64_t	vs_logical_ashift;	
-        uint64_t	vs_physical_ashift;	
-        uint64_t	vs_fragmentation;
+        hrtime_t	vs_timestamp
+        uint64_t	vs_state
+        uint64_t	vs_aux
+        uint64_t	vs_alloc
+        uint64_t	vs_space
+        uint64_t	vs_dspace
+        uint64_t	vs_rsize
+        uint64_t	vs_esize
+        uint64_t	vs_ops[ZIO_TYPES]
+        uint64_t	vs_bytes[ZIO_TYPES]
+        uint64_t	vs_read_errors
+        uint64_t	vs_write_errors
+        uint64_t	vs_checksum_errors
+        uint64_t	vs_self_healed
+        uint64_t	vs_scan_removing
+        uint64_t	vs_scan_processed
+        uint64_t	vs_configured_ashift
+        uint64_t	vs_logical_ashift
+        uint64_t	vs_physical_ashift
+        uint64_t	vs_fragmentation
 
     ctypedef struct ddt_object_t:
-        uint64_t	ddo_count;	
-        uint64_t	ddo_dspace;	
-        uint64_t	ddo_mspace;	
+        uint64_t	ddo_count
+        uint64_t	ddo_dspace
+        uint64_t	ddo_mspace
     
     ctypedef struct ddt_stat_t:
-        uint64_t	dds_blocks;	
-        uint64_t	dds_lsize;	
-        uint64_t	dds_psize;	
-        uint64_t	dds_dsize;	
-        uint64_t	dds_ref_blocks;	
-        uint64_t	dds_ref_lsize;	
-        uint64_t	dds_ref_psize;	
-        uint64_t	dds_ref_dsize;	
+        uint64_t	dds_blocks
+        uint64_t	dds_lsize
+        uint64_t	dds_psize
+        uint64_t	dds_dsize
+        uint64_t	dds_ref_blocks
+        uint64_t	dds_ref_lsize
+        uint64_t	dds_ref_psize
+        uint64_t	dds_ref_dsize
     
     ctypedef struct ddt_histogram_t:
-        ddt_stat_t	ddh_stat[64];	
-    
+        ddt_stat_t	ddh_stat[64]
+
+
+cdef extern from "sys/zfs_ioctl.h":
+    ctypedef struct zfs_cmd_t:
+        char		zc_name[MAXPATHLEN]
+        uint64_t	zc_cookie
+
 
 cdef extern from "zfeature_common.h":
     ctypedef enum spa_feature_t:
