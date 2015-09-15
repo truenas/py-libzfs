@@ -66,7 +66,7 @@ setup(
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
             extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0"],
             cython_include_dirs=["./pxd"],
-            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version},
+            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version, 'TRUEOS': os.getenv('TRUEOS')},
             include_dirs=system_includes,
             extra_link_args=["-g"],
         )

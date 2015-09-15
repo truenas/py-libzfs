@@ -450,8 +450,12 @@ cdef extern from "libzfs.h":
         ZFS_DIFF_TIMESTAMP = 0x2,
         ZFS_DIFF_CLASSIFY = 0x4
 
-    extern int zfs_receive(libzfs_handle_t *, const char *, recvflags_t *,
-        int, void *) # XXX: last argument should be avl_tree_t *
+    IF TRUEOS:
+        extern int zfs_receive(libzfs_handle_t *, const char *, recvflags_t *,
+            int, nvpair.nvlist_t *, nvpair.nvlist_t *, void *) # XXX: last argument should be avl_tree_t *
+    ELSE:
+        extern int zfs_receive(libzfs_handle_t *, const char *, recvflags_t *,
+            int, void *) # XXX: last argument should be avl_tree_t *
 
     extern int zfs_show_diffs(zfs_handle_t *, int, const char *, const char *,
         int)

@@ -1538,9 +1538,11 @@ cdef class ZFSDataset(object):
             cfsopts.handle) != 0:
             raise self.root.get_error()
 
-    def receive(self, fd, force=False, nomount=False):
+    def receive(self, fd, force=False, nomount=False, props=None, limitds=None):
         cdef libzfs.libzfs_handle_t *handle = self.root.handle,
         cdef libzfs.recvflags_t flags;
+        cdef NVList props_nvl = None
+        cdef NVList limitds_nvl = None
 
         memset(&flags, 0, sizeof(libzfs.recvflags_t))
 
@@ -1550,10 +1552,24 @@ cdef class ZFSDataset(object):
         if nomount:
             flags.nomount = True
 
-        raise NotImplementedError()
-        # FIXME: commented out until final zfs_receive ABI is estabilished
-        # if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
-        #     raise self.root.get_error()
+        IF TRUEOS:
+            if props:
+                props_nvl = NVList(otherdict=props)
+            if limitds:
+                limitds_nvl = NVList(otherdict=limitds)
+
+            if libzfs.zfs_receive(
+                handle,
+                self.name,
+                &flags,
+                fd,
+                props_nvl.handle if props_nvl else NULL,
+                limitds_nvl.handle if limitds_nvl else NULL,
+                NULL) != 0:
+                raise self.root.get_error()
+        ELSE:
+            if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
+                raise self.root.get_error()
 
 
 cdef class ZFSSnapshot(ZFSDataset):
