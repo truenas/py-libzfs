@@ -967,13 +967,18 @@ cdef class ZFSPool(object):
         return str(self)
 
     def __getstate__(self):
+        try:
+            root_ds = self.root_dataset.__getstate__()
+        except ZFSException:
+            root_ds = None
+
         return {
             'name': self.name,
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
             'error_count': self.error_count,
-            'root_dataset': self.root_dataset.__getstate__() if self.root_dataset else None,
+            'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
             'features': [i.__getstate__() for i in self.features] if self.features else None,
             'scan': self.scrub.__getstate__(),
@@ -1113,7 +1118,7 @@ cdef class ZFSPool(object):
 
     property error_count:
         def __get__(self):
-            return self.config['error_count']
+            return self.config.get('error_count')
 
     property config:
         def __get__(self):
