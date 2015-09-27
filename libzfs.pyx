@@ -1144,8 +1144,12 @@ cdef class ZFSPool(object):
             cdef ZPoolFeature f
             cdef NVList features_nv
             cdef zfs.zfeature_info_t* feat
-            cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_features(self.handle)
+            cdef uintptr_t nvl;
 
+            if self.status == 'UNAVAIL':
+                return
+
+            nvl = <uintptr_t>libzfs.zpool_get_features(self.handle)
             features_nv = NVList(nvl)
 
             for i in range(0, zfs.SPA_FEATURES):
