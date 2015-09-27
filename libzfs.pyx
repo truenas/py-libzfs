@@ -291,7 +291,7 @@ cdef class ZFS(object):
                     yield c
 
     def get(self, name):
-        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
+        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open_canfail(self.handle, name)
         cdef ZFSPool pool
 
         if handle == NULL:
