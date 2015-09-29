@@ -1411,6 +1411,7 @@ cdef class ZFSDataset(object):
             'name': self.name,
             'pool': self.pool.name,
             'type': self.type.name,
+            'mountpoint': self.mountpoint,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
         }
 
