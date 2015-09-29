@@ -969,7 +969,7 @@ cdef class ZFSPool(object):
     def __getstate__(self):
         try:
             root_ds = self.root_dataset.__getstate__()
-        except ZFSException:
+        except (ZFSException, AttributeError):
             root_ds = None
 
         return {
