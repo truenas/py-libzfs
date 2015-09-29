@@ -1529,8 +1529,13 @@ cdef class ZFSDataset(object):
         for i in self.children:
             i.mount_recursive()
 
-    def umount(self):
-        if libzfs.zfs_unmountall(self.handle, 0) != 0:
+    def umount(self, force=False):
+        cdef int flags = 0
+
+        if force:
+            flags = zfs.MS_FORCE
+
+        if libzfs.zfs_unmountall(self.handle, flags) != 0:
             raise self.root.get_error()
 
     def send(self, fd):

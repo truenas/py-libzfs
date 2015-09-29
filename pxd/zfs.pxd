@@ -32,6 +32,11 @@ cdef extern from "sys/param.h":
         MAXPATHLEN
 
 
+cdef extern from "sys/mount.h":
+    enum:
+        MS_FORCE
+
+
 cdef extern from "sys/fs/zfs.h":
     enum:
         ZIO_TYPES
