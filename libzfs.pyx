@@ -1523,7 +1523,9 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def mount_recursive(self):
-        self.mount()
+        if self.properties['canmount'].value == 'on':
+            self.mount()
+
         for i in self.children:
             i.mount_recursive()
 
