@@ -1109,7 +1109,7 @@ cdef class ZFSPool(object):
 
     property hostname:
         def __get__(self):
-            return self.config['hostname']
+            return self.config.get('hostname')
 
     property status:
         def __get__(self):
