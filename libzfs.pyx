@@ -1611,7 +1611,7 @@ cdef class ZFSDataset(object):
                 NULL) != 0:
                 raise self.root.get_error()
         ELSE:
-            if libzfs.zfs_receive(handle, self.name, &flags, fd, NULL) != 0:
+            if libzfs.zfs_receive(handle, self.name, props, &flags, fd, NULL) != 0:
                 raise self.root.get_error()
 
 
