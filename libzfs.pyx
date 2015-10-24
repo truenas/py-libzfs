@@ -382,6 +382,15 @@ cdef class ZFS(object):
         snap.handle = handle
         return snap
 
+    def get_object(self, name):
+        try:
+            return self.get_dataset(name)
+        except ZFSException, err:
+            if err.code == Error.NOENT:
+                return self.get_snapshot(name)
+
+            raise err
+
     def create(self, name, topology, opts, fsopts):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
