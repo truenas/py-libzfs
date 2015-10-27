@@ -1638,7 +1638,10 @@ cdef class ZFSSnapshot(ZFSDataset):
 
     def __getstate__(self, recursive=True):
         ret = super(ZFSSnapshot, self).__getstate__(recursive)
-        ret['holds'] = self.holds
+        ret.update({
+            'holds': self.holds,
+            'snapshot_name': self.snapshot_name
+        })
         return ret
 
     def rollback(self, force=False):
