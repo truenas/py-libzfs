@@ -1581,12 +1581,12 @@ cdef class ZFSDataset(object):
 
         return cmd.zc_cookie
 
-    def snapshot(self, name, fsopts):
-        cdef NVList cfsopts = NVList(otherdict=fsopts)
+    def snapshot(self, name, fsopts=None, recursive=False):
+        cdef NVList cfsopts = NVList(otherdict=fsopts or {})
         if libzfs.zfs_snapshot(
             self.root.handle,
             name,
-            True,
+            recursive,
             cfsopts.handle) != 0:
             raise self.root.get_error()
 
