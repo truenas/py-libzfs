@@ -1642,18 +1642,27 @@ cdef class ZFSSnapshot(ZFSDataset):
         return ret
 
     def rollback(self, force=False):
-        if libzfs.zfs_rollback(self.parent.handle, self.handle, force) != 0:
+        cdef ZFSDataset parent
+
+        parent = <ZFSDataset>self.parent
+        if libzfs.zfs_rollback(parent.handle, self.handle, force) != 0:
             raise self.root.get_error()
 
     def bookmark(self, name):
         pass
 
     def hold(self, tag, recursive=False):
-        if libzfs.zfs_hold(self.parent.handle, self.snapshot_name, tag, recursive, -1) != 0:
+        cdef ZFSDataset parent
+
+        parent = <ZFSDataset>self.parent
+        if libzfs.zfs_hold(parent.handle, self.snapshot_name, tag, recursive, -1) != 0:
             raise self.root.get_error()
 
     def release(self, tag, recursive=False):
-        if libzfs.zfs_release(self.parent.handle, self.snapshot_name, tag, recursive) != 0:
+        cdef ZFSDataset parent
+
+        parent = <ZFSDataset>self.parent
+        if libzfs.zfs_release(parent.handle, self.snapshot_name, tag, recursive) != 0:
             raise self.root.get_error()
 
     def delete(self, recursive=False):
@@ -1668,7 +1677,7 @@ cdef class ZFSSnapshot(ZFSDataset):
 
     property parent:
         def __get__(self):
-            return <ZFSDataset>self.root.get_dataset(self.name.partition('@')[0])
+            return self.root.get_dataset(self.name.partition('@')[0])
 
     property holds:
         def __get__(self):
