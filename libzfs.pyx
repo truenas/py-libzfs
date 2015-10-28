@@ -1478,7 +1478,6 @@ cdef class ZFSDataset(object):
                 snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                 snapshot.root = self.root
                 snapshot.pool = self.pool
-                snapshot.parent = self
                 snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
                 yield snapshot
 
@@ -1628,8 +1627,6 @@ cdef class ZFSDataset(object):
 
 
 cdef class ZFSSnapshot(ZFSDataset):
-    cdef readonly ZFSDataset parent
-
     def __str__(self):
         return "<libzfs.ZFSSnapshot name '{0}'>".format(self.name)
 
@@ -1668,6 +1665,10 @@ cdef class ZFSSnapshot(ZFSDataset):
     property snapshot_name:
         def __get__(self):
             return self.name.partition('@')[-1]
+
+    property parent:
+        def __get__(self):
+            return self.root.get_dataset(self.name.partition('@')[0])
 
     property holds:
         def __get__(self):
