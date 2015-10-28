@@ -1668,7 +1668,7 @@ cdef class ZFSSnapshot(ZFSDataset):
 
     property parent:
         def __get__(self):
-            return self.root.get_dataset(self.name.partition('@')[0])
+            return <ZFSDataset>self.root.get_dataset(self.name.partition('@')[0])
 
     property holds:
         def __get__(self):
