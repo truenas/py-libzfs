@@ -1659,6 +1659,12 @@ cdef class ZFSSnapshot(ZFSDataset):
         if libzfs.zfs_release(self.parent.handle, self.snapshot_name, tag, recursive) != 0:
             raise self.root.get_error()
 
+    def delete(self, recursive=False):
+        if not recursive:
+            super(ZFSSnapshot, self).delete()
+        else:
+            self.parent.destroy_snapshot(self.snapshot_name)
+
     property snapshot_name:
         def __get__(self):
             return self.name.partition('@')[-1]
