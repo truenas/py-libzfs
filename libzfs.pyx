@@ -1,4 +1,3 @@
-# cython: c_string_type=unicode, c_string_encoding=ascii
 #-
 # Copyright (c) 2014 iXsystems, Inc.
 # All rights reserved.
