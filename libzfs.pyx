@@ -397,8 +397,6 @@ cdef class ZFS(object):
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
 
-        print repr(dict(root))
-
         if libzfs.zpool_create(
             self.handle,
             name,
