@@ -423,9 +423,9 @@ cdef extern from "libzfs.h":
         sendflags_t *, int, snapfilter_cb_t, void *, nvpair.nvlist_t **)
 
     IF FREEBSD_VERSION >= 1000000:
-        extern int zfs_send_one(zfs_handle_t *, const char *, int, int)
+        extern int zfs_send_one(zfs_handle_t *, const char *, int, int) nogil
     ELSE:
-        extern int zfs_send_one(zfs_handle_t *, const char *, int)
+        extern int zfs_send_one(zfs_handle_t *, const char *, int) nogil
 
     extern int zfs_promote(zfs_handle_t *)
     extern int zfs_hold(zfs_handle_t *, const char *, const char *,

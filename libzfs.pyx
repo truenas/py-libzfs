@@ -1547,12 +1547,17 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def send(self, fd):
-        IF FREEBSD_VERSION >= 1000000:
-            if libzfs.zfs_send_one(self.handle, NULL, fd, 0) != 0:
-                raise self.root.get_error()
-        ELSE:
-            if libzfs.zfs_send_one(self.handle, NULL, fd) != 0:
-                raise self.root.get_error()
+        cdef int cfd = fd
+        cdef int err
+
+        with nogil:
+            IF FREEBSD_VERSION >= 1000000:
+                err = libzfs.zfs_send_one(self.handle, NULL, cfd, 0)
+            ELSE:
+                err = libzfs.zfs_send_one(self.handle, NULL, cfd)
+
+        if err != 0:
+            raise self.root.get_error()
 
     def get_send_space(self, fromname=None):
         cdef const char *cfromname = NULL
