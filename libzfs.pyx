@@ -1208,7 +1208,7 @@ cdef class ZFSPool(object):
         pass
 
     def attach_vdevs(self, vdevs_tree):
-        cdef ZFSVdev vd = self.root.make_vdev_tree(NVList(otherdict=vdevs_tree))
+        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
 
         if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
             raise self.root.get_error()
