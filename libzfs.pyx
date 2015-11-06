@@ -1546,15 +1546,19 @@ cdef class ZFSDataset(object):
         if libzfs.zfs_unmountall(self.handle, flags) != 0:
             raise self.root.get_error()
 
-    def send(self, fd):
+    def send(self, fd, fromname=None):
         cdef int cfd = fd
         cdef int err
+        cdef char *cfromname = NULL
+
+        if fromname:
+            cfromname = fromname
 
         with nogil:
             IF FREEBSD_VERSION >= 1000000:
-                err = libzfs.zfs_send_one(self.handle, NULL, cfd, 0)
+                err = libzfs.zfs_send_one(self.handle, cfromname, cfd, 0)
             ELSE:
-                err = libzfs.zfs_send_one(self.handle, NULL, cfd)
+                err = libzfs.zfs_send_one(self.handle, cfromname, cfd)
 
         if err != 0:
             raise self.root.get_error()
