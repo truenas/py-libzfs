@@ -420,7 +420,7 @@ cdef extern from "libzfs.h":
     ctypedef int (*snapfilter_cb_t)(zfs_handle_t *, void *)
 
     extern int zfs_send(zfs_handle_t *, const char *, const char *,
-        sendflags_t *, int, snapfilter_cb_t, void *, nvpair.nvlist_t **)
+        sendflags_t *, int, snapfilter_cb_t, void *, nvpair.nvlist_t **) nogil
 
     IF FREEBSD_VERSION >= 1000000:
         extern int zfs_send_one(zfs_handle_t *, const char *, int, int) nogil

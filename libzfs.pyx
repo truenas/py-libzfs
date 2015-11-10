@@ -207,6 +207,20 @@ class FeatureState(enum.Enum):
     ACTIVE = 2
 
 
+class SendFlag(enum.Enum):
+    VERBOSE = 0
+    REPLICATE = 1
+    DOALL = 2
+    FROMORIGIN = 3
+    DEDUP = 3
+    PROPS = 4
+    DRYRUN = 5
+    PARSABLE = 6
+    PROGRESS = 7
+    LARGEBLOCK = 8
+    EMBED_DATA = 9
+
+
 IF FREEBSD_VERSION >= 1000000:
     class SendFlags(enum.IntEnum):
         EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
@@ -1549,19 +1563,65 @@ cdef class ZFSDataset(object):
         if libzfs.zfs_unmountall(self.handle, flags) != 0:
             raise self.root.get_error()
 
-    def send(self, fd, fromname=None):
+    def send(self, fd, **kwargs):
         cdef int cfd = fd
         cdef int err
+        cdef char *ctoname
         cdef char *cfromname = NULL
+        cdef libzfs.sendflags_t cflags
+
+        toname = kwargs.get('toname')
+        fromname = kwargs.get('fromname')
+        flags = kwargs.get('flags')
+        memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
+
+        if not toname:
+            raise ValueError('toname argument is required')
+
+        ctoname = toname
 
         if fromname:
             cfromname = fromname
 
+        if flags:
+            if not isinstance(flags, set):
+                raise ValueError('flags must be passed as a set')
+
+            if SendFlag.VERBOSE in flags:
+                cflags.verbose = 1
+
+            if SendFlag.REPLICATE in flags:
+                cflags.replicate = 1
+
+            if SendFlag.DOALL in flags:
+                cflags.doall = 1
+
+            if SendFlag.FROMORIGIN in flags:
+                cflags.fromorigin = 1
+
+            if SendFlag.DEDUP in flags:
+                cflags.dedup = 1
+
+            if SendFlag.PROPS in flags:
+                cflags.props = 1
+
+            if SendFlag.DRYRUN in flags:
+                cflags.dryrun = 1
+
+            if SendFlag.PARSABLE in flags:
+                cflags.parsable = 1
+
+            if SendFlag.PROGRESS in flags:
+                cflags.progress = 1
+
+            if SendFlag.LARGEBLOCK in flags:
+                cflags.largeblock = 1
+
+            if SendFlag.EMBED_DATA in flags:
+                cflags.embed_data = 1
+
         with nogil:
-            IF FREEBSD_VERSION >= 1000000:
-                err = libzfs.zfs_send_one(self.handle, cfromname, cfd, 0)
-            ELSE:
-                err = libzfs.zfs_send_one(self.handle, cfromname, cfd)
+            err = libzfs.zfs_send(self.handle, cfromname, ctoname, &cflags, cfd, NULL, NULL, NULL)
 
         if err != 0:
             raise self.root.get_error()
@@ -1696,6 +1756,11 @@ cdef class ZFSSnapshot(ZFSDataset):
             super(ZFSSnapshot, self).delete()
         else:
             self.parent.destroy_snapshot(self.snapshot_name)
+
+    def send(self, fd, **kwargs):
+        fromname = kwargs.get('fromname')
+        flags = kwargs.get('flags')
+        return self.parent.send(fd, toname=self.name, fromname=fromname, flags=flags)
 
     property snapshot_name:
         def __get__(self):
