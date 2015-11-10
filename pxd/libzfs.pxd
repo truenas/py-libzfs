@@ -457,8 +457,12 @@ cdef extern from "libzfs.h":
         extern int zfs_receive(libzfs_handle_t *, const char *, recvflags_t *,
             int, nvpair.nvlist_t *, nvpair.nvlist_t *, void *) # XXX: last argument should be avl_tree_t *
     ELSE:
-        extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
-            recvflags_t *, int, void *) # XXX: last argument should be avl_tree_t *
+        IF FREEBSD_VERSION > 1002000:
+            extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
+                recvflags_t *, int, void *) # XXX: last argument should be avl_tree_t *
+        ELSE:
+            extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
+                recvflags_t *, int) # XXX: last argument should be avl_tree_t *
 
     extern int zfs_show_diffs(zfs_handle_t *, int, const char *, const char *,
         int)

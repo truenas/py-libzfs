@@ -1697,8 +1697,12 @@ cdef class ZFSDataset(object):
             if props:
                 props_nvl = NVList(otherdict=props)
 
-            if libzfs.zfs_receive(handle, self.name, props_nvl.handle if props_nvl else NULL, &flags, fd, NULL) != 0:
-                raise self.root.get_error()
+            IF FREEBSD_VERSION > 1002000:
+                if libzfs.zfs_receive(handle, self.name, props_nvl.handle if props_nvl else NULL, &flags, fd, NULL) != 0:
+                    raise self.root.get_error()
+            ELSE:
+                if libzfs.zfs_receive(handle, self.name, props_nvl.handle if props_nvl else NULL, &flags, fd) != 0:
+                    raise self.root.get_error()
 
 
 cdef class ZFSSnapshot(ZFSDataset):
