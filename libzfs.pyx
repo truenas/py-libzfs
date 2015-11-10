@@ -1666,13 +1666,15 @@ cdef class ZFSSnapshot(ZFSDataset):
     def bookmark(self, name):
         pass
 
-    def clone(self, name, opts={}):
-        cdef NVList copts = NVList(otherdict=opts)
+    def clone(self, name, opts=None):
+        cdef NVList copts = None
+        if opts:
+            copts = NVList(otherdict=opts)
 
         if libzfs.zfs_clone(
             self.handle,
             name,
-            copts.handle) != 0:
+            copts.handle if copts else NULL) != 0:
             raise self.root.get_error()
 
     def hold(self, tag, recursive=False):
