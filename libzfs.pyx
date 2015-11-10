@@ -1591,6 +1591,10 @@ cdef class ZFSDataset(object):
 
         return cmd.zc_cookie
 
+    def promote(self):
+        if libzfs.zfs_promote(self.handle) != 0:
+            raise self.root.get_error()
+
     def snapshot(self, name, fsopts=None, recursive=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts or {})
         if libzfs.zfs_snapshot(
