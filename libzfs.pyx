@@ -1662,6 +1662,15 @@ cdef class ZFSSnapshot(ZFSDataset):
     def bookmark(self, name):
         pass
 
+    def clone(self, name, opts={}):
+        cdef NVList copts = NVList(otherdict=opts)
+
+        if libzfs.zfs_clone(
+            self.handle,
+            name,
+            copts.handle) != 0:
+            raise self.root.get_error()
+
     def hold(self, tag, recursive=False):
         cdef ZFSDataset parent
 
