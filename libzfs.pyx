@@ -1482,6 +1482,9 @@ cdef class ZFSDataset(object):
 
     property snapshots_recursive:
         def __get__(self):
+            for s in self.snapshots:
+                yield s
+
             for c in self.children:
                 for s in c.snapshots:
                     yield s
