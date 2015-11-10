@@ -187,17 +187,17 @@ cdef class NVList(object):
 
             yield nvpair.nvpair_name(pair)
 
-    def get(self, str key, object default=None):
+    def get(self, key, object default=None):
         if not key in self:
             return default
 
         return self[key]
 
-    def type(self, str key):
+    def type(self, key):
         cdef nvpair.nvpair_t *pair = self.__get_pair(key)
         return nvpair.nvpair_type(pair)
 
-    def set(self, str key, object value, int typeid):
+    def set(self, key, value, typeid):
         cdef NVList cnvlist
         cdef void* carray = NULL
         cdef uintptr_t cptr
@@ -357,7 +357,7 @@ cdef class NVList(object):
 
         raise ValueError('Value not compatible with type specified: {0}'.format(type(value).__name__))
 
-    def __getitem__(self, str key):
+    def __getitem__(self, key):
         cdef nvpair.nvpair_t *pair
 
         pair = self.__get_pair(key)
@@ -397,7 +397,7 @@ cdef class NVList(object):
             if type(value[0]) is long:
                 self.set(key, value, nvpair.DATA_TYPE_INT64_ARRAY)
 
-            if type(value[0]) is str:
+            if type(value[0]) is str or type(value) is unicode:
                 self.set(key, value, nvpair.DATA_TYPE_STRING_ARRAY)
 
         if type(value) is dict:
