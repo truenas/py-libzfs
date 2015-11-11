@@ -1520,7 +1520,7 @@ cdef class ZFSDataset(object):
             cdef zfs.zfs_type_t type
 
             dependents = []
-            libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_dependents, <void*>dependents)
+            libzfs.zfs_iter_dependents(self.handle, False, self.__iterate_dependents, <void*>dependents)
             for h in dependents:
                 type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*><uintptr_t>h)
 
