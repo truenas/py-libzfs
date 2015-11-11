@@ -1764,7 +1764,7 @@ cdef class ZFSSnapshot(ZFSDataset):
     def send(self, fd, **kwargs):
         fromname = kwargs.get('fromname')
         flags = kwargs.get('flags')
-        return self.parent.send(fd, toname=self.name, fromname=fromname, flags=flags)
+        return self.parent.send(fd, toname=self.snapshot_name, fromname=fromname, flags=flags)
 
     property snapshot_name:
         def __get__(self):
