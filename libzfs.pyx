@@ -1522,7 +1522,7 @@ cdef class ZFSDataset(object):
             dependents = []
             libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_dependents, <void*>dependents)
             for h in dependents:
-                type = libzfs.zfs_get_type(h)
+                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*><uintptr_t>h)
 
                 if type == zfs.ZFS_TYPE_FILESYSTEM:
                     dataset = ZFSDataset.__new__(ZFSDataset)
