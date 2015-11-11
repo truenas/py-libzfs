@@ -1452,6 +1452,11 @@ cdef class ZFSDataset(object):
         snapshots = <object>arg
         snapshots.append(<uintptr_t>handle)
 
+    @staticmethod
+    cdef int __iterate_dependents(libzfs.zfs_handle_t* handle, void *arg):
+        dependents = <object>arg
+        dependents.append(<uintptr_t>handle)
+
     property name:
         def __get__(self):
             return libzfs.zfs_get_name(self.handle)
@@ -1466,6 +1471,7 @@ cdef class ZFSDataset(object):
     property children:
         def __get__(self):
             cdef ZFSDataset dataset
+
             datasets = []
             libzfs.zfs_iter_filesystems(self.handle, self.__iterate_children, <void*>datasets)
             for h in datasets:
@@ -1485,6 +1491,7 @@ cdef class ZFSDataset(object):
     property snapshots:
         def __get__(self):
             cdef ZFSSnapshot snapshot
+
             snapshots = []
             libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_snapshots, <void*>snapshots)
             for h in snapshots:
@@ -1505,6 +1512,31 @@ cdef class ZFSDataset(object):
                 for i in c.children_recursive:
                     for s in i.snapshots:
                         yield s
+
+    property dependents:
+        def __get__(self):
+            cdef ZFSDataset dataset
+            cdef ZFSSnapshot snapshot
+            cdef zfs.zfs_type_t type
+
+            dependents = []
+            libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_dependents, <void*>dependents)
+            for h in dependents:
+                type = libzfs.zfs_get_type(h)
+
+                if type == zfs.ZFS_TYPE_FILESYSTEM:
+                    dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.root = self.root
+                    dataset.pool = self.pool
+                    dataset.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                    yield dataset
+
+                if type == zfs.ZFS_TYPE_SNAPSHOT:
+                    snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.root = self.root
+                    snapshot.pool = self.pool
+                    snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                    yield snapshot
 
     property properties:
         def __get__(self):
