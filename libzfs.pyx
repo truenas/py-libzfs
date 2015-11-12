@@ -1524,7 +1524,7 @@ cdef class ZFSDataset(object):
             for h in dependents:
                 type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*><uintptr_t>h)
 
-                if type == zfs.ZFS_TYPE_FILESYSTEM:
+                if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
                     dataset = ZFSDataset.__new__(ZFSDataset)
                     dataset.root = self.root
                     dataset.pool = self.pool
