@@ -371,9 +371,6 @@ cdef class NVList(object):
             self.set(key, value, nvpair.DATA_TYPE_BOOLEAN)
 
         if type(value) is int:
-            self.set(key, value, nvpair.DATA_TYPE_UINT32)
-
-        if type(value) is long:
             self.set(key, value, nvpair.DATA_TYPE_UINT64)
 
         if type(value) is str or type(value) is unicode:
