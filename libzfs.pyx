@@ -590,11 +590,13 @@ cdef class ZFSProperty(object):
             pass
 
     def inherit(self, recursive=False, received=False):
+        dsets = self.dataset
         if recursive:
-            raise NotImplementedError()
+            dsets = dsets.extend(list(self.dataset.children_recursive))
 
-        if libzfs.zfs_prop_inherit(self.dataset.handle, self.name, received) != 0:
-            raise self.dataset.root.get_error()
+        for dset in dsets:
+            if libzfs.zfs_prop_inherit(dset.handle, self.name, received) != 0:
+                raise self.dataset.root.get_error()
 
 
 cdef class ZFSUserProperty(ZFSProperty):
