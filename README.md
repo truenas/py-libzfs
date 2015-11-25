@@ -19,6 +19,6 @@ Get a list of pools:
 
 Get help:
 
-`help(libzfs)
+`help(libzfs)`
 
 
