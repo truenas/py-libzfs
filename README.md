@@ -15,7 +15,7 @@ py-libzfs is a fairly straight-forward set of Python bindings for libzfs for Fre
 
 Get a list of pools:
 
-`pools = libzfs.ZFS().pools`
+`pools = list(libzfs.ZFS().pools)`
 
 Get help:
 
