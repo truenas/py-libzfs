@@ -1585,6 +1585,9 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def mount_recursive(self):
+        if self.type != DatasetType.FILESYSTEM:
+            return
+
         if self.properties['canmount'].value == 'on':
             self.mount()
 
