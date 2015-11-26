@@ -1001,6 +1001,7 @@ cdef class ZFSPool(object):
 
         return {
             'name': self.name,
+            'id': str(self.guid),
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
