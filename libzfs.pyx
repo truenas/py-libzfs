@@ -1001,7 +1001,7 @@ cdef class ZFSPool(object):
 
         return {
             'name': self.name,
-            'id': str(self.guid),
+            'id': self.name,
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
@@ -1436,6 +1436,7 @@ cdef class ZFSDataset(object):
 
     def __getstate__(self, recursive=True):
         ret = {
+            'id': self.name,
             'name': self.name,
             'pool': self.pool.name,
             'type': self.type.name,
