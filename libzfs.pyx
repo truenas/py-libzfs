@@ -290,6 +290,10 @@ cdef class ZFS(object):
                 pool = ZFSPool.__new__(ZFSPool)
                 pool.root = self
                 pool.handle = <libzfs.zpool_handle_t*><uintptr_t>h
+                if pool.name == '$import':
+                    continue
+
+
                 yield pool
 
     property datasets:
@@ -1506,6 +1510,9 @@ cdef class ZFSDataset(object):
                 snapshot.root = self.root
                 snapshot.pool = self.pool
                 snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                if snapshot.snapshot_name == '$ORIGIN':
+                    continue
+
                 yield snapshot
 
     property snapshots_recursive:
