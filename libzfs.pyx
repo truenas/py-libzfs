@@ -298,7 +298,7 @@ cdef class ZFS(object):
 
     property datasets:
         def __get__(self):
-            for p in self.pools
+            for p in self.pools:
                 try:
                     yield p.root_dataset
                     for c in p.root_dataset.children_recursive:
