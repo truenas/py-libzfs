@@ -306,8 +306,11 @@ cdef class ZFS(object):
     property snapshots:
         def __get__(self):
             for p in self.pools:
-                for c in p.root_dataset.snapshots_recursive:
-                    yield c
+                try:
+                    for c in p.root_dataset.snapshots_recursive:
+                        yield c
+                except ZFSException:
+                    continue
 
     def get(self, name):
         cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open_canfail(self.handle, name)
