@@ -298,10 +298,13 @@ cdef class ZFS(object):
 
     property datasets:
         def __get__(self):
-            for p in self.pools:
-                yield p.root_dataset
-                for c in p.root_dataset.children_recursive:
-                    yield c
+            for p in self.pools
+                try:
+                    yield p.root_dataset
+                    for c in p.root_dataset.children_recursive:
+                        yield c
+                except ZFSException:
+                    continue
 
     property snapshots:
         def __get__(self):
