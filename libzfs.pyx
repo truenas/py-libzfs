@@ -667,6 +667,14 @@ cdef class ZFSVdevStats(object):
         def __get__(self):
             return self.nvlist['vdev_stats'][0]
 
+    property size:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][4]
+
+    property allocated:
+        def __get__(self):
+            return self.nvlist['vdev_stats'][3]
+
     property read_errors:
         def __get__(self):
             return self.nvlist['vdev_stats'][21]
