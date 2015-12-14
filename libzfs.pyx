@@ -657,6 +657,8 @@ cdef class ZFSVdevStats(object):
             'checksum_errors': self.checksum_errors,
             'ops': self.ops,
             'bytes': self.bytes,
+            'size': self.size,
+            'allocated': self.allocated,
             'configured_ashift': self.configured_ashift,
             'logical_ashift': self.logical_ashift,
             'physical_ashift': self.physical_ashift,
