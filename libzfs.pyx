@@ -849,6 +849,14 @@ cdef class ZFSVdev(object):
         if libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate) != 0:
             raise self.root.get_error()
 
+    def degrade(self, aux):
+        if libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux)):
+            raise self.root.get_error()
+
+    def fault(self, aux):
+        if libzfs.zpool_vdev_fault(self.zpool.handle, self.guid, int(aux)):
+            raise self.root.get_error()
+
     property type:
         def __get__(self):
             value = self.nvlist.get('type')

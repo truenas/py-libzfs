@@ -317,8 +317,6 @@ cdef extern from "sys/fs/zfs.h":
         VDEV_STATE_DEGRADED
         VDEV_STATE_HEALTHY
     
-    #define	VDEV_STATE_ONLINE	VDEV_STATE_HEALTHY
-    
     ctypedef enum vdev_aux_t:
         VDEV_AUX_NONE
         VDEV_AUX_OPEN_FAILED
