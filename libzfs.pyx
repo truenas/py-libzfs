@@ -1754,6 +1754,7 @@ cdef class ZFSDataset(object):
             i.mount_recursive()
 
     def umount(self, force=False):
+        cdef char *command = 'zfs mount'
         cdef int flags = 0
 
         if force:
@@ -1761,6 +1762,7 @@ cdef class ZFSDataset(object):
 
         if libzfs.zfs_unmountall(self.handle, flags) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, '-f' if force else '', self.name)
 
     def send(self, fd, **kwargs):
         cdef int cfd = fd
