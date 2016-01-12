@@ -254,9 +254,21 @@ class ZFSException(RuntimeError):
 
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
+    cdef int history
+    cdef char *history_prefix
 
-    def __cinit__(self):
+    def __cinit__(self, history=False, history_prefix=''):
         self.handle = libzfs.libzfs_init()
+        if isinstance(history, bool):
+            self.history = history
+        else:
+            raise ZFSException(Error.BADTYPE, 'history is a boolean parameter')
+
+        if self.history:
+            if isinstance(history_prefix, str):
+                self.history_prefix = history_prefix
+            else:
+                raise ZFSException(Error.BADTYPE, 'history_prefix is a string parameter')
 
     def __dealloc__(self):
         libzfs.libzfs_fini(self.handle)
@@ -440,6 +452,7 @@ cdef class ZFS(object):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
+        cdef char *command = 'zpool create'
 
         if libzfs.zpool_create(
             self.handle,
@@ -448,6 +461,20 @@ cdef class ZFS(object):
             copts.handle,
             cfsopts.handle) != 0:
             raise ZFSException(self.errno, self.errstr)
+
+        if self.history:
+            hopts = self.generate_history_opts(opts, '-o')
+            hfsopts = self.generate_history_opts(fsopts, '-O')
+            self.write_history(
+                    command,
+                    hopts,
+                    hfsopts,
+                    name,
+                    topology.get('data', ''),
+                    'cache' if topology.get('cache', None) else '',
+                    topology.get('cache', ''),
+                    'cache' if topology.get('log', None) else '',
+                    topology.get('log', ''))
 
         return self.get(name)
 
@@ -459,6 +486,73 @@ cdef class ZFS(object):
         if libzfs.zpool_destroy(handle, "destroy") != 0:
             raise ZFSException(self.errno, self.errstr)
 
+    def write_history(self, *args):
+        history_message = ""
+
+        def eval_arg(argument):
+            if isinstance(argument, str):
+                return eval_str(argument)
+            if isinstance(argument, dict):
+                return eval_dict(argument)
+            if isinstance(argument, tuple):
+                return eval_tuple(argument)
+            if isinstance(argument, list):
+                return eval_list(argument)
+            if isinstance(argument, ZFSVdev):
+                return eval_zfsvdev(argument)
+
+        def eval_str(argument):
+            return " " + argument
+
+        def eval_dict(argument):
+            out = ""
+            for tup in arg.items():
+                out += eval_arg(tup)
+            return out
+
+        def eval_tuple(argument):
+            if len(argument) == 2:
+                if isinstance(argument[1], str):
+                    return " " + str(argument[0]) + '=' + str(argument[1])
+
+            out = ""
+            for i in argument:
+                out += eval_arg(i)
+            return out
+
+        def eval_list(argument):
+            out = ""
+            for i in argument:
+                out += eval_arg(i)
+            return out
+
+        def eval_zfsvdev(argument):
+            disks = argument.disks
+            if len(disks):
+                out = " " + str(argument.type)
+                for disk in disks:
+                    out += " " + disk
+                return  out
+            else:
+                return ""
+
+        if self.history:
+            history_message = self.history_prefix
+            for arg in args:
+                history_message += eval_arg(arg)
+
+            libzfs.zpool_log_history(self.handle, history_message)
+
+    def generate_history_opts(self, opt_dict, prefix):
+        keys = []
+        out_dict = {}
+        for key in opt_dict.keys():
+            keys.append(key)
+
+        for key in keys:
+            out_dict[prefix + ' ' + key] = opt_dict[key]
+
+        return out_dict
 
 cdef class ZPoolProperty(object):
     cdef int propid
