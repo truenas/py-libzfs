@@ -465,12 +465,15 @@ cdef class ZFS(object):
         if self.history:
             hopts = self.generate_history_opts(opts, '-o')
             hfsopts = self.generate_history_opts(fsopts, '-O')
+            data_vdevs = topology.get('data', {})
+            if data_vdevs[0].type == 'disk':
+                data_vdevs = data_vdevs[0].disks[0]
             self.write_history(
                     command,
                     hopts,
                     hfsopts,
                     name,
-                    topology.get('data', ''),
+                    data_vdevs,
                     'cache' if topology.get('cache', None) else '',
                     topology.get('cache', ''),
                     'cache' if topology.get('log', None) else '',
