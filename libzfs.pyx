@@ -452,7 +452,7 @@ cdef class ZFS(object):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
-        cdef char *command = 'zpool create'
+        cdef char *command = 'zpool create -f'
 
         if libzfs.zpool_create(
             self.handle,
