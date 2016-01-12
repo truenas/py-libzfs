@@ -691,8 +691,10 @@ cdef class ZFSProperty(object):
             return cstr
 
         def __set__(self, value):
+            cdef char *command = 'zfs set'
             if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                 raise self.dataset.root.get_error()
+            self.dataset.root.write_history(command, (self.name, str(value)), self.dataset.name)
 
     property rawvalue:
         def __get__(self):
@@ -1513,6 +1515,7 @@ cdef class ZFSPropertyDict(dict):
 
     def __setitem__(self, key, value):
         cdef ZFSUserProperty userprop
+        cdef char *command = 'zfs set'
         if key in self.props:
             raise KeyError('Cannot overwrite existing property')
 
@@ -1527,6 +1530,7 @@ cdef class ZFSPropertyDict(dict):
                 raise self.parent.root.get_error()
 
         self.props[key] = userprop
+        self.parent.root.write_history(command, (str(key), str(userprop.value)), self.parent.name)
 
     def __iter__(self):
         for i in self.props:
