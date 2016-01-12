@@ -1731,8 +1731,10 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def mount(self):
+        cdef char *command = 'zfs mount'
         if libzfs.zfs_mount(self.handle, NULL, 0) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, self.name)
 
     def mount_recursive(self):
         if self.type != DatasetType.FILESYSTEM:
