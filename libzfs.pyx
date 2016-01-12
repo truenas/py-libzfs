@@ -719,6 +719,7 @@ cdef class ZFSProperty(object):
             pass
 
     def inherit(self, recursive=False, received=False):
+        cdef char *command = 'zfs inherit'
         cdef ZFSDataset dset
 
         dsets = [self.dataset]
@@ -729,6 +730,8 @@ cdef class ZFSProperty(object):
             dset = <ZFSDataset>d
             if libzfs.zfs_prop_inherit(dset.handle, self.name, received) != 0:
                 raise self.dataset.root.get_error()
+
+        self.dataset.root.write_history(command, '-r' if recursive else '', self.dataset.name)
 
 
 cdef class ZFSUserProperty(ZFSProperty):
