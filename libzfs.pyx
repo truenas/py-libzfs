@@ -387,7 +387,7 @@ cdef class ZFS(object):
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
-        cdef char *command = 'zpool import'
+        cdef const char *command = 'zpool import'
         cdef NVList copts = NVList(otherdict=opts)
 
         if libzfs.zpool_import_props(
@@ -401,7 +401,7 @@ cdef class ZFS(object):
         self.write_history(command, str(pool.guid), newname if newname else pool.name)
 
     def export_pool(self, ZFSPool pool):
-        cdef char *command = 'zpool export'
+        cdef const char *command = 'zpool export'
         if libzfs.zpool_disable_datasets(pool.handle, True) != 0:
             raise self.get_error()
 
@@ -456,7 +456,7 @@ cdef class ZFS(object):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
-        cdef char *command = 'zpool create'
+        cdef const char *command = 'zpool create'
 
         if libzfs.zpool_create(
             self.handle,
@@ -606,7 +606,7 @@ cdef class ZPoolProperty(object):
             return cstr
 
         def __set__(self, value):
-            cdef char *command = 'zpool set'
+            cdef const char *command = 'zpool set'
             if libzfs.zpool_set_prop(self.pool.handle, self.name, value) != 0:
                 raise self.pool.root.get_error()
             self.pool.root.write_history(command, (self.name, str(value)), self.pool.name)
@@ -670,7 +670,7 @@ cdef class ZPoolFeature(object):
                 return FeatureState.ACTIVE
 
     def enable(self):
-        cdef char *command = 'zpool set'
+        cdef const char *command = 'zpool set'
         name = "feature@{0}".format(self.name)
         if libzfs.zpool_set_prop(self.pool.handle, name, "enabled") != 0:
             raise self.pool.root.get_error()
@@ -711,7 +711,7 @@ cdef class ZFSProperty(object):
             return cstr
 
         def __set__(self, value):
-            cdef char *command = 'zfs set'
+            cdef const char *command = 'zfs set'
             if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
                 raise self.dataset.root.get_error()
             self.dataset.root.write_history(command, (self.name, str(value)), self.dataset.name)
@@ -739,7 +739,7 @@ cdef class ZFSProperty(object):
             pass
 
     def inherit(self, recursive=False, received=False):
-        cdef char *command = 'zfs inherit'
+        cdef const char *command = 'zfs inherit'
         cdef ZFSDataset dset
 
         dsets = [self.dataset]
@@ -898,7 +898,7 @@ cdef class ZFSVdev(object):
         self.nvlist['children'] = self.nvlist.get_raw('children') + [vdev.nvlist]
 
     def attach(self, ZFSVdev vdev):
-        cdef char *command = 'zpool attach'
+        cdef const char *command = 'zpool attach'
         cdef ZFSVdev root
 
         if self.type not in ('mirror', 'disk', 'file'):
@@ -924,7 +924,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
 
     def replace(self, ZFSVdev vdev):
-        cdef char *command = 'zpool replace'
+        cdef const char *command = 'zpool replace'
         cdef ZFSVdev root
 
         if self.type not in ('disk', 'file'):
@@ -948,7 +948,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, self.path, vdev.path)
 
     def detach(self):
-        cdef char *command = 'zpool detach'
+        cdef const char *command = 'zpool detach'
         if self.type not in ('file', 'disk'):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
@@ -961,7 +961,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, self.path)
 
     def offline(self, temporary=False):
-        cdef char *command = 'zpool offline'
+        cdef const char *command = 'zpool offline'
         if self.type not in ('disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
@@ -971,7 +971,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, '-t' if temporary else '',self.zpool.name, self.path)
 
     def online(self, expand=False):
-        cdef char *command = 'zpool online'
+        cdef const char *command = 'zpool online'
         cdef int flags = 0
         cdef zfs.vdev_state_t newstate
 
@@ -1413,7 +1413,7 @@ cdef class ZFSPool(object):
         pass
 
     def attach_vdevs(self, vdevs_tree):
-        cdef char *command = 'zpool add'
+        cdef const char *command = 'zpool add'
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
 
         if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
@@ -1440,19 +1440,19 @@ cdef class ZFSPool(object):
             raise self.root.get_error()
 
     def start_scrub(self):
-        cdef char *command = 'zpool scrub'
+        cdef const char *command = 'zpool scrub'
         if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB) != 0:
             raise self.root.get_error()
         self.root.write_history(command, self.name)
 
     def stop_scrub(self):
-        cdef char *command = 'zpool scrub -s'
+        cdef const char *command = 'zpool scrub -s'
         if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE) != 0:
             raise self.root.get_error()
         self.root.write_history(command, self.name)
 
     def clear(self):
-        cdef char *command = 'zpool clear'
+        cdef const char *command = 'zpool clear'
         cdef NVList policy = NVList()
         policy["rewind-request"] = zfs.ZPOOL_NO_REWIND
         self.root.write_history(command, self.name)
@@ -1460,7 +1460,7 @@ cdef class ZFSPool(object):
         return libzfs.zpool_clear(self.handle, NULL, policy.handle) == 0
 
     def upgrade(self):
-        cdef char *command = 'zpool upgrade'
+        cdef const char *command = 'zpool upgrade'
         if libzfs.zpool_upgrade(self.handle, zfs.SPA_VERSION) != 0:
             raise self.root.get_error()
 
@@ -1565,7 +1565,7 @@ cdef class ZFSPropertyDict(dict):
 
     def __setitem__(self, key, value):
         cdef ZFSUserProperty userprop
-        cdef char *command = 'zfs set'
+        cdef const char *command = 'zfs set'
         if key in self.props:
             raise KeyError('Cannot overwrite existing property')
 
@@ -1785,7 +1785,7 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def mount(self):
-        cdef char *command = 'zfs mount'
+        cdef const char *command = 'zfs mount'
         if libzfs.zfs_mount(self.handle, NULL, 0) != 0:
             raise self.root.get_error()
         self.root.write_history(command, self.name)
@@ -1801,7 +1801,7 @@ cdef class ZFSDataset(object):
             i.mount_recursive()
 
     def umount(self, force=False):
-        cdef char *command = 'zfs mount'
+        cdef const char *command = 'zfs mount'
         cdef int flags = 0
 
         if force:
