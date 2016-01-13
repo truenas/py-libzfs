@@ -1990,6 +1990,7 @@ cdef class ZFSSnapshot(ZFSDataset):
         pass
 
     def clone(self, name, opts=None):
+        cdef const char *command = 'zfs clone'
         cdef NVList copts = None
         if opts:
             copts = NVList(otherdict=opts)
@@ -1999,6 +2000,9 @@ cdef class ZFSSnapshot(ZFSDataset):
             name,
             copts.handle if copts else NULL) != 0:
             raise self.root.get_error()
+        if self.root.history:
+            hopts = self.root.generate_history_opts(opts, '-o')
+            self.root.write_history(command, hopts, self.name)
 
     def hold(self, tag, recursive=False):
         cdef const char *command = 'zfs hold'
