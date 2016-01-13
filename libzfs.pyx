@@ -1413,10 +1413,13 @@ cdef class ZFSPool(object):
         pass
 
     def attach_vdevs(self, vdevs_tree):
+        cdef char *command = 'zpool add'
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
 
         if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, self.name, self.root.history_vdevs_list(vdevs_tree))
 
     def vdev_by_guid(self, guid):
         def search_vdev(vdev, g):
