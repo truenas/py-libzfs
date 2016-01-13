@@ -387,6 +387,7 @@ cdef class ZFS(object):
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
+        cdef char *command = 'zpool import -f'
         cdef NVList copts = NVList(otherdict=opts)
         
         if libzfs.zpool_import_props(
@@ -397,13 +398,16 @@ cdef class ZFS(object):
             False
         ) != 0:
             raise self.get_error()
+        self.write_history(command, str(pool.guid), newname if newname else pool.name)
 
     def export_pool(self, ZFSPool pool):
+        cdef char *command = 'zpool export -f'
         if libzfs.zpool_disable_datasets(pool.handle, True) != 0:
             raise self.get_error()
 
         if libzfs.zpool_export(pool.handle, True, "export") != 0:
             raise self.get_error()
+        self.write_history(command, str(pool.name))
 
     def get_dataset(self, name):
         cdef libzfs.zfs_handle_t* handle = libzfs.zfs_open(self.handle, name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
