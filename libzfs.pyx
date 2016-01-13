@@ -1905,7 +1905,7 @@ cdef class ZFSDataset(object):
         return cmd.zc_cookie
 
     def promote(self):
-        cdef const char *command = 'zfs snapshot'
+        cdef const char *command = 'zfs promote'
         if libzfs.zfs_promote(self.handle) != 0:
             raise self.root.get_error()
         self.root.write_history(command, self.name)
