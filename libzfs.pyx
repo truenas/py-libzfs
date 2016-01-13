@@ -961,11 +961,14 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, self.path)
 
     def offline(self, temporary=False):
+        cdef char *command = 'zpool offline'
         if self.type not in ('disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
         if libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, '-t' if temporary else '',self.zpool.name, self.path)
 
     def online(self, expand=False):
         cdef int flags = 0
