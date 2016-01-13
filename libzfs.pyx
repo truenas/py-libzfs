@@ -606,8 +606,10 @@ cdef class ZPoolProperty(object):
             return cstr
 
         def __set__(self, value):
+            cdef char *command = 'zpool set'
             if libzfs.zpool_set_prop(self.pool.handle, self.name, value) != 0:
                 raise self.pool.root.get_error()
+            self.pool.root.write_history(command, (self.name, str(value)), self.pool.name)
 
     property rawvalue:
         def __get__(self):
