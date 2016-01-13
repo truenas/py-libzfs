@@ -546,11 +546,12 @@ cdef class ZFS(object):
     def generate_history_opts(self, opt_dict, prefix):
         keys = []
         out_dict = {}
-        for key in opt_dict.keys():
-            keys.append(key)
+        if isinstance(opt_dict, dict):
+            for key in opt_dict.keys():
+                keys.append(key)
 
-        for key in keys:
-            out_dict[prefix + ' ' + key] = opt_dict[key]
+            for key in keys:
+                out_dict[prefix + ' ' + key] = opt_dict[key]
 
         return out_dict
 
