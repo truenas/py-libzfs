@@ -1440,12 +1440,16 @@ cdef class ZFSPool(object):
             raise self.root.get_error()
 
     def start_scrub(self):
+        cdef char *command = 'zpool scrub'
         if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, self.name)
 
     def stop_scrub(self):
+        cdef char *command = 'zpool scrub -s'
         if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, self.name)
 
     def clear(self):
         cdef NVList policy = NVList()
