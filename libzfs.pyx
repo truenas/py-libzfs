@@ -2001,11 +2001,13 @@ cdef class ZFSSnapshot(ZFSDataset):
             raise self.root.get_error()
 
     def hold(self, tag, recursive=False):
+        cdef const char *command = 'zfs hold'
         cdef ZFSDataset parent
 
         parent = <ZFSDataset>self.parent
         if libzfs.zfs_hold(parent.handle, self.snapshot_name, tag, recursive, -1) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, '-r' if recursive else '', tag, self.name)
 
     def release(self, tag, recursive=False):
         cdef const char *command = 'zfs release'
