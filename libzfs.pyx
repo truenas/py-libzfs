@@ -2015,10 +2015,12 @@ cdef class ZFSSnapshot(ZFSDataset):
             raise self.root.get_error()
 
     def delete(self, recursive=False):
+        cdef const char *command = 'zfs destroy'
         if not recursive:
             super(ZFSSnapshot, self).delete()
         else:
             self.parent.destroy_snapshot(self.snapshot_name)
+        self.root.write_history(command, '-r' if recursive else '', self.name)
 
     def send(self, fd, **kwargs):
         fromname = kwargs.get('fromname')
