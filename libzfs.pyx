@@ -2008,11 +2008,13 @@ cdef class ZFSSnapshot(ZFSDataset):
             raise self.root.get_error()
 
     def release(self, tag, recursive=False):
+        cdef const char *command = 'zfs release'
         cdef ZFSDataset parent
 
         parent = <ZFSDataset>self.parent
         if libzfs.zfs_release(parent.handle, self.snapshot_name, tag, recursive) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, '-r' if recursive else '', tag, self.name)
 
     def delete(self, recursive=False):
         cdef const char *command = 'zfs destroy'
