@@ -389,7 +389,7 @@ cdef class ZFS(object):
     def import_pool(self, ZFSImportablePool pool, newname, opts):
         cdef char *command = 'zpool import'
         cdef NVList copts = NVList(otherdict=opts)
-        
+
         if libzfs.zpool_import_props(
             self.handle,
             pool.nvlist.handle,
@@ -469,19 +469,12 @@ cdef class ZFS(object):
         if self.history:
             hopts = self.generate_history_opts(opts, '-o')
             hfsopts = self.generate_history_opts(fsopts, '-O')
-            data_vdevs = topology.get('data', {})
-            if data_vdevs[0].type == 'disk':
-                data_vdevs = data_vdevs[0].disks[0]
             self.write_history(
                     command,
                     hopts,
                     hfsopts,
                     name,
-                    data_vdevs,
-                    'cache' if topology.get('cache', None) else '',
-                    topology.get('cache', ''),
-                    'cache' if topology.get('log', None) else '',
-                    topology.get('log', ''))
+                    self.history_vdevs_list(topology))
 
         return self.get(name)
 
@@ -560,6 +553,25 @@ cdef class ZFS(object):
             out_dict[prefix + ' ' + key] = opt_dict[key]
 
         return out_dict
+
+    def history_vdevs_list(self, topology):
+        out = []
+        if self.history:
+            data_vdevs = topology.get('data', {})
+            if data_vdevs[0].type == 'disk':
+                data_vdevs = data_vdevs[0].disks[0]
+            out.append(data_vdevs)
+
+            if topology.get('cache', False):
+                out.append('cache')
+                out.append(topology.get('cache'))
+
+            if topology.get('log', False):
+                out.append('log')
+                out.append(topology.get('log'))
+
+        return out
+
 
 cdef class ZPoolProperty(object):
     cdef int propid
