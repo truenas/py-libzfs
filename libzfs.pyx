@@ -1980,11 +1980,14 @@ cdef class ZFSSnapshot(ZFSDataset):
         return ret
 
     def rollback(self, force=False):
+        cdef const char *command = 'zfs rollback'
         cdef ZFSDataset parent
 
         parent = <ZFSDataset>self.parent
         if libzfs.zfs_rollback(parent.handle, self.handle, force) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, '-f' if force else '', self.name)
 
     def bookmark(self, name):
         pass
