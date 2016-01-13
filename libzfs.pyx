@@ -1452,8 +1452,10 @@ cdef class ZFSPool(object):
         self.root.write_history(command, self.name)
 
     def clear(self):
+        cdef char *command = 'zpool clear'
         cdef NVList policy = NVList()
         policy["rewind-request"] = zfs.ZPOOL_NO_REWIND
+        self.root.write_history(command, self.name)
 
         return libzfs.zpool_clear(self.handle, NULL, policy.handle) == 0
 
