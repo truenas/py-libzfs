@@ -948,6 +948,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, self.path, vdev.path)
 
     def detach(self):
+        cdef char *command = 'zpool detach'
         if self.type not in ('file', 'disk'):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
@@ -956,6 +957,8 @@ cdef class ZFSVdev(object):
 
         if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, self.zpool.name, self.path)
 
     def offline(self, temporary=False):
         if self.type not in ('disk', 'file'):
