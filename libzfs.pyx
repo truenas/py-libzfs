@@ -1784,8 +1784,10 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def destroy_snapshot(self, name):
+        cdef const char *command = 'zfs destroy'
         if libzfs.zfs_destroy_snaps(self.handle, name, True) != 0:
             raise self.root.get_error()
+        self.root.write_history(command, name)
 
     def mount(self):
         cdef const char *command = 'zfs mount'
