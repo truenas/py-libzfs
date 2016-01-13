@@ -1460,12 +1460,15 @@ cdef class ZFSPool(object):
         return libzfs.zpool_clear(self.handle, NULL, policy.handle) == 0
 
     def upgrade(self):
+        cdef char *command = 'zpool upgrade'
         if libzfs.zpool_upgrade(self.handle, zfs.SPA_VERSION) != 0:
             raise self.root.get_error()
 
         for i in self.features:
             if i.state == FeatureState.DISABLED:
                 i.enable()
+
+        self.root.write_history(command, self.name)
 
 
 cdef class ZFSImportablePool(ZFSPool):
