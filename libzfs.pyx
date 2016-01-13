@@ -1909,6 +1909,7 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
 
     def snapshot(self, name, fsopts=None, recursive=False):
+        cdef const char *command = 'zfs snapshot'
         cdef NVList cfsopts = NVList(otherdict=fsopts or {})
         if libzfs.zfs_snapshot(
             self.root.handle,
@@ -1916,6 +1917,9 @@ cdef class ZFSDataset(object):
             recursive,
             cfsopts.handle) != 0:
             raise self.root.get_error()
+        if self.root.history:
+            hfsopts = self.root.generate_history_opts(fsopts, '-o')
+            self.root.write_history(command, '-r' if recursive else '', hfsopts, name)
 
     def receive(self, fd, force=False, nomount=False, props=None, limitds=None):
         cdef libzfs.libzfs_handle_t *handle = self.root.handle,
