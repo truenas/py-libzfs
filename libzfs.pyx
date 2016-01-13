@@ -1767,6 +1767,7 @@ cdef class ZFSDataset(object):
             return result
 
     def rename(self, new_name, nounmount=False, forceunmount=False):
+        cdef const char *command = 'zfs rename'
         cdef libzfs.renameflags_t flags
 
         flags.recurse = False
@@ -1775,6 +1776,8 @@ cdef class ZFSDataset(object):
 
         if libzfs.zfs_rename(self.handle, NULL, new_name, flags) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
 
     def delete(self):
         if libzfs.zfs_destroy(self.handle, True) != 0:
