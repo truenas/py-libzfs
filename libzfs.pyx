@@ -971,6 +971,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, '-t' if temporary else '',self.zpool.name, self.path)
 
     def online(self, expand=False):
+        cdef char *command = 'zpool online'
         cdef int flags = 0
         cdef zfs.vdev_state_t newstate
 
@@ -982,6 +983,8 @@ cdef class ZFSVdev(object):
 
         if libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, '-e' if expand else '',self.zpool.name, self.path)
 
     def degrade(self, aux):
         if libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux)):
