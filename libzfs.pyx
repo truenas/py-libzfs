@@ -670,9 +670,11 @@ cdef class ZPoolFeature(object):
                 return FeatureState.ACTIVE
 
     def enable(self):
+        cdef char *command = 'zpool set'
         name = "feature@{0}".format(self.name)
         if libzfs.zpool_set_prop(self.pool.handle, name, "enabled") != 0:
             raise self.pool.root.get_error()
+        self.pool.root.write_history(command, (self.name, 'enabled'), self.pool.name)
 
 
 cdef class ZFSProperty(object):
