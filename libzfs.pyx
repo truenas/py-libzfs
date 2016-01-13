@@ -898,6 +898,7 @@ cdef class ZFSVdev(object):
         self.nvlist['children'] = self.nvlist.get_raw('children') + [vdev.nvlist]
 
     def attach(self, ZFSVdev vdev):
+        cdef char *command = 'zpool attach'
         cdef ZFSVdev root
 
         if self.type not in ('mirror', 'disk', 'file'):
@@ -919,6 +920,8 @@ cdef class ZFSVdev(object):
             root.nvlist.handle,
             False) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
 
     def replace(self, ZFSVdev vdev):
         cdef ZFSVdev root
