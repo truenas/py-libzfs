@@ -1806,7 +1806,7 @@ cdef class ZFSDataset(object):
             i.mount_recursive()
 
     def umount(self, force=False):
-        cdef const char *command = 'zfs mount'
+        cdef const char *command = 'zfs umount'
         cdef int flags = 0
 
         if force:
