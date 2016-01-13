@@ -924,6 +924,7 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
 
     def replace(self, ZFSVdev vdev):
+        cdef char *command = 'zpool replace'
         cdef ZFSVdev root
 
         if self.type not in ('disk', 'file'):
@@ -943,6 +944,8 @@ cdef class ZFSVdev(object):
             root.nvlist.handle,
             True) != 0:
             raise self.root.get_error()
+
+        self.root.write_history(command, self.zpool.name, self.path, vdev.path)
 
     def detach(self):
         if self.type not in ('file', 'disk'):
