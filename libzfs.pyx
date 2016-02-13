@@ -1179,9 +1179,9 @@ cdef class ZFSPool(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self):
+    def __getstate__(self, datasets_recursive=True):
         try:
-            root_ds = self.root_dataset.__getstate__()
+            root_ds = self.root_dataset.__getstate__(datasets_recursive)
         except (ZFSException, AttributeError):
             root_ds = None
 
