@@ -558,10 +558,12 @@ cdef class ZFS(object):
     def history_vdevs_list(self, topology):
         out = []
         if self.history:
-            data_vdevs = topology.get('data', {})
-            if data_vdevs[0].type == 'disk':
-                data_vdevs = data_vdevs[0].disks[0]
-            out.append(data_vdevs)
+            data_vdevs = topology.get('data', None)
+            if data_vdevs:
+                if data_vdevs[0].type == 'disk':
+                    data_vdevs = data_vdevs[0].disks[0]
+
+                out.append(data_vdevs)
 
             if topology.get('cache', False):
                 out.append('cache')
