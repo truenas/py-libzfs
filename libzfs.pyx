@@ -785,7 +785,17 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property source:
         def __get__(self):
-            return self.values.get('source')
+            src = self.values.get('source')
+            if not src:
+                return None
+
+            if src == self.dataset.name:
+                return PropertySource.LOCAL
+
+            if src == '$recvd':
+                return PropertySource.RECEIVED
+
+            return PropertySource.INHERITED
 
 
 cdef class ZFSVdevStats(object):
