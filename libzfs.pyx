@@ -772,10 +772,7 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property value:
         def __get__(self):
-            if "value" not in self.values:
-                return None
-
-            return self.values["value"]
+            return self.value.get('value')
 
         def __set__(self, value):
             if self.dataset:
@@ -788,7 +785,7 @@ cdef class ZFSUserProperty(ZFSProperty):
 
     property source:
         def __get__(self):
-            pass
+            return self.values.get('source')
 
 
 cdef class ZFSVdevStats(object):
