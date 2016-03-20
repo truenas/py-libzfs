@@ -1934,7 +1934,7 @@ cdef class ZFSDataset(object):
         if nomount:
             flags.nomount = True
 
-        if resumable
+        if resumable:
             flags.resumable = True
 
         IF TRUEOS:
