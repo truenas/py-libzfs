@@ -1934,8 +1934,9 @@ cdef class ZFSDataset(object):
         if nomount:
             flags.nomount = True
 
-        if resumable:
-            flags.resumable = True
+        IF FREEBSD_VERSION >= 1003000:
+            if resumable:
+                flags.resumable = True
 
         IF TRUEOS:
             if props:
