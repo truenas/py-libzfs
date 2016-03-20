@@ -594,7 +594,7 @@ cdef class ZFS(object):
         if nvl == NULL:
             raise ZFSException(self.errno, self.errstr)
 
-        return dict(NVList(nvl))
+        return dict(NVList(<uintptr_t>nvl))
 
 
 cdef class ZPoolProperty(object):
