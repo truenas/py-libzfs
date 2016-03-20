@@ -470,11 +470,12 @@ cdef class ZFS(object):
             hopts = self.generate_history_opts(opts, '-o')
             hfsopts = self.generate_history_opts(fsopts, '-O')
             self.write_history(
-                    command,
-                    hopts,
-                    hfsopts,
-                    name,
-                    self.history_vdevs_list(topology))
+                command,
+                hopts,
+                hfsopts,
+                name,
+                self.history_vdevs_list(topology)
+            )
 
         return self.get(name)
 
@@ -574,6 +575,26 @@ cdef class ZFS(object):
                 out.append(topology.get('log'))
 
         return out
+
+    def send_resume(self, fd, token, flags=None):
+        cdef libzfs.sendflags_t cflags
+
+        memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
+
+        if flags:
+            convert_sendflags(flags, &cflags)
+
+        if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
+            raise ZFSException(self.errno, self.errstr)
+
+    def describe_resume_token(self, token):
+        cdef nvpair.nvlist_t *nvl
+
+        nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, token)
+        if nvl == NULL:
+            raise ZFSException(self.errno, self.errstr)
+
+        return dict(NVList(nvl))
 
 
 cdef class ZPoolProperty(object):
@@ -1847,41 +1868,7 @@ cdef class ZFSDataset(object):
             cfromname = fromname
 
         if flags:
-            if not isinstance(flags, set):
-                raise ValueError('flags must be passed as a set')
-
-            if SendFlag.VERBOSE in flags:
-                cflags.verbose = 1
-
-            if SendFlag.REPLICATE in flags:
-                cflags.replicate = 1
-
-            if SendFlag.DOALL in flags:
-                cflags.doall = 1
-
-            if SendFlag.FROMORIGIN in flags:
-                cflags.fromorigin = 1
-
-            if SendFlag.DEDUP in flags:
-                cflags.dedup = 1
-
-            if SendFlag.PROPS in flags:
-                cflags.props = 1
-
-            if SendFlag.DRYRUN in flags:
-                cflags.dryrun = 1
-
-            if SendFlag.PARSABLE in flags:
-                cflags.parsable = 1
-
-            if SendFlag.PROGRESS in flags:
-                cflags.progress = 1
-
-            if SendFlag.LARGEBLOCK in flags:
-                cflags.largeblock = 1
-
-            if SendFlag.EMBED_DATA in flags:
-                cflags.embed_data = 1
+            convert_sendflags(flags, &cflags)
 
         with nogil:
             err = libzfs.zfs_send(self.handle, cfromname, ctoname, &cflags, cfd, NULL, NULL, NULL)
@@ -1933,7 +1920,7 @@ cdef class ZFSDataset(object):
             hfsopts = self.root.generate_history_opts(fsopts, '-o')
             self.root.write_history(command, '-r' if recursive else '', hfsopts, name)
 
-    def receive(self, fd, force=False, nomount=False, props=None, limitds=None):
+    def receive(self, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
         cdef libzfs.libzfs_handle_t *handle = self.root.handle,
         cdef libzfs.recvflags_t flags;
         cdef NVList props_nvl = None
@@ -1946,6 +1933,9 @@ cdef class ZFSDataset(object):
 
         if nomount:
             flags.nomount = True
+
+        if resumable
+            flags.resumable = True
 
         IF TRUEOS:
             if props:
@@ -2067,6 +2057,43 @@ cdef class ZFSSnapshot(ZFSDataset):
             nvl = NVList(<uintptr_t>ptr)
             return dict(nvl)
 
+
+cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
+    if not isinstance(flags, set):
+        raise ValueError('flags must be passed as a set')
+
+    if SendFlag.VERBOSE in flags:
+        cflags.verbose = 1
+
+    if SendFlag.REPLICATE in flags:
+        cflags.replicate = 1
+
+    if SendFlag.DOALL in flags:
+        cflags.doall = 1
+
+    if SendFlag.FROMORIGIN in flags:
+        cflags.fromorigin = 1
+
+    if SendFlag.DEDUP in flags:
+        cflags.dedup = 1
+
+    if SendFlag.PROPS in flags:
+        cflags.props = 1
+
+    if SendFlag.DRYRUN in flags:
+        cflags.dryrun = 1
+
+    if SendFlag.PARSABLE in flags:
+        cflags.parsable = 1
+
+    if SendFlag.PROGRESS in flags:
+        cflags.progress = 1
+
+    if SendFlag.LARGEBLOCK in flags:
+        cflags.largeblock = 1
+
+    if SendFlag.EMBED_DATA in flags:
+        cflags.embed_data = 1
 
 
 def nicestrtonum(ZFS zfs, value):
