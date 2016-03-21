@@ -576,25 +576,26 @@ cdef class ZFS(object):
 
         return out
 
-    def send_resume(self, fd, token, flags=None):
-        cdef libzfs.sendflags_t cflags
+    IF FREEBSD_VERSION >= 1003000:
+        def send_resume(self, fd, token, flags=None):
+            cdef libzfs.sendflags_t cflags
 
-        memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
+            memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
 
-        if flags:
-            convert_sendflags(flags, &cflags)
+            if flags:
+                convert_sendflags(flags, &cflags)
 
-        if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
-            raise ZFSException(self.errno, self.errstr)
+            if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
+                raise ZFSException(self.errno, self.errstr)
 
-    def describe_resume_token(self, token):
-        cdef nvpair.nvlist_t *nvl
+        def describe_resume_token(self, token):
+            cdef nvpair.nvlist_t *nvl
 
-        nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, token)
-        if nvl == NULL:
-            raise ZFSException(self.errno, self.errstr)
+            nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, token)
+            if nvl == NULL:
+                raise ZFSException(self.errno, self.errstr)
 
-        return dict(NVList(<uintptr_t>nvl))
+            return dict(NVList(<uintptr_t>nvl))
 
 
 cdef class ZPoolProperty(object):
@@ -958,7 +959,7 @@ cdef class ZFSVdev(object):
         cdef const char *command = 'zpool replace'
         cdef ZFSVdev root
 
-        if self.type not in ('disk', 'file'):
+        if self.type == 'file':
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
 
         if self.parent.type != 'mirror':
