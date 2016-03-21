@@ -1848,6 +1848,15 @@ cdef class ZFSDataset(object):
             raise self.root.get_error()
         self.root.write_history(command, '-f' if force else '', self.name)
 
+    def umount_recursive(self, force=False):
+        if self.type != DatasetType.FILESYSTEM:
+            return
+
+        self.umount(force)
+
+        for i in self.children:
+            i.umount_recursive(force)
+
     def send(self, fd, **kwargs):
         cdef int cfd = fd
         cdef int err
