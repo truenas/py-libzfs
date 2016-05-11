@@ -891,7 +891,7 @@ cdef class ZFSVdevStats(object):
 cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
-    cdef ZFSVdev parent
+    cdef readonly ZFSVdev parent
     cdef NVList nvlist
 
     def __init__(self, ZFS root, typ, ZFSPool pool=None):
