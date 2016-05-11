@@ -992,6 +992,14 @@ cdef class ZFSVdev(object):
 
         self.root.write_history(command, self.zpool.name, self.path)
 
+    def remove(self):
+        cdef const char *command = 'zpool remove'
+
+        if libzfs.zpool_vdev_remove(self.zpool.handle, self.path):
+            raise self.root.get_error()
+
+        self.root.write_history(command, self.zpool.name, self.path)
+
     def offline(self, temporary=False):
         cdef const char *command = 'zpool offline'
         if self.type not in ('disk', 'file'):
