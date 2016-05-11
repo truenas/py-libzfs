@@ -1465,6 +1465,12 @@ cdef class ZFSPool(object):
 
             return None
 
+        # Try cache vdevs first, they are layed out differently in vdev tree than data and log vdevs
+        for i in self.cache_vdevs:
+            ret = search_vdev(i, guid)
+            if ret:
+                return ret
+
         return search_vdev(self.root_vdev, guid)
 
     def delete(self):
