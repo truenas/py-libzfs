@@ -297,7 +297,7 @@ cdef class ZFS(object):
             root.nvlist['l2cache'] = [(<ZFSVdev>i).nvlist for i in topology['cache']]
 
         if 'spare' in topology:
-            root.nvlist['spares'] = [(<ZFSVdev>i).nvlist for i in topology['cache']]
+            root.nvlist['spares'] = [(<ZFSVdev>i).nvlist for i in topology['spare']]
 
         if 'log' in topology:
             for i in topology['log']:
