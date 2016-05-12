@@ -277,9 +277,10 @@ cdef class ZFS(object):
         return [p.__getstate__() for p in self.pools]
 
     @staticmethod
-    cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg):
-        pools = <object>arg
-        pools.append(<uintptr_t>handle)
+    cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg) nogil:
+        with gil:
+            pools = <object>arg
+            pools.append(<uintptr_t>handle)
 
     cdef object get_error(self):
         return ZFSException(
@@ -376,8 +377,9 @@ cdef class ZFS(object):
 
         with nogil:
             result = libzfs.zpool_search_import(self.handle, &iargs)
-            if result is NULL:
-                return
+
+        if result is NULL:
+            return
 
         nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items(raw=True):
@@ -1246,10 +1248,11 @@ cdef class ZFSPool(object):
         }
 
     @staticmethod
-    cdef int __iterate_props(int proptype, void* arg):
-        proptypes = <object>arg
-        proptypes.append(proptype)
-        return zfs.ZPROP_CONT
+    cdef int __iterate_props(int proptype, void* arg) nogil:
+        with gil:
+            proptypes = <object>arg
+            proptypes.append(proptype)
+            return zfs.ZPROP_CONT
 
     property root_dataset:
         def __get__(self):
@@ -1566,10 +1569,11 @@ cdef class ZFSPropertyDict(dict):
     cdef object props
 
     @staticmethod
-    cdef int __iterate_props(int proptype, void* arg):
-        proptypes = <object>arg
-        proptypes.append(proptype)
-        return zfs.ZPROP_CONT
+    cdef int __iterate_props(int proptype, void* arg) nogil:
+        with gil:
+            proptypes = <object>arg
+            proptypes.append(proptype)
+            return zfs.ZPROP_CONT
 
     def __repr__(self):
         return '{' + ', '.join(["'{0}': {1}".format(k, repr(v)) for k, v in self.items()]) + '}'
@@ -1696,19 +1700,22 @@ cdef class ZFSDataset(object):
         return ret
 
     @staticmethod
-    cdef int __iterate_children(libzfs.zfs_handle_t* handle, void *arg):
-        datasets = <object>arg
-        datasets.append(<uintptr_t>handle)
+    cdef int __iterate_children(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        with gil:
+            datasets = <object>arg
+            datasets.append(<uintptr_t>handle)
 
     @staticmethod
-    cdef int __iterate_snapshots(libzfs.zfs_handle_t* handle, void *arg):
-        snapshots = <object>arg
-        snapshots.append(<uintptr_t>handle)
+    cdef int __iterate_snapshots(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        with gil:
+            snapshots = <object>arg
+            snapshots.append(<uintptr_t>handle)
 
     @staticmethod
-    cdef int __iterate_dependents(libzfs.zfs_handle_t* handle, void *arg):
-        dependents = <object>arg
-        dependents.append(<uintptr_t>handle)
+    cdef int __iterate_dependents(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        with gil:
+            dependents = <object>arg
+            dependents.append(<uintptr_t>handle)
 
     property name:
         def __get__(self):
@@ -1935,12 +1942,14 @@ cdef class ZFSDataset(object):
     def snapshot(self, name, fsopts=None, recursive=False):
         cdef const char *command = 'zfs snapshot'
         cdef NVList cfsopts = NVList(otherdict=fsopts or {})
+
         if libzfs.zfs_snapshot(
             self.root.handle,
             name,
             recursive,
             cfsopts.handle) != 0:
             raise self.root.get_error()
+
         if self.root.history:
             hfsopts = self.root.generate_history_opts(fsopts, '-o')
             self.root.write_history(command, '-r' if recursive else '', hfsopts, name)
