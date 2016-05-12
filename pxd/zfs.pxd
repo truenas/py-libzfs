@@ -37,7 +37,7 @@ cdef extern from "sys/mount.h":
         MS_FORCE
 
 
-cdef extern from "sys/fs/zfs.h":
+cdef extern from "sys/fs/zfs.h" nogil:
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS

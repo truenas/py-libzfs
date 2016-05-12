@@ -24,7 +24,7 @@
 # SUCH DAMAGE.
 #
 
-cdef extern from "nvpair.h":
+cdef extern from "nvpair.h" nogil:
 	ctypedef char int8_t
 	ctypedef unsigned char uint8_t
 	ctypedef unsigned char uchar_t

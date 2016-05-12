@@ -37,7 +37,7 @@ IF FREEBSD_VERSION >= 1000000:
         extern int lzc_send_space(const char *, const char *, uint64_t *)
 
 
-cdef extern from "libzfs.h":
+cdef extern from "libzfs.h" nogil:
     cdef enum:
         MAXNAMELEN
         MAXPATHLEN

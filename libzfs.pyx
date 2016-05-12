@@ -374,9 +374,10 @@ cdef class ZFS(object):
         if cachefile:
             iargs.cachefile = cachefile
 
-        result = libzfs.zpool_search_import(self.handle, &iargs)
-        if result is NULL:
-            return
+        with nogil:
+            result = libzfs.zpool_search_import(self.handle, &iargs)
+            if result is NULL:
+                return
 
         nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items(raw=True):
