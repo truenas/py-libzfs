@@ -895,6 +895,7 @@ cdef class ZFSVdev(object):
     cdef readonly ZFSPool zpool
     cdef readonly ZFS root
     cdef readonly ZFSVdev parent
+    cdef readonly object group
     cdef NVList nvlist
 
     def __init__(self, ZFS root, typ, ZFSPool pool=None):
@@ -1299,6 +1300,7 @@ cdef class ZFSPool(object):
                     vdev.root = self.root
                     vdev.zpool = self
                     vdev.nvlist = <NVList>child
+                    vdev.group = 'data'
                     yield vdev
 
     property log_vdevs:
@@ -1315,6 +1317,7 @@ cdef class ZFSPool(object):
                     vdev.root = self.root
                     vdev.zpool = self
                     vdev.nvlist = <NVList>child
+                    vdev.group = 'log'
                     yield vdev
 
     property cache_vdevs:
@@ -1330,6 +1333,7 @@ cdef class ZFSPool(object):
                     vdev.root = self.root
                     vdev.zpool = self
                     vdev.nvlist = <NVList>child
+                    vdev.group = 'cache'
                     yield vdev
 
     property spare_vdevs:
@@ -1345,6 +1349,7 @@ cdef class ZFSPool(object):
                     vdev.root = self.root
                     vdev.zpool = self
                     vdev.nvlist = <NVList>child
+                    vdev.group = 'spare'
                     yield vdev
 
     property groups:
@@ -1477,13 +1482,14 @@ cdef class ZFSPool(object):
 
             return None
 
-        # Try cache vdevs first, they are layed out differently in vdev tree than data and log vdevs
-        for i in self.cache_vdevs:
-            ret = search_vdev(i, guid)
-            if ret:
-                return ret
+        if guid == self.root_vdev.guid:
+            return self.root_vdev
 
-        return search_vdev(self.root_vdev, guid)
+        for g in (self.data_vdevs, self.cache_vdevs, self.log_vdevs, self.spare_vdevs):
+            for i in g:
+                ret = search_vdev(i, guid)
+                if ret:
+                    return ret
 
     def delete(self):
         if libzfs.zpool_destroy(self.handle, "destroy") != 0:
