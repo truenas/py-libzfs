@@ -492,6 +492,50 @@ cdef class ZFS(object):
         if libzfs.zpool_destroy(handle, "destroy") != 0:
             raise ZFSException(self.errno, self.errstr)
 
+    def receive(self, name, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
+        cdef libzfs.libzfs_handle_t *handle = self.handle,
+        cdef libzfs.recvflags_t flags;
+        cdef NVList props_nvl = None
+        cdef NVList limitds_nvl = None
+
+        memset(&flags, 0, sizeof(libzfs.recvflags_t))
+
+        if force:
+            flags.force = True
+
+        if nomount:
+            flags.nomount = True
+
+        IF FREEBSD_VERSION >= 1003000:
+            if resumable:
+                flags.resumable = True
+
+        IF TRUEOS:
+            if props:
+                props_nvl = NVList(otherdict=props)
+            if limitds:
+                limitds_nvl = NVList(otherdict=limitds)
+
+            if libzfs.zfs_receive(
+                handle,
+                name,
+                &flags,
+                fd,
+                props_nvl.handle if props_nvl else NULL,
+                limitds_nvl.handle if limitds_nvl else NULL,
+                NULL) != 0:
+                raise self.get_error()
+        ELSE:
+            if props:
+                props_nvl = NVList(otherdict=props)
+
+            IF FREEBSD_VERSION > 1002000:
+                if libzfs.zfs_receive(handle, name, props_nvl.handle if props_nvl else NULL, &flags, fd, NULL) != 0:
+                    raise self.get_error()
+            ELSE:
+                if libzfs.zfs_receive(handle, name, props_nvl.handle if props_nvl else NULL, &flags, fd) != 0:
+                    raise self.get_error()
+
     def write_history(self, *args):
         history_message = ""
 
@@ -1963,48 +2007,15 @@ cdef class ZFSDataset(object):
             self.root.write_history(command, '-r' if recursive else '', hfsopts, name)
 
     def receive(self, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
-        cdef libzfs.libzfs_handle_t *handle = self.root.handle,
-        cdef libzfs.recvflags_t flags;
-        cdef NVList props_nvl = None
-        cdef NVList limitds_nvl = None
-
-        memset(&flags, 0, sizeof(libzfs.recvflags_t))
-
-        if force:
-            flags.force = True
-
-        if nomount:
-            flags.nomount = True
-
-        IF FREEBSD_VERSION >= 1003000:
-            if resumable:
-                flags.resumable = True
-
-        IF TRUEOS:
-            if props:
-                props_nvl = NVList(otherdict=props)
-            if limitds:
-                limitds_nvl = NVList(otherdict=limitds)
-
-            if libzfs.zfs_receive(
-                handle,
-                self.name,
-                &flags,
-                fd,
-                props_nvl.handle if props_nvl else NULL,
-                limitds_nvl.handle if limitds_nvl else NULL,
-                NULL) != 0:
-                raise self.root.get_error()
-        ELSE:
-            if props:
-                props_nvl = NVList(otherdict=props)
-
-            IF FREEBSD_VERSION > 1002000:
-                if libzfs.zfs_receive(handle, self.name, props_nvl.handle if props_nvl else NULL, &flags, fd, NULL) != 0:
-                    raise self.root.get_error()
-            ELSE:
-                if libzfs.zfs_receive(handle, self.name, props_nvl.handle if props_nvl else NULL, &flags, fd) != 0:
-                    raise self.root.get_error()
+        self.root.receive(
+            self.name,
+            fd,
+            force=force,
+            nomount=nomount,
+            resumable=resumable,
+            props=props,
+            limitds=limitds
+        )
 
 
 cdef class ZFSSnapshot(ZFSDataset):
