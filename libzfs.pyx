@@ -701,7 +701,7 @@ cdef class ZPoolProperty(object):
 
     property allowed_values:
         def __get__(self):
-            pass
+            return libzfs.zfs_prop_values(self.propid)
 
     def reset(self):
         pass
@@ -810,7 +810,7 @@ cdef class ZFSProperty(object):
 
     property allowed_values:
         def __get__(self):
-            pass
+            return libzfs.zfs_prop_values(self.propid)
 
     def inherit(self, recursive=False, received=False):
         cdef const char *command = 'zfs inherit'
