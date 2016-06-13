@@ -113,7 +113,7 @@ ZPOOL_PROPERTY_CONVERTERS = {
 ZFS_PROPERTY_CONVERTERS = {
     'type': ZfsConverter(str, readonly=True),
     'creation': ZfsConverter(datetime, readonly=True),
-    'uesd': ZfsConverter(int, readonly=True),
+    'used': ZfsConverter(int, readonly=True),
     'available': ZfsConverter(int, readonly=True),
     'referenced': ZfsConverter(int, readonly=True),
     'mounted': ZfsConverter(bool, readonly=True),
@@ -152,7 +152,19 @@ ZFS_PROPERTY_CONVERTERS = {
     'usedbychildren': ZfsConverter(int, readonly=True),
     'usedbyrefreservation': ZfsConverter(int, readonly=True),
     'logbias': ZfsConverter(str),
-    'dedup': ZfsConverter(bool)
+    'dedup': ZfsConverter(str),
+    'mislabel': ZfsConverter(str),
+    'sync': ZfsConverter(str),
+    'refcompressratio': ZfsConverter(str, readonly=True),
+    'written': ZfsConverter(int, readonly=True),
+    'logicalused': ZfsConverter(int, readonly=True),
+    'logicalreferenced': ZfsConverter(int, readonly=True),
+    'volmode': ZfsConverter(str),
+    'filesystem_limit': ZfsConverter(int),
+    'snapshot_limit': ZfsConverter(int),
+    'filesystem_count': ZfsConverter(int, readonly=True),
+    'snapshot_count': ZfsConverter(int, readonly=True),
+    'redundant_metadata': ZfsConverter(str)
 }
 
 
