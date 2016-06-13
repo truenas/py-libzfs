@@ -34,8 +34,8 @@ class ZfsConverter(object):
         self.readonly = kwargs.pop('readonly', False)
         self.nullable = kwargs.pop('nullable', False)
         self.null = kwargs.pop('null', '-')
-        self.no = kwargs.pop('no', 'no')
-        self.yes = kwargs.pop('yes', 'yes')
+        self.no = kwargs.pop('no', 'off')
+        self.yes = kwargs.pop('yes', 'on')
 
     def to_native(self, value):
         if self.nullable and value == self.null:
