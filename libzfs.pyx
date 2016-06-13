@@ -37,6 +37,7 @@ from libc.stdlib cimport free
 
 
 include "nvpair.pxi"
+include "converter.pxi"
 
 
 class DatasetType(enum.IntEnum):
@@ -658,6 +659,7 @@ cdef class ZPoolProperty(object):
         return {
             'value': self.value,
             'rawvalue': self.rawvalue,
+            'parsed': self.parsed,
             'source': self.source.name
         }
 
@@ -698,6 +700,17 @@ cdef class ZPoolProperty(object):
             cdef zfs.zprop_source_t src
             libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True)
             return PropertySource(src)
+
+    property parsed:
+        def __get__(self):
+            if self.name in ZPOOL_PROPERTY_CONVERTERS:
+                return ZPOOL_PROPERTY_CONVERTERS[self.name].to_native(self.rawvalue)
+
+            return self.rawvalue
+
+        def __set__(self, value):
+            if self.name in ZPOOL_PROPERTY_CONVERTERS:
+                self.value = ZPOOL_PROPERTY_CONVERTERS[self.name].to_property(value)
 
     property allowed_values:
         def __get__(self):
@@ -762,6 +775,7 @@ cdef class ZFSProperty(object):
         return {
             'value': self.value,
             'rawvalue': self.rawvalue,
+            'parsed': self.parsed,
             'source': self.source.name if self.source else None
         }
 
@@ -807,6 +821,17 @@ cdef class ZFSProperty(object):
                 return None
 
             return PropertySource(<int>source)
+
+    property parsed:
+        def __get__(self):
+            if self.name in ZFS_PROPERTY_CONVERTERS:
+                return ZFS_PROPERTY_CONVERTERS[self.name].to_native(self.rawvalue)
+
+            return self.rawvalue
+
+        def __set__(self, value):
+            if self.name in ZFS_PROPERTY_CONVERTERS:
+                self.value = ZFS_PROPERTY_CONVERTERS[self.name].to_property(value)
 
     property allowed_values:
         def __get__(self):
