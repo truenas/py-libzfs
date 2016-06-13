@@ -154,3 +154,31 @@ ZFS_PROPERTY_CONVERTERS = {
     'logbias': ZfsConverter(str),
     'dedup': ZfsConverter(bool)
 }
+
+
+def parse_zfs_prop(prop, value):
+    try:
+        return ZFS_PROPERTY_CONVERTERS[prop].to_native(value)
+    except KeyError:
+        return value
+
+
+def serialize_zfs_prop(prop, value):
+    try:
+        return ZFS_PROPERTY_CONVERTERS[prop].to_property(value)
+    except KeyError:
+        return value
+
+
+def parse_zpool_prop(prop, value):
+    try:
+        return ZPOOL_PROPERTY_CONVERTERS[prop].to_native(value)
+    except KeyError:
+        return value
+
+
+def serialize_zpool_prop(prop, value):
+    try:
+        return ZPOOL_PROPERTY_CONVERTERS[prop].to_property(value)
+    except KeyError:
+        return value

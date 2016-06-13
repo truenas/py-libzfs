@@ -703,14 +703,10 @@ cdef class ZPoolProperty(object):
 
     property parsed:
         def __get__(self):
-            if self.name in ZPOOL_PROPERTY_CONVERTERS:
-                return ZPOOL_PROPERTY_CONVERTERS[self.name].to_native(self.rawvalue)
-
-            return self.rawvalue
+            return parse_zpool_prop(self.name, self.rawvalue)
 
         def __set__(self, value):
-            if self.name in ZPOOL_PROPERTY_CONVERTERS:
-                self.value = ZPOOL_PROPERTY_CONVERTERS[self.name].to_property(value)
+            self.value = serialize_zpool_prop(self.name, value)
 
     property allowed_values:
         def __get__(self):
@@ -824,14 +820,10 @@ cdef class ZFSProperty(object):
 
     property parsed:
         def __get__(self):
-            if self.name in ZFS_PROPERTY_CONVERTERS:
-                return ZFS_PROPERTY_CONVERTERS[self.name].to_native(self.rawvalue)
-
-            return self.rawvalue
+            return parse_zfs_prop(self.name, self.rawvalue)
 
         def __set__(self, value):
-            if self.name in ZFS_PROPERTY_CONVERTERS:
-                self.value = ZFS_PROPERTY_CONVERTERS[self.name].to_property(value)
+            self.value = serialize_zfs_prop(self.name, value)
 
     property allowed_values:
         def __get__(self):
