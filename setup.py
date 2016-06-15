@@ -60,8 +60,6 @@ freebsd_version = int(subprocess.check_output("uname -K", shell=True).strip())
 setup(
     name='libzfs',
     version='1.0',
-    packages=[''],
-    package_dir={'': ''},
     package_data={'': ['*.html', '*.c']},
     cmdclass={'build_ext': build_ext},
     ext_modules=[
