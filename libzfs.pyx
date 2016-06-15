@@ -1210,14 +1210,14 @@ cdef class ZPoolScrub(object):
             if not self.stat:
                 return None
 
-            return datetime.datetime.fromtimestamp(self.stat[2])
+            return datetime.fromtimestamp(self.stat[2])
 
     property end_time:
         def __get__(self):
             if not self.stat:
                 return None
 
-            return datetime.datetime.fromtimestamp(self.stat[3])
+            return datetime.fromtimestamp(self.stat[3])
 
     property bytes_to_scan:
         def __get__(self):
