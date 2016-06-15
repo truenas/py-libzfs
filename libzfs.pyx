@@ -26,11 +26,11 @@
 #
 
 import enum
-import datetime
 import cython
 cimport libzfs
 cimport zfs
 cimport nvpair
+from datetime import datetime
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset, strncpy
 from libc.stdlib cimport free
