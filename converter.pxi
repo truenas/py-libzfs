@@ -34,11 +34,12 @@ class ZfsConverter(object):
         self.readonly = kwargs.pop('readonly', False)
         self.nullable = kwargs.pop('nullable', False)
         self.null = kwargs.pop('null', '-')
+        self.read_null = kwargs.pop('read_null', self.null)
         self.no = kwargs.pop('no', 'off')
         self.yes = kwargs.pop('yes', 'on')
 
     def to_native(self, value):
-        if self.nullable and value == self.null:
+        if self.nullable and value == self.read_null:
             return None
 
         if self.typ is int:
@@ -117,8 +118,8 @@ ZFS_PROPERTY_CONVERTERS = {
     'available': ZfsConverter(int, readonly=True),
     'referenced': ZfsConverter(int, readonly=True),
     'mounted': ZfsConverter(bool, readonly=True),
-    'quota': ZfsConverter(int, nullable=True, null='none'),
-    'reservation': ZfsConverter(int, nullable=True, null='none'),
+    'quota': ZfsConverter(int, nullable=True, null='none', read_null='0'),
+    'reservation': ZfsConverter(int, nullable=True, null='none', read_null='0'),
     'recordsize': ZfsConverter(str),
     'mountpoint': ZfsConverter(str),
     'sharenfs': ZfsConverter(str, nullable=True, null='off'),
@@ -143,8 +144,8 @@ ZFS_PROPERTY_CONVERTERS = {
     'vscan': ZfsConverter(bool),
     'nbmand': ZfsConverter(bool),
     'sharesmb': ZfsConverter(str, nullable=True, null='off'),
-    'refquota': ZfsConverter(int, nullable=True, null='none'),
-    'refreservation': ZfsConverter(int, nullable=True, null='none'),
+    'refquota': ZfsConverter(int, nullable=True, null='none', read_null='0'),
+    'refreservation': ZfsConverter(int, nullable=True, null='none', read_null='0'),
     'primarycache': ZfsConverter(str),
     'secondarycache': ZfsConverter(str),
     'usedbysnapshots': ZfsConverter(int, readonly=True),
