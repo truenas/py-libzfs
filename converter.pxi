@@ -161,6 +161,7 @@ ZFS_PROPERTY_CONVERTERS = {
     'logicalused': ZfsConverter(int, readonly=True),
     'logicalreferenced': ZfsConverter(int, readonly=True),
     'volmode': ZfsConverter(str),
+    'volsize': ZfsConverter(int),
     'volblocksize': ZfsConverter(int),
     'filesystem_limit': ZfsConverter(int),
     'snapshot_limit': ZfsConverter(int),
