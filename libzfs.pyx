@@ -1051,8 +1051,8 @@ cdef class ZFSVdev(object):
         if self.type not in ('file', 'disk'):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
-        if self.parent.type != 'mirror':
-            raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors only")
+        if self.parent.type not in ('mirror', 'spare'):
+            raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
         if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
             raise self.root.get_error()
