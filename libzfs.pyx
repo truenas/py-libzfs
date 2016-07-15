@@ -2046,6 +2046,7 @@ cdef class ZFSSnapshot(ZFSDataset):
         ret = super(ZFSSnapshot, self).__getstate__(recursive)
         ret.update({
             'holds': self.holds,
+            'dataset': self.dataset.name,
             'snapshot_name': self.snapshot_name
         })
         return ret
