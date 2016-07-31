@@ -1,0 +1,2 @@
+global-include *.c
+global-include *.html
