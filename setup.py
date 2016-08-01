@@ -61,7 +61,7 @@ setup(
     name='libzfs',
     version='1.0',
     packages=[''],
-    include_package_data=True,
+    package_data={'': ['*.html', '*.c']},
     cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension(
@@ -76,4 +76,3 @@ setup(
         )
     ]
 )
-
