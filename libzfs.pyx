@@ -763,6 +763,11 @@ cdef class ZPoolFeature(object):
 cdef class ZFSProperty(object):
     cdef readonly ZFSDataset dataset
     cdef int propid
+    cdef char *cname
+    cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
+    cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
+    cdef char csrcstr[libzfs.ZFS_MAXNAMELEN + 1]
+    cdef zfs.zprop_source_t csource
 
     def __init__(self):
         raise RuntimeError('ZFSProperty cannot be instantiated by the user')
@@ -781,18 +786,28 @@ cdef class ZFSProperty(object):
     def __repr__(self):
         return str(self)
 
+    def refresh(self):
+        with nogil:
+            self.cname = libzfs.zfs_prop_to_name(self.propid)
+            libzfs.zfs_prop_get(
+                self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
+                &self.csource, self.csrcstr, libzfs.ZFS_MAXNAMELEN,
+                False
+            )
+
+            libzfs.zfs_prop_get(
+                self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
+                NULL, NULL, 0,
+                True
+            )
+
     property name:
         def __get__(self):
-            return libzfs.zfs_prop_to_name(self.propid)
+            return self.cname
 
     property value:
         def __get__(self):
-            cdef char cstr[1024]
-
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 1023, NULL, NULL, 0, False) != 0:
-                return None
-
-            return cstr
+            return self.cvalue
 
         def __set__(self, value):
             cdef const char *command = 'zfs set'
@@ -802,21 +817,11 @@ cdef class ZFSProperty(object):
 
     property rawvalue:
         def __get__(self):
-            cdef char cstr[1024]
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, cstr, 1023, NULL, NULL, 0, True) != 0:
-                return None
-
-            return cstr
+            return self.crawvalue
 
     property source:
         def __get__(self):
-            cdef char val[1024]
-            cdef char cstr[256]
-            cdef zfs.zprop_source_t source
-            if libzfs.zfs_prop_get(self.dataset.handle, self.propid, val, 1023, &source, cstr, 255, True) != 0:
-                return None
-
-            return PropertySource(<int>source)
+            return PropertySource(<int>self.csource)
 
     property parsed:
         def __get__(self):
@@ -1665,6 +1670,7 @@ cdef class ZFSPropertyDict(dict):
             prop = ZFSProperty.__new__(ZFSProperty)
             prop.dataset = self.parent
             prop.propid = x
+            prop.refresh()
             self.props[prop.name] = prop
 
         for k, v in nvl.items():
