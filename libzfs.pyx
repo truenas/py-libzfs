@@ -1808,7 +1808,9 @@ cdef class ZFSDataset(object):
             cdef ZFSDataset dataset
 
             datasets = []
-            libzfs.zfs_iter_filesystems(self.handle, self.__iterate_children, <void*>datasets)
+            with nogil:
+                libzfs.zfs_iter_filesystems(self.handle, self.__iterate_children, <void*>datasets)
+
             for h in datasets:
                 dataset = ZFSDataset.__new__(ZFSDataset)
                 dataset.root = self.root
@@ -1828,7 +1830,9 @@ cdef class ZFSDataset(object):
             cdef ZFSSnapshot snapshot
 
             snapshots = []
-            libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_snapshots, <void*>snapshots)
+            with nogil:
+                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_snapshots, <void*>snapshots)
+
             for h in snapshots:
                 snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                 snapshot.root = self.root
@@ -1858,7 +1862,9 @@ cdef class ZFSDataset(object):
             cdef zfs.zfs_type_t type
 
             dependents = []
-            libzfs.zfs_iter_dependents(self.handle, False, self.__iterate_dependents, <void*>dependents)
+            with nogil:
+                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate_dependents, <void*>dependents)
+
             for h in dependents:
                 type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*><uintptr_t>h)
 
