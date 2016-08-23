@@ -459,3 +459,15 @@ cdef extern from "zfeature_common.h":
         const spa_feature_t* fi_depends
 
     cdef zfeature_info_t* spa_feature_table
+
+
+cdef extern from "sys/vdev_impl.h":
+    enum:
+        VDEV_PHYS_SIZE
+        VDEV_LABELS
+
+    ctypedef struct vdev_phys_t:
+        char vp_nvlist[VDEV_PHYS_SIZE - 24]
+
+    ctypedef struct vdev_label_t:
+        vdev_phys_t vl_vdev_phys

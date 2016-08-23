@@ -25,6 +25,8 @@
 # SUCH DAMAGE.
 #
 
+import os
+import stat
 import enum
 import cython
 cimport libzfs
@@ -2187,3 +2189,42 @@ def nicestrtonum(ZFS zfs, value):
         raise ValueError('Cannot convert {0} to integer'.format(value))
 
     return result
+
+
+def vdev_label_offset(psize, l, offset):
+    return offset + l * sizeof(zfs.vdev_label_t) + 0 \
+        if l < zfs.VDEV_LABELS / 2 \
+        else psize - zfs.VDEV_LABELS * sizeof(zfs.vdev_label_t)
+
+
+def read_label(device, no):
+    cdef nvpair.nvlist_t *handle
+    cdef NVList nvlist
+    cdef zfs.vdev_label_t *label
+    cdef char *buf
+    cdef char *read
+
+    fd = os.open(device, os.O_RDONLY)
+    if fd < 0:
+        raise OSError('Cannot open {0}'.format(device))
+
+    st = os.fstat(fd)
+    if not stat.S_ISCHR(st.st_mode):
+        raise OSError('Not a character device')
+
+    psize = st.st_size
+
+    data = os.pread(fd, sizeof(zfs.vdev_label_t), vdev_label_offset(psize, no, 0))
+    if len(data) != sizeof(zfs.vdev_label_t):
+        raise OSError('Cannot read label')
+
+    read = data
+    label = <zfs.vdev_label_t *>read
+    buf = label.vl_vdev_phys.vp_nvlist
+    buflen = sizeof(label.vl_vdev_phys.vp_nvlist)
+
+    if nvpair.nvlist_unpack(buf, buflen, &handle, 0) != 0:
+        raise OSError('Cannot unpack nvlist')
+
+    nvlist = NVList(<uintptr_t>handle)
+    return dict(nvlist)
