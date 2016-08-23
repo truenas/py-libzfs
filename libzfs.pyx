@@ -28,6 +28,7 @@
 import os
 import stat
 import enum
+import errno
 import cython
 cimport libzfs
 cimport zfs
@@ -2206,17 +2207,17 @@ def read_label(device, no):
 
     fd = os.open(device, os.O_RDONLY)
     if fd < 0:
-        raise OSError('Cannot open {0}'.format(device))
+        raise OSError(errno.ENXIO, 'Cannot open {0}'.format(device))
 
     st = os.fstat(fd)
     if not stat.S_ISCHR(st.st_mode):
-        raise OSError('Not a character device')
+        raise OSError(errno.EINVAL, 'Not a character device')
 
     psize = st.st_size
 
     data = os.pread(fd, sizeof(zfs.vdev_label_t), vdev_label_offset(psize, no, 0))
     if len(data) != sizeof(zfs.vdev_label_t):
-        raise OSError('Cannot read label')
+        raise OSError(errno.EINVAL, 'Cannot read label')
 
     read = data
     label = <zfs.vdev_label_t *>read
