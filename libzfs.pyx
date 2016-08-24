@@ -2225,7 +2225,7 @@ def read_label(device, no):
     buflen = sizeof(label.vl_vdev_phys.vp_nvlist)
 
     if nvpair.nvlist_unpack(buf, buflen, &handle, 0) != 0:
-        raise OSError('Cannot unpack nvlist')
+        raise OSError(errno.EINVAL, 'Cannot unpack nvlist')
 
     nvlist = NVList(<uintptr_t>handle)
     return dict(nvlist)
