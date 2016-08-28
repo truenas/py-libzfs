@@ -34,6 +34,7 @@ cimport libzfs
 cimport zfs
 cimport nvpair
 from datetime import datetime
+from libc.errno cimport errno
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset, strncpy
 from libc.stdlib cimport free
@@ -2229,3 +2230,18 @@ def read_label(device, no):
 
     nvlist = NVList(<uintptr_t>handle)
     return dict(nvlist)
+
+
+def clear_label(device):
+    cdef int fd
+    cdef int err
+
+    fd = os.open(device, os.O_WRONLY)
+
+    with nogil:
+        errr = libzfs.zpool_clear_label(fd)
+
+    if err != 0:
+        raise OSError(errno, os.strerror(errno))
+
+    os.close(fd)
