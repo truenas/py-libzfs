@@ -2199,7 +2199,7 @@ def vdev_label_offset(psize, l, offset):
         else psize - zfs.VDEV_LABELS * sizeof(zfs.vdev_label_t)
 
 
-def read_label(device, no):
+def read_label(device):
     cdef nvpair.nvlist_t *handle
     cdef NVList nvlist
     cdef char *buf
