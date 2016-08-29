@@ -2202,32 +2202,23 @@ def vdev_label_offset(psize, l, offset):
 def read_label(device, no):
     cdef nvpair.nvlist_t *handle
     cdef NVList nvlist
-    cdef zfs.vdev_label_t *label
     cdef char *buf
     cdef char *read
 
     fd = os.open(device, os.O_RDONLY)
     if fd < 0:
-        raise OSError(errno.ENXIO, 'Cannot open {0}'.format(device))
+        raise OSError(errno, os.strerror(errno))
 
     st = os.fstat(fd)
     if not stat.S_ISCHR(st.st_mode):
+        os.close(fd)
         raise OSError(errno.EINVAL, 'Not a character device')
 
-    psize = st.st_size
-
-    data = os.pread(fd, sizeof(zfs.vdev_label_t), vdev_label_offset(psize, no, 0))
-    if len(data) != sizeof(zfs.vdev_label_t):
+    if libzfs.zpool_read_label(fd, &handle) != 0:
+        os.close(fd)
         raise OSError(errno.EINVAL, 'Cannot read label')
 
-    read = data
-    label = <zfs.vdev_label_t *>read
-    buf = label.vl_vdev_phys.vp_nvlist
-    buflen = sizeof(label.vl_vdev_phys.vp_nvlist)
-
-    if nvpair.nvlist_unpack(buf, buflen, &handle, 0) != 0:
-        raise OSError(errno.EINVAL, 'Cannot unpack nvlist')
-
+    os.close(fd)
     nvlist = NVList(<uintptr_t>handle)
     return dict(nvlist)
 
@@ -2237,11 +2228,14 @@ def clear_label(device):
     cdef int err
 
     fd = os.open(device, os.O_WRONLY)
+    if fd < 0:
+        raise OSError(errno, os.strerror(errno))
 
     with nogil:
         errr = libzfs.zpool_clear_label(fd)
 
     if err != 0:
+        os.close(fd)
         raise OSError(errno, os.strerror(errno))
 
     os.close(fd)
