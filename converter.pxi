@@ -140,7 +140,7 @@ ZFS_PROPERTY_CONVERTERS = {
     'canmount': ZfsConverter(bool),
     'xattr': ZfsConverter(bool),
     'copies': ZfsConverter(int),
-    'version': ZfsConverter(int),
+    'version': ZfsConverter(int, nullable=True, null=''),
     'utf8only': ZfsConverter(bool),
     'normalization': ZfsConverter(str),
     'casesensitivity': ZfsConverter(str),
