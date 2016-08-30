@@ -46,7 +46,10 @@ class ZfsConverter(object):
             return None
 
         if self.typ is int:
-            return int(value)
+            try:
+                return int(value)
+            except ValueError:
+                return None
 
         if self.typ is str:
             return value
