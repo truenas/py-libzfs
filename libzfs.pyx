@@ -502,6 +502,11 @@ cdef class ZFS(object):
         cdef libzfs.recvflags_t flags;
         cdef NVList props_nvl = None
         cdef NVList limitds_nvl = None
+        cdef nvpair.nvlist_t *c_props_nvl = NULL
+        cdef nvpair.nvlist_t *c_limitds_nvl = NULL
+        cdef const char *c_name = name
+        cdef int c_fd = fd
+        cdef int ret
 
         memset(&flags, 0, sizeof(libzfs.recvflags_t))
 
@@ -518,28 +523,34 @@ cdef class ZFS(object):
         IF TRUEOS:
             if props:
                 props_nvl = NVList(otherdict=props)
+                c_props_nvl = props_nvl.handle
             if limitds:
                 limitds_nvl = NVList(otherdict=limitds)
+                c_limitds_nvl = limitds.handle
 
-            if libzfs.zfs_receive(
-                handle,
-                name,
-                &flags,
-                fd,
-                props_nvl.handle if props_nvl else NULL,
-                limitds_nvl.handle if limitds_nvl else NULL,
-                NULL) != 0:
-                raise self.get_error()
+            with nogil:
+                ret = libzfs.zfs_receive(
+                    handle,
+                    c_name,
+                    &flags,
+                    c_fd,
+                    c_props_nvl,
+                    c_limitds_nvl,
+                    NULL
+                )
         ELSE:
             if props:
                 props_nvl = NVList(otherdict=props)
+                c_props_nvl = props_nvl.handle
 
-            IF FREEBSD_VERSION > 1002000:
-                if libzfs.zfs_receive(handle, name, props_nvl.handle if props_nvl else NULL, &flags, fd, NULL) != 0:
-                    raise self.get_error()
-            ELSE:
-                if libzfs.zfs_receive(handle, name, props_nvl.handle if props_nvl else NULL, &flags, fd) != 0:
-                    raise self.get_error()
+            with nogil:
+                IF FREEBSD_VERSION > 1002000:
+                    ret = libzfs.zfs_receive(handle, c_name, c_props_nvl, &flags, c_fd, NULL)
+                ELSE:
+                    ret = libzfs.zfs_receive(handle, c_name, c_props_nvl, &flags, c_fd)
+
+        if ret != 0:
+            raise self.get_error()
 
     def write_history(self, *args):
         history_message = ""
