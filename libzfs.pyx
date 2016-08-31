@@ -367,7 +367,7 @@ cdef class ZFS(object):
         pool.handle = handle
         return pool
 
-    def find_import(self, cachefile=None):
+    def find_import(self, cachefile=None, destroyed=False):
         cdef ZFSImportablePool pool
         cdef libzfs.importargs_t iargs
         cdef char* paths = "/dev"
@@ -394,6 +394,11 @@ cdef class ZFS(object):
             pool.name = name
             pool.free = False
             pool.nvlist = config
+
+            # Skip destroyed pools
+            if config['state'] == PoolState.DESTROYED and not destroyed:
+                continue
+
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
