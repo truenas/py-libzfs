@@ -1185,6 +1185,7 @@ cdef class ZFSVdev(object):
                 vdev.zpool = self.zpool
                 vdev.root = self.root
                 vdev.parent = self
+                vdev.group = self.group
                 yield vdev
 
         def __set__(self, value):
