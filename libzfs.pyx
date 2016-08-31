@@ -1456,6 +1456,10 @@ cdef class ZFSPool(object):
         def __get__(self):
             return self.config.get('hostname')
 
+    property state:
+        def __get__(self):
+            return PoolState(self.config['state'])
+
     property status:
         def __get__(self):
             stats = self.config['vdev_tree']['vdev_stats']
@@ -1504,7 +1508,6 @@ cdef class ZFSPool(object):
                 f.pool = self
                 f.nvlist = features_nv
                 yield f
-
 
     property disks:
         def __get__(self):
