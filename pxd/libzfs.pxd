@@ -35,6 +35,7 @@ IF FREEBSD_VERSION >= 1000000:
             LZC_SEND_FLAG_EMBED_DATA
 
         extern int lzc_send_space(const char *, const char *, uint64_t *)
+        extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
 cdef extern from "libzfs.h" nogil:
