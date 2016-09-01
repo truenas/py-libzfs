@@ -48,6 +48,7 @@ class DatasetType(enum.IntEnum):
     FILESYSTEM = zfs.ZFS_TYPE_FILESYSTEM
     VOLUME = zfs.ZFS_TYPE_VOLUME
     SNAPSHOT = zfs.ZFS_TYPE_SNAPSHOT
+    BOOKMARK = zfs.ZFS_TYPE_BOOKMARK
 
 
 class Error(enum.IntEnum):
@@ -1766,7 +1767,8 @@ cdef class ZFSPropertyDict(dict):
     def __contains__(self, key):
         return key in self.props
 
-cdef class ZFSDataset(object):
+
+cdef class ZFSObject(object):
     cdef libzfs.zfs_handle_t* handle
     cdef readonly ZFS root
     cdef readonly ZFSPool pool
@@ -1778,20 +1780,62 @@ cdef class ZFSDataset(object):
         libzfs.zfs_close(self.handle)
 
     def __str__(self):
-        return "<libzfs.ZFSDataset name '{0}' type '{1}'>".format(self.name, self.type.name)
+        return "<libzfs.{0} name '{1}' type '{1}'>".format(self.__class__.__name__, self.name, self.type.name)
 
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self, recursive=True):
-        ret = {
+    def __getstate__(self):
+        return {
             'id': self.name,
             'name': self.name,
             'pool': self.pool.name,
             'type': self.type.name,
-            'mountpoint': self.mountpoint,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
         }
+
+    property name:
+        def __get__(self):
+            return libzfs.zfs_get_name(self.handle)
+
+    property type:
+        def __get__(self):
+            cdef zfs.zfs_type_t typ
+
+            typ = libzfs.zfs_get_type(self.handle)
+            return DatasetType(typ)
+
+    property properties:
+        def __get__(self):
+            cdef ZFSPropertyDict d
+
+            d = ZFSPropertyDict.__new__(ZFSPropertyDict)
+            d.parent = self
+            d.refresh()
+            return d
+
+    def rename(self, new_name, nounmount=False, forceunmount=False):
+        cdef const char *command = 'zfs rename'
+        cdef libzfs.renameflags_t flags
+
+        flags.recurse = False
+        flags.nounmount = nounmount
+        flags.forceunmount = forceunmount
+
+        if libzfs.zfs_rename(self.handle, NULL, new_name, flags) != 0:
+            raise self.root.get_error()
+
+        self.root.write_history(command, '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
+
+    def delete(self):
+        if libzfs.zfs_destroy(self.handle, True) != 0:
+            raise self.root.get_error()
+
+
+cdef class ZFSDataset(ZFSObject):
+    def __getstate__(self, recursive=True):
+        ret = super(ZFSDataset, self).__getstate__()
+        ret['mountpoint'] = self.mountpoint
 
         if recursive:
             ret['children'] = [i.__getstate__() for i in self.children]
@@ -1821,17 +1865,6 @@ cdef class ZFSDataset(object):
         with gil:
             dependents = <object>arg
             dependents.append(<uintptr_t>handle)
-
-    property name:
-        def __get__(self):
-            return libzfs.zfs_get_name(self.handle)
-
-    property type:
-        def __get__(self):
-            cdef zfs.zfs_type_t typ
-
-            typ = libzfs.zfs_get_type(self.handle)
-            return DatasetType(typ)
 
     property children:
         def __get__(self):
@@ -1928,15 +1961,6 @@ cdef class ZFSDataset(object):
                     snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
                     yield snapshot
 
-    property properties:
-        def __get__(self):
-            cdef ZFSPropertyDict d
-
-            d = ZFSPropertyDict.__new__(ZFSPropertyDict)
-            d.parent = self
-            d.refresh()
-            return d
-
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
@@ -1946,23 +1970,6 @@ cdef class ZFSDataset(object):
             result = mntpt
             free(mntpt)
             return result
-
-    def rename(self, new_name, nounmount=False, forceunmount=False):
-        cdef const char *command = 'zfs rename'
-        cdef libzfs.renameflags_t flags
-
-        flags.recurse = False
-        flags.nounmount = nounmount
-        flags.forceunmount = forceunmount
-
-        if libzfs.zfs_rename(self.handle, NULL, new_name, flags) != 0:
-            raise self.root.get_error()
-
-        self.root.write_history(command, '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
-
-    def delete(self):
-        if libzfs.zfs_destroy(self.handle, True) != 0:
-            raise self.root.get_error()
 
     def destroy_snapshot(self, name):
         cdef const char *command = 'zfs destroy'
@@ -2093,15 +2100,9 @@ cdef class ZFSDataset(object):
         )
 
 
-cdef class ZFSSnapshot(ZFSDataset):
-    def __str__(self):
-        return "<libzfs.ZFSSnapshot name '{0}'>".format(self.name)
-
-    def __repr__(self):
-        return str(self)
-
-    def __getstate__(self, recursive=True):
-        ret = super(ZFSSnapshot, self).__getstate__(recursive)
+cdef class ZFSSnapshot(ZFSObject):
+    def __getstate__(self):
+        ret = super(ZFSSnapshot, self).__getstate__()
         ret.update({
             'holds': self.holds,
             'dataset': self.parent.name,
@@ -2188,8 +2189,22 @@ cdef class ZFSSnapshot(ZFSDataset):
             return dict(nvl)
 
 
-cdef class ZFSBookmark(ZFSDataset):
-    pass
+cdef class ZFSBookmark(ZFSObject):
+    def __getstate__(self):
+        ret = super(ZFSBookmark, self).__getstate__()
+        ret.update({
+            'dataset': self.parent.name,
+            'bookmark_name': self.bookmark_name
+        })
+        return ret
+
+    property parent:
+        def __get__(self):
+            return self.root.get_dataset(self.name.partition('#')[0])
+
+    property bookmark_name:
+        def __get__(self):
+            return self.name.partition('#')[-1]
 
 
 cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
@@ -2278,7 +2293,7 @@ def clear_label(device):
         raise OSError(errno, os.strerror(errno))
 
     with nogil:
-        errr = libzfs.zpool_clear_label(fd)
+        err = libzfs.zpool_clear_label(fd)
 
     if err != 0:
         os.close(fd)
