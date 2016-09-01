@@ -1780,7 +1780,7 @@ cdef class ZFSObject(object):
         libzfs.zfs_close(self.handle)
 
     def __str__(self):
-        return "<libzfs.{0} name '{1}' type '{1}'>".format(self.__class__.__name__, self.name, self.type.name)
+        return "<libzfs.{0} name '{1}' type '{2}'>".format(self.__class__.__name__, self.name, self.type.name)
 
     def __repr__(self):
         return str(self)
