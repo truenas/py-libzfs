@@ -1811,6 +1811,12 @@ cdef class ZFSDataset(object):
             snapshots.append(<uintptr_t>handle)
 
     @staticmethod
+    cdef int __iterate_bookmarks(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        with gil:
+            bookmarks = <object>arg
+            bookmarks.append(<uintptr_t>handle)
+
+    @staticmethod
     cdef int __iterate_dependents(libzfs.zfs_handle_t* handle, void *arg) nogil:
         with gil:
             dependents = <object>arg
@@ -1866,6 +1872,22 @@ cdef class ZFSDataset(object):
                     continue
 
                 yield snapshot
+
+    property bookmarks:
+        def __get__(self):
+            cdef ZFSBookmark bookmark
+
+            bookmarks = []
+            with nogil:
+                libzfs.zfs_iter_bookmarks(self.handle, self.__iterate_bookmarks, <void *>bookmarks)
+
+            for b in bookmarks:
+                bookmark = ZFSBookmark.__new__(ZFSBookmark)
+                bookmark.root = self.root
+                bookmark.pool = self.pool
+                bookmark.handle = <libzfs.zfs_handle_t*><uintptr_t>b
+                yield bookmark
+
 
     property snapshots_recursive:
         def __get__(self):
@@ -2164,6 +2186,10 @@ cdef class ZFSSnapshot(ZFSDataset):
 
             nvl = NVList(<uintptr_t>ptr)
             return dict(nvl)
+
+
+cdef class ZFSBookmark(ZFSDataset):
+    pass
 
 
 cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
