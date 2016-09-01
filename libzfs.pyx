@@ -1664,7 +1664,7 @@ cdef class ZFSImportablePool(ZFSPool):
 
 
 cdef class ZFSPropertyDict(dict):
-    cdef ZFSDataset parent
+    cdef ZFSObject parent
     cdef object props
 
     @staticmethod
