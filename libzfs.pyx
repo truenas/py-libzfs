@@ -2121,7 +2121,19 @@ cdef class ZFSSnapshot(ZFSObject):
         self.root.write_history(command, '-f' if force else '', self.name)
 
     def bookmark(self, name):
-        pass
+        cdef NVList bookmarks
+        cdef nvpair.nvlist_t *c_bookmarks
+        cdef int ret
+
+        bookmarks = NVList()
+        bookmarks['{0}#{1}'.format(self.parent.name, name)] = self.name
+        c_bookmarks = bookmarks.handle
+
+        with nogil:
+            ret = libzfs.lzc_bookmark(c_bookmarks, NULL)
+
+        if ret != 0:
+            raise OSError(ret, os.strerror(ret))
 
     def clone(self, name, opts=None):
         cdef const char *command = 'zfs clone'
