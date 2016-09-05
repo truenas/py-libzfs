@@ -1774,7 +1774,7 @@ cdef class ZFSObject(object):
     cdef readonly ZFSPool pool
 
     def __init__(self):
-        raise RuntimeError('ZFSDataset cannot be instantiated by the user')
+        raise RuntimeError('ZFSObject cannot be instantiated by the user')
 
     def __dealloc__(self):
         libzfs.zfs_close(self.handle)
