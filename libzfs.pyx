@@ -782,7 +782,7 @@ cdef class ZPoolFeature(object):
 
 
 cdef class ZFSProperty(object):
-    cdef readonly ZFSDataset dataset
+    cdef readonly ZFSObject dataset
     cdef int propid
     cdef char *cname
     cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
