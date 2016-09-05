@@ -857,14 +857,14 @@ cdef class ZFSProperty(object):
 
     def inherit(self, recursive=False, received=False):
         cdef const char *command = 'zfs inherit'
-        cdef ZFSDataset dset
+        cdef ZFSObject dset
 
         dsets = [self.dataset]
         if recursive:
             dsets = dsets.extend(list(self.dataset.children_recursive))
 
         for d in dsets:
-            dset = <ZFSDataset>d
+            dset = <ZFSObject>d
             if libzfs.zfs_prop_inherit(dset.handle, self.name, received) != 0:
                 raise self.dataset.root.get_error()
 
