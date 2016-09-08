@@ -249,24 +249,49 @@ class SendFlag(enum.Enum):
 
 
 class DiffRecordType(enum.Enum):
-    ADD = 'add'
-    REMOVE = 'remove'
-    MODIFY = 'modify'
-    RENAME = 'rename'
+    ADD = '+'
+    REMOVE = '-'
+    MODIFY = 'M'
+    RENAME = 'R'
 
 
-cdef class DiffRecord(object):
-    property timestamp:
-        def __get__(self):
-            pass
+class DiffFileType(enum.Enum):
+    BLOCK = 'B'
+    CHAR = 'C'
+    FILE = 'F'
+    DIRECTORY = '/'
+    SYMLINK = '@'
+    SOCKET = '='
 
-    property path:
-        def __get__(self):
-            pass
 
-    property old_path:
-        def __get__(self):
-            pass
+class DiffRecord(object):
+    def __init__(self, raw):
+        timestamp, cmd, typ, rest = raw.split(maxsplit=3)
+        paths = rest.split('->', maxsplit=2)
+        self.raw = raw
+        self.timestamp = datetime.utcfromtimestamp(float(timestamp))
+        self.cmd = DiffRecordType(cmd)
+        self.type = DiffFileType(typ)
+        self.path = paths[0].strip()
+
+        if self.cmd == DiffRecordType.RENAME:
+            self.oldpath = paths[1].strip()
+
+    def __str__(self):
+        return self.raw
+
+    def __repr__(self):
+        return str(self)
+
+    def __getstate__(self):
+        return {
+            'timestamp': self.timestamp,
+            'cmd': self.cmd.name,
+            'type': self.type.name,
+            'path': self.path,
+            'oldpath': getattr(self, 'oldpath', None)
+        }
+
 
 
 IF FREEBSD_VERSION >= 1000000:
@@ -2143,7 +2168,7 @@ cdef class ZFSDataset(ZFSObject):
 
         with os.fdopen(rfd, 'r') as f:
             for line in f:
-                yield line.split()
+                yield DiffRecord(raw=line)
 
         thr.join()
 
