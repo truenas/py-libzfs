@@ -26,8 +26,6 @@
 #####################################################################
 
 
-
-
 class ZfsConverter(object):
     def __init__(self, typ, **kwargs):
         self.typ = typ

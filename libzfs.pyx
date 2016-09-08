@@ -29,6 +29,7 @@ import os
 import stat
 import enum
 import errno
+import threading
 import cython
 cimport libzfs
 cimport zfs
@@ -245,6 +246,27 @@ class SendFlag(enum.Enum):
     PROGRESS = 7
     LARGEBLOCK = 8
     EMBED_DATA = 9
+
+
+class DiffRecordType(enum.Enum):
+    ADD = 'add'
+    REMOVE = 'remove'
+    MODIFY = 'modify'
+    RENAME = 'rename'
+
+
+cdef class DiffRecord(object):
+    property timestamp:
+        def __get__(self):
+            pass
+
+    property path:
+        def __get__(self):
+            pass
+
+    property old_path:
+        def __get__(self):
+            pass
 
 
 IF FREEBSD_VERSION >= 1000000:
@@ -2098,6 +2120,35 @@ cdef class ZFSDataset(ZFSObject):
             props=props,
             limitds=limitds
         )
+
+    def diff(self, fromsnap, tosnap):
+        cdef char *c_fromsnap = fromsnap
+        cdef char *c_tosnap = tosnap
+        cdef int c_flags = libzfs.ZFS_DIFF_PARSEABLE | libzfs.ZFS_DIFF_TIMESTAMP | libzfs.ZFS_DIFF_CLASSIFY
+        ret = None
+
+        def worker(fd):
+            cdef int c_fd = fd
+            cdef int c_ret
+            nonlocal ret
+
+            with nogil:
+                c_ret = libzfs.zfs_show_diffs(self.handle, c_fd, c_fromsnap, c_tosnap, c_flags)
+
+            ret = c_ret
+
+        rfd, wfd = os.pipe()
+        thr = threading.Thread(target=worker, args=(wfd,), daemon=True)
+        thr.start()
+
+        with os.fdopen(rfd, 'r') as f:
+            for line in f:
+                yield line.split()
+
+        thr.join()
+
+        if ret != 0:
+            raise self.root.get_error()
 
 
 cdef class ZFSSnapshot(ZFSObject):
