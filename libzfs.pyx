@@ -1878,6 +1878,18 @@ cdef class ZFSObject(object):
         if libzfs.zfs_destroy(self.handle, True) != 0:
             raise self.root.get_error()
 
+    def get_send_space(self, fromname=None):
+        cdef const char *cfromname = NULL
+        cdef uint64_t space
+
+        if fromname:
+            cfromname = fromname
+
+        if libzfs.lzc_send_space(self.name, cfromname, &space) != 0:
+            raise ZFSException(Error.FAULT, "Cannot obtain space estimate: ")
+
+        return space
+
 
 cdef class ZFSDataset(ZFSObject):
     def __getstate__(self, recursive=True):
@@ -2088,18 +2100,6 @@ cdef class ZFSDataset(ZFSObject):
 
         if err != 0:
             raise self.root.get_error()
-
-    def get_send_space(self, fromname=None):
-        cdef const char *cfromname = NULL
-        cdef uint64_t space
-
-        if fromname:
-            cfromname = fromname
-
-        if libzfs.lzc_send_space(self.name, cfromname, &space) != 0:
-            raise ZFSException(Error.FAULT, "Cannot obtain space estimate: ")
-
-        return space
 
     def get_send_progress(self, fd):
         cdef zfs.zfs_cmd_t cmd
