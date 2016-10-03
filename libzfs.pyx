@@ -966,6 +966,7 @@ cdef class ZFSUserProperty(ZFSProperty):
 
 
 cdef class ZFSVdevStats(object):
+    cdef readonly ZFSVdev vdev
     cdef NVList nvlist
 
     def __getstate__(self):
@@ -1223,6 +1224,7 @@ cdef class ZFSVdev(object):
             cdef ZFSVdevStats ret
 
             ret = ZFSVdevStats.__new__(ZFSVdevStats)
+            ret.vdev = self
             ret.nvlist = self.nvlist
             return ret
 
