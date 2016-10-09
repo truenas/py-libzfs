@@ -370,9 +370,10 @@ cdef class ZFS(object):
     property pools:
         def __get__(self):
             cdef ZFSPool pool
-
             pools = []
-            libzfs.zpool_iter(self.handle, self.__iterate_pools, <void*>pools)
+
+            with nogil:
+                libzfs.zpool_iter(self.handle, self.__iterate_pools, <void*>pools)
 
             for h in pools:
                 pool = ZFSPool.__new__(ZFSPool)
@@ -380,7 +381,6 @@ cdef class ZFS(object):
                 pool.handle = <libzfs.zpool_handle_t*><uintptr_t>h
                 if pool.name == '$import':
                     continue
-
 
                 yield pool
 
@@ -404,8 +404,12 @@ cdef class ZFS(object):
                     continue
 
     def get(self, name):
-        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open_canfail(self.handle, name)
+        cdef const char *c_name = name
+        cdef libzfs.zpool_handle_t* handle = NULL
         cdef ZFSPool pool
+
+        with nogil:
+            handle = libzfs.zpool_open_canfail(self.handle, c_name)
 
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
@@ -457,16 +461,22 @@ cdef class ZFS(object):
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
         cdef const char *command = 'zpool import'
+        cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
+        cdef int ret
 
-        if libzfs.zpool_import_props(
-            self.handle,
-            pool.nvlist.handle,
-            newname,
-            copts.handle,
-            False
-        ) != 0:
+        with nogil:
+            ret = libzfs.zpool_import_props(
+                self.handle,
+                pool.nvlist.handle,
+                c_newname,
+                copts.handle,
+                False
+            )
+
+        if ret != 0:
             raise self.get_error()
+
         self.write_history(command, str(pool.guid), newname if newname else pool.name)
 
     def export_pool(self, ZFSPool pool):
@@ -479,9 +489,14 @@ cdef class ZFS(object):
         self.write_history(command, str(pool.name))
 
     def get_dataset(self, name):
-        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_open(self.handle, name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
+        cdef const char *c_name = name
+        cdef libzfs.zfs_handle_t* handle = NULL
         cdef ZFSPool pool
         cdef ZFSDataset dataset
+
+        with nogil:
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
+
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Dataset {0} not found'.format(name))
 
@@ -496,9 +511,14 @@ cdef class ZFS(object):
         return dataset
 
     def get_snapshot(self, name):
-        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_open(self.handle, name, zfs.ZFS_TYPE_SNAPSHOT)
+        cdef libzfs.zfs_handle_t* handle = NULL
         cdef ZFSPool pool
         cdef ZFSSnapshot snap
+        cdef const char *c_name = name
+
+        with nogil:
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_SNAPSHOT)
+
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Snapshot {0} not found'.format(name))
 
@@ -515,24 +535,47 @@ cdef class ZFS(object):
     def get_object(self, name):
         try:
             return self.get_dataset(name)
-        except ZFSException, err:
+        except ZFSException as err:
             if err.code == Error.NOENT:
                 return self.get_snapshot(name)
 
             raise err
 
+    def get_dataset_by_path(self, path):
+        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_path_to_zhandle(self.handle, path, zfs.ZFS_TYPE_DATASET)
+        cdef ZFSPool pool
+        cdef ZFSDataset dataset
+        if handle == NULL:
+            raise ZFSException(Error.NOENT, 'Dataset with path {0} not found'.format(path))
+
+        pool = ZFSPool.__new__(ZFSPool)
+        pool.root = self
+        pool.free = False
+        pool.handle = libzfs.zfs_get_pool_handle(handle)
+        dataset = ZFSDataset.__new__(ZFSDataset)
+        dataset.root = self
+        dataset.pool = pool
+        dataset.handle = handle
+        return dataset
+
     def create(self, name, topology, opts, fsopts):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
+        cdef const char *c_name = name
         cdef const char *command = 'zpool create'
+        cdef int ret
 
-        if libzfs.zpool_create(
-            self.handle,
-            name,
-            root.handle,
-            copts.handle,
-            cfsopts.handle) != 0:
+        with nogil:
+            ret = libzfs.zpool_create(
+                self.handle,
+                c_name,
+                root.handle,
+                copts.handle,
+                cfsopts.handle
+            )
+
+        if ret != 0:
             raise ZFSException(self.errno, self.errstr)
 
         if self.history:
@@ -549,7 +592,12 @@ cdef class ZFS(object):
         return self.get(name)
 
     def destroy(self, name):
-        cdef libzfs.zpool_handle_t* handle = libzfs.zpool_open(self.handle, name)
+        cdef libzfs.zpool_handle_t* handle
+        cdef const char *c_name = name
+
+        with nogil:
+            handle = libzfs.zpool_open(self.handle, c_name)
+
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
 
@@ -612,6 +660,8 @@ cdef class ZFS(object):
             raise self.get_error()
 
     def write_history(self, *args):
+        cdef const char *c_message
+
         history_message = ""
 
         def eval_arg(argument):
@@ -666,7 +716,10 @@ cdef class ZFS(object):
             for arg in args:
                 history_message += eval_arg(arg)
 
-            libzfs.zpool_log_history(self.handle, history_message)
+            c_message = history_message
+
+            with nogil:
+                libzfs.zpool_log_history(self.handle, c_message)
 
     def generate_history_opts(self, opt_dict, prefix):
         keys = []
@@ -750,21 +803,42 @@ cdef class ZPoolProperty(object):
     property value:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
-            if libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, False) != 0:
+            cdef int ret
+
+            with nogil:
+                ret = libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, False)
+
+            if ret != 0:
                 return '-'
 
             return cstr
 
         def __set__(self, value):
             cdef const char *command = 'zpool set'
-            if libzfs.zpool_set_prop(self.pool.handle, self.name, value) != 0:
+            cdef const char *c_name
+            cdef const char *c_value = value
+            cdef int ret
+
+            name = self.name
+            c_name = name
+
+            with nogil:
+                ret = libzfs.zpool_set_prop(self.pool.handle, c_name, c_value)
+
+            if ret != 0:
                 raise self.pool.root.get_error()
+
             self.pool.root.write_history(command, (self.name, str(value)), self.pool.name)
 
     property rawvalue:
         def __get__(self):
             cdef char cstr[libzfs.ZPOOL_MAXPROPLEN]
-            if libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, True) != 0:
+            cdef int ret
+
+            with nogil:
+                ret = libzfs.zpool_get_prop(self.pool.handle, self.propid, cstr, sizeof(cstr), NULL, True)
+
+            if ret != 0:
                 return '-'
 
             return cstr
@@ -772,7 +846,10 @@ cdef class ZPoolProperty(object):
     property source:
         def __get__(self):
             cdef zfs.zprop_source_t src
-            libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True)
+
+            with nogil:
+                libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True)
+
             return PropertySource(src)
 
     property parsed:
@@ -828,9 +905,18 @@ cdef class ZPoolFeature(object):
 
     def enable(self):
         cdef const char *command = 'zpool set'
+        cdef const char *c_name
+        cdef int ret
+
         name = "feature@{0}".format(self.name)
-        if libzfs.zpool_set_prop(self.pool.handle, name, "enabled") != 0:
+        c_name = name
+
+        with nogil:
+            ret = libzfs.zpool_set_prop(self.pool.handle, c_name, "enabled")
+
+        if ret != 0:
             raise self.pool.root.get_error()
+
         self.pool.root.write_history(command, (self.name, 'enabled'), self.pool.name)
 
 
@@ -942,8 +1028,20 @@ cdef class ZFSUserProperty(ZFSProperty):
             return self.values.get('value')
 
         def __set__(self, value):
+            cdef const char *c_name
+            cdef const char *c_value
+            cdef int ret
+
+            name = self.name
+            str_value = str(value)
+            c_name = name
+            c_value = str_value
+
             if self.dataset:
-                if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
+                with nogil:
+                    ret = libzfs.zfs_prop_set(self.dataset.handle, c_name, c_value)
+
+                if ret != 0:
                     raise self.dataset.root.get_error()
 
     property rawvalue:
@@ -1358,7 +1456,9 @@ cdef class ZFSPool(object):
 
     def __dealloc__(self):
         if self.free:
-            libzfs.zpool_close(self.handle)
+            with nogil:
+                libzfs.zpool_close(self.handle)
+
             self.handle = NULL
 
     def __str__(self):
@@ -1402,17 +1502,18 @@ cdef class ZFSPool(object):
 
     property root_dataset:
         def __get__(self):
+            cdef const char *c_name;
+            cdef libzfs.zfs_handle_t* handle = NULL
             cdef ZFSDataset dataset
-            cdef libzfs.zfs_handle_t* handle
 
-            handle = libzfs.zfs_open(
-                self.root.handle,
-                self.name,
-                zfs.ZFS_TYPE_FILESYSTEM
-            )
+            name = self.name
+            c_name = name
+
+            with nogil:
+                handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
 
             if handle == NULL:
-                raise ZFSException(Error.OPENFAILED, 'Cannot open root dataset')
+                raise self.root.get_error()
 
             dataset = ZFSDataset.__new__(ZFSDataset)
             dataset.root = self.root
@@ -1540,7 +1641,9 @@ cdef class ZFSPool(object):
             cdef ZPoolProperty prop
             proptypes = []
             result = {}
-            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_POOL)
+
+            with nogil:
+                libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_POOL)
 
             for x in proptypes:
                 prop = ZPoolProperty.__new__(ZPoolProperty)
@@ -1555,12 +1658,14 @@ cdef class ZFSPool(object):
             cdef ZPoolFeature f
             cdef NVList features_nv
             cdef zfs.zfeature_info_t* feat
-            cdef uintptr_t nvl;
+            cdef uintptr_t nvl
 
             if self.status == 'UNAVAIL':
                 return
 
-            nvl = <uintptr_t>libzfs.zpool_get_features(self.handle)
+            with nogil:
+                nvl = <uintptr_t>libzfs.zpool_get_features(self.handle)
+
             features_nv = NVList(nvl)
 
             for i in range(0, zfs.SPA_FEATURES):
@@ -1591,6 +1696,9 @@ cdef class ZFSPool(object):
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef uint64_t vol_reservation
+        cdef const char *c_name = name
+        cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
+        cdef int ret
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
             vol_reservation = libzfs.zvol_volsize_to_reservation(
@@ -1599,21 +1707,25 @@ cdef class ZFSPool(object):
 
             cfsopts['refreservation'] = vol_reservation
 
-        if libzfs.zfs_create(
-            self.root.handle,
-            name,
-            fstype,
-            cfsopts.handle) != 0:
-            raise self.root.get_error()
+        with nogil:
+            ret = libzfs.zfs_create(
+                self.root.handle,
+                c_name,
+                c_fstype,
+                cfsopts.handle
+            )
 
-    def destroy(self, name):
-        pass
+        if ret != 0:
+            raise self.root.get_error()
 
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
+        cdef int ret
 
-        if libzfs.zpool_add(self.handle, vd.nvlist.handle) != 0:
+        ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
+
+        if ret != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.name, self.root.history_vdevs_list(vdevs_tree))
@@ -1736,11 +1848,14 @@ cdef class ZFSPropertyDict(dict):
         cdef ZFSProperty prop
         cdef ZFSUserProperty userprop
         cdef nvpair.nvlist_t *nvlist
+        cdef zfs.zfs_type_t c_type = <zfs.zfs_type_t>self.parent.type
         proptypes = []
         self.props = {}
 
-        libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, self.parent.type)
-        nvlist = libzfs.zfs_get_user_props(self.parent.handle)
+        with nogil:
+            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, c_type)
+            nvlist = libzfs.zfs_get_user_props(self.parent.handle)
+
         nvl = NVList(<uintptr_t>nvlist)
 
         for x in proptypes:
@@ -2361,6 +2476,7 @@ def read_label(device):
     cdef NVList nvlist
     cdef char *buf
     cdef char *read
+    cdef int ret
 
     fd = os.open(device, os.O_RDONLY)
     if fd < 0:
@@ -2371,7 +2487,8 @@ def read_label(device):
         os.close(fd)
         raise OSError(errno.EINVAL, 'Not a character device')
 
-    if libzfs.zpool_read_label(fd, &handle) != 0:
+    ret = libzfs.zpool_read_label(fd, &handle)
+    if ret != 0:
         os.close(fd)
         raise OSError(errno.EINVAL, 'Cannot read label')
 
