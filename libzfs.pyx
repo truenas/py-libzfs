@@ -981,7 +981,7 @@ cdef class ZFSProperty(object):
             c_value = value
 
             with nogil:
-                ret = libzfs.zfs_prop_set(self.dataset.handle, cname, c_value)
+                ret = libzfs.zfs_prop_set(self.dataset.handle, self.cname, c_value)
 
             if ret != 0:
                 raise self.dataset.root.get_error()
