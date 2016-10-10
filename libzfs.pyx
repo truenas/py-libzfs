@@ -460,7 +460,6 @@ cdef class ZFS(object):
             yield pool
 
     def import_pool(self, ZFSImportablePool pool, newname, opts):
-        cdef const char *command = 'zpool import'
         cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
         cdef int ret
@@ -477,16 +476,24 @@ cdef class ZFS(object):
         if ret != 0:
             raise self.get_error()
 
-        self.write_history(command, str(pool.guid), newname if newname else pool.name)
+        self.write_history('zpool import', str(pool.guid), newname if newname else pool.name)
 
     def export_pool(self, ZFSPool pool):
-        cdef const char *command = 'zpool export'
-        if libzfs.zpool_disable_datasets(pool.handle, True) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_disable_datasets(pool.handle, 1)
+
+        if ret != 0:
             raise self.get_error()
 
-        if libzfs.zpool_export(pool.handle, True, "export") != 0:
+        with nogil:
+            ret = libzfs.zpool_export(pool.handle, 1, "export")
+
+        if ret != 0:
             raise self.get_error()
-        self.write_history(command, str(pool.name))
+
+        self.write_history('zpool export', str(pool.name))
 
     def get_dataset(self, name):
         cdef const char *c_name = name
@@ -563,7 +570,6 @@ cdef class ZFS(object):
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef const char *c_name = name
-        cdef const char *command = 'zpool create'
         cdef int ret
 
         with nogil:
@@ -582,7 +588,7 @@ cdef class ZFS(object):
             hopts = self.generate_history_opts(opts, '-o')
             hfsopts = self.generate_history_opts(fsopts, '-O')
             self.write_history(
-                command,
+                'zpool create',
                 hopts,
                 hfsopts,
                 name,
@@ -814,7 +820,6 @@ cdef class ZPoolProperty(object):
             return cstr
 
         def __set__(self, value):
-            cdef const char *command = 'zpool set'
             cdef const char *c_name
             cdef const char *c_value = value
             cdef int ret
@@ -828,7 +833,7 @@ cdef class ZPoolProperty(object):
             if ret != 0:
                 raise self.pool.root.get_error()
 
-            self.pool.root.write_history(command, (self.name, str(value)), self.pool.name)
+            self.pool.root.write_history('zpool set', (self.name, str(value)), self.pool.name)
 
     property rawvalue:
         def __get__(self):
@@ -904,7 +909,6 @@ cdef class ZPoolFeature(object):
                 return FeatureState.ACTIVE
 
     def enable(self):
-        cdef const char *command = 'zpool set'
         cdef const char *c_name
         cdef int ret
 
@@ -917,7 +921,7 @@ cdef class ZPoolFeature(object):
         if ret != 0:
             raise self.pool.root.get_error()
 
-        self.pool.root.write_history(command, (self.name, 'enabled'), self.pool.name)
+        self.pool.root.write_history('zpool set', (self.name, 'enabled'), self.pool.name)
 
 
 cdef class ZFSProperty(object):
@@ -970,10 +974,22 @@ cdef class ZFSProperty(object):
             return self.cvalue
 
         def __set__(self, value):
-            cdef const char *command = 'zfs set'
-            if libzfs.zfs_prop_set(self.dataset.handle, self.name, str(value)) != 0:
+            cdef const char *c_name
+            cdef const char *c_value
+            cdef int ret
+
+            name = self.name
+            value = str(self.value)
+            c_name = name
+            c_value = value
+
+            with nogil:
+                ret = libzfs.zfs_prop_set(self.dataset.handle, c_name, c_value)
+
+            if ret != 0:
                 raise self.dataset.root.get_error()
-            self.dataset.root.write_history(command, (self.name, str(value)), self.dataset.name)
+
+            self.dataset.root.write_history('zfs set', (self.name, str(value)), self.dataset.name)
 
     property rawvalue:
         def __get__(self):
@@ -994,9 +1010,9 @@ cdef class ZFSProperty(object):
         def __get__(self):
             return libzfs.zfs_prop_values(self.propid)
 
-    def inherit(self, recursive=False, received=False):
-        cdef const char *command = 'zfs inherit'
+    def inherit(self, recursive=False, bint received=False):
         cdef ZFSObject dset
+        cdef int ret
 
         dsets = [self.dataset]
         if recursive:
@@ -1004,10 +1020,13 @@ cdef class ZFSProperty(object):
 
         for d in dsets:
             dset = <ZFSObject>d
-            if libzfs.zfs_prop_inherit(dset.handle, self.name, received) != 0:
+            with nogil:
+                ret = libzfs.zfs_prop_inherit(dset.handle, self.cname, received)
+
+            if ret != 0:
                 raise self.dataset.root.get_error()
 
-        self.dataset.root.write_history(command, '-r' if recursive else '', self.dataset.name)
+        self.dataset.root.write_history('zfs inherit', '-r' if recursive else '', self.dataset.name)
 
 
 cdef class ZFSUserProperty(ZFSProperty):
@@ -1032,9 +1051,8 @@ cdef class ZFSUserProperty(ZFSProperty):
             cdef const char *c_value
             cdef int ret
 
-            name = self.name
             str_value = str(value)
-            c_name = name
+            c_name = self.name
             c_value = str_value
 
             if self.dataset:
@@ -1752,39 +1770,61 @@ cdef class ZFSPool(object):
                     return ret
 
     def delete(self):
-        if libzfs.zpool_destroy(self.handle, "destroy") != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_destroy(self.handle, "destroy")
+
+        if ret != 0:
             raise self.root.get_error()
 
     def start_scrub(self):
-        cdef const char *command = 'zpool scrub'
-        if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, self.name)
+
+        self.root.write_history('zpool scrub', self.name)
 
     def stop_scrub(self):
-        cdef const char *command = 'zpool scrub -s'
-        if libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, self.name)
+
+        self.root.write_history('zpool scrub -s', self.name)
 
     def clear(self):
-        cdef const char *command = 'zpool clear'
         cdef NVList policy = NVList()
+        cdef int ret
         policy["rewind-request"] = zfs.ZPOOL_NO_REWIND
-        self.root.write_history(command, self.name)
 
-        return libzfs.zpool_clear(self.handle, NULL, policy.handle) == 0
+        with nogil:
+            ret = libzfs.zpool_clear(self.handle, NULL, policy.handle)
+
+        self.root.write_history('zpool clear', self.name)
+        return ret == 0
 
     def upgrade(self):
-        cdef const char *command = 'zpool upgrade'
-        if libzfs.zpool_upgrade(self.handle, zfs.SPA_VERSION) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_upgrade(self.handle, zfs.SPA_VERSION)
+
+        if ret != 0:
             raise self.root.get_error()
 
         for i in self.features:
             if i.state == FeatureState.DISABLED:
                 i.enable()
 
-        self.root.write_history(command, self.name)
+        self.root.write_history('zpool upgrade', self.name)
 
 
 cdef class ZFSImportablePool(ZFSPool):
@@ -1886,7 +1926,10 @@ cdef class ZFSPropertyDict(dict):
 
     def __setitem__(self, key, value):
         cdef ZFSUserProperty userprop
-        cdef const char *command = 'zfs set'
+        cdef int ret
+        cdef const char *c_key
+        cdef const char *c_value
+
         if key in self.props:
             raise KeyError('Cannot overwrite existing property')
 
@@ -1897,11 +1940,18 @@ cdef class ZFSPropertyDict(dict):
         if userprop.dataset is None:
             # detached user property
             userprop.dataset = self.parent
-            if libzfs.zfs_prop_set(self.parent.handle, key, userprop.value) != 0:
+            value = str(userprop.value)
+            c_key = key
+            c_value = value
+
+            with nogil:
+                ret = libzfs.zfs_prop_set(self.parent.handle, c_key, c_value)
+
+            if ret != 0:
                 raise self.parent.root.get_error()
 
         self.props[key] = userprop
-        self.parent.root.write_history(command, (str(key), str(userprop.value)), self.parent.name)
+        self.parent.root.write_history('zfs set', (str(key), str(userprop.value)), self.parent.name)
 
     def __iter__(self):
         for i in self.props:
@@ -1947,7 +1997,8 @@ cdef class ZFSObject(object):
         raise RuntimeError('ZFSObject cannot be instantiated by the user')
 
     def __dealloc__(self):
-        libzfs.zfs_close(self.handle)
+        with nogil:
+            libzfs.zfs_close(self.handle)
 
     def __str__(self):
         return "<libzfs.{0} name '{1}' type '{2}'>".format(self.__class__.__name__, self.name, self.type.name)
@@ -1985,30 +2036,46 @@ cdef class ZFSObject(object):
             return d
 
     def rename(self, new_name, nounmount=False, forceunmount=False):
-        cdef const char *command = 'zfs rename'
         cdef libzfs.renameflags_t flags
+        cdef const char *c_new_name = new_name
 
         flags.recurse = False
         flags.nounmount = nounmount
         flags.forceunmount = forceunmount
 
-        if libzfs.zfs_rename(self.handle, NULL, new_name, flags) != 0:
+        with nogil:
+            ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+
+        if ret != 0:
             raise self.root.get_error()
 
-        self.root.write_history(command, '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
+        self.root.write_history('zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
 
     def delete(self):
-        if libzfs.zfs_destroy(self.handle, True) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zfs_destroy(self.handle, 1)
+
+        if ret != 0:
             raise self.root.get_error()
 
     def get_send_space(self, fromname=None):
         cdef const char *cfromname = NULL
+        cdef const char *c_name
         cdef uint64_t space
+        cdef int ret
+
+        name = self.name
+        c_name = name
 
         if fromname:
             cfromname = fromname
 
-        if libzfs.lzc_send_space(self.name, cfromname, &space) != 0:
+        with nogil:
+            ret = libzfs.lzc_send_space(c_name, cfromname, &space)
+
+        if ret != 0:
             raise ZFSException(Error.FAULT, "Cannot obtain space estimate: ")
 
         return space
@@ -2154,16 +2221,27 @@ cdef class ZFSDataset(ZFSObject):
             return result
 
     def destroy_snapshot(self, name):
-        cdef const char *command = 'zfs destroy'
-        if libzfs.zfs_destroy_snaps(self.handle, name, True) != 0:
+        cdef const char *c_name = name
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zfs_destroy_snaps(self.handle, c_name, True)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, name)
+
+        self.root.write_history('zfs destroy', name)
 
     def mount(self):
-        cdef const char *command = 'zfs mount'
-        if libzfs.zfs_mount(self.handle, NULL, 0) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zfs_mount(self.handle, NULL, 0)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, self.name)
+
+        self.root.write_history('zfs mount', self.name)
 
     def mount_recursive(self):
         if self.type != DatasetType.FILESYSTEM:
@@ -2176,15 +2254,19 @@ cdef class ZFSDataset(ZFSObject):
             i.mount_recursive()
 
     def umount(self, force=False):
-        cdef const char *command = 'zfs umount'
         cdef int flags = 0
+        cdef int ret
 
         if force:
             flags = zfs.MS_FORCE
 
-        if libzfs.zfs_unmountall(self.handle, flags) != 0:
+        with nogil:
+            ret = libzfs.zfs_unmountall(self.handle, flags)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, '-f' if force else '', self.name)
+
+        self.root.write_history('zfs umount', '-f' if force else '', self.name)
 
     def umount_recursive(self, force=False):
         if self.type != DatasetType.FILESYSTEM:
@@ -2226,37 +2308,52 @@ cdef class ZFSDataset(ZFSObject):
 
     def get_send_progress(self, fd):
         cdef zfs.zfs_cmd_t cmd
+        cdef int ret
 
         memset(&cmd, 0, cython.sizeof(libzfs.zfs_cmd))
 
         cmd.zc_cookie = fd
         strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)
 
-        if libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd) != 0:
+        with nogil:
+            ret = libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd)
+
+        if ret != 0:
             raise ZFSException(Error.FAULT, "Cannot obtain send progress")
 
         return cmd.zc_cookie
 
     def promote(self):
-        cdef const char *command = 'zfs promote'
-        if libzfs.zfs_promote(self.handle) != 0:
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zfs_promote(self.handle)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, self.name)
+
+        self.root.write_history('zfs promote', self.name)
 
     def snapshot(self, name, fsopts=None, recursive=False):
-        cdef const char *command = 'zfs snapshot'
         cdef NVList cfsopts = NVList(otherdict=fsopts or {})
+        cdef const char *c_name = name
+        cdef int c_recursive = recursive
+        cdef int ret
 
-        if libzfs.zfs_snapshot(
-            self.root.handle,
-            name,
-            recursive,
-            cfsopts.handle) != 0:
+        with nogil:
+            ret = libzfs.zfs_snapshot(
+                self.root.handle,
+                c_name,
+                c_recursive,
+                cfsopts.handle
+            )
+
+        if ret != 0:
             raise self.root.get_error()
 
         if self.root.history:
             hfsopts = self.root.generate_history_opts(fsopts, '-o')
-            self.root.write_history(command, '-r' if recursive else '', hfsopts, name)
+            self.root.write_history('zfs snapshot', '-r' if recursive else '', hfsopts, name)
 
     def receive(self, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
         self.root.receive(
@@ -2310,14 +2407,19 @@ cdef class ZFSSnapshot(ZFSObject):
         return ret
 
     def rollback(self, force=False):
-        cdef const char *command = 'zfs rollback'
         cdef ZFSDataset parent
+        cdef int c_force = force
+        cdef int ret
 
         parent = <ZFSDataset>self.parent
-        if libzfs.zfs_rollback(parent.handle, self.handle, force) != 0:
+
+        with nogil:
+            ret = libzfs.zfs_rollback(parent.handle, self.handle, c_force)
+
+        if ret != 0:
             raise self.root.get_error()
 
-        self.root.write_history(command, '-f' if force else '', self.name)
+        self.root.write_history('zfs rollback', '-f' if force else '', self.name)
 
     def bookmark(self, name):
         cdef NVList bookmarks
@@ -2335,45 +2437,74 @@ cdef class ZFSSnapshot(ZFSObject):
             raise OSError(ret, os.strerror(ret))
 
     def clone(self, name, opts=None):
-        cdef const char *command = 'zfs clone'
         cdef NVList copts = None
+        cdef nvpair.nvlist_t *copts_handle = NULL
+        cdef const char *c_name = name
+        cdef int ret
+
         if opts:
             copts = NVList(otherdict=opts)
+            copts_handle = copts.handle
 
-        if libzfs.zfs_clone(
-            self.handle,
-            name,
-            copts.handle if copts else NULL) != 0:
+        with nogil:
+            ret = libzfs.zfs_clone(
+                self.handle,
+                c_name,
+                copts_handle
+            )
+
+        if ret != 0:
             raise self.root.get_error()
+
         if self.root.history:
             hopts = self.root.generate_history_opts(opts, '-o')
-            self.root.write_history(command, hopts, self.name)
+            self.root.write_history('zfs clone', hopts, self.name)
 
     def hold(self, tag, recursive=False):
-        cdef const char *command = 'zfs hold'
         cdef ZFSDataset parent
+        cdef const char *c_snapshot_name
+        cdef const char *c_tag = tag
+        cdef int c_recursive = recursive
+        cdef int ret
 
+        snapshot_name = self.snapshot_name
+        c_snapshot_name = snapshot_name
         parent = <ZFSDataset>self.parent
-        if libzfs.zfs_hold(parent.handle, self.snapshot_name, tag, recursive, -1) != 0:
+
+        with nogil:
+            ret = libzfs.zfs_hold(parent.handle, c_snapshot_name, c_tag, c_recursive, -1)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, '-r' if recursive else '', tag, self.name)
+
+        self.root.write_history('zfs hold', '-r' if recursive else '', tag, self.name)
 
     def release(self, tag, recursive=False):
-        cdef const char *command = 'zfs release'
         cdef ZFSDataset parent
+        cdef const char *c_snapshot_name
+        cdef const char *c_tag = tag
+        cdef int c_recursive = recursive
+        cdef int ret
 
+        snapshot_name = self.snapshot_name
+        c_snapshot_name = snapshot_name
         parent = <ZFSDataset>self.parent
-        if libzfs.zfs_release(parent.handle, self.snapshot_name, tag, recursive) != 0:
+
+        with nogil:
+            ret = libzfs.zfs_release(parent.handle, c_snapshot_name, c_tag, c_recursive)
+
+        if ret != 0:
             raise self.root.get_error()
-        self.root.write_history(command, '-r' if recursive else '', tag, self.name)
+
+        self.root.write_history('zfs release', '-r' if recursive else '', tag, self.name)
 
     def delete(self, recursive=False):
-        cdef const char *command = 'zfs destroy'
         if not recursive:
             super(ZFSSnapshot, self).delete()
         else:
             self.parent.destroy_snapshot(self.snapshot_name)
-        self.root.write_history(command, '-r' if recursive else '', self.name)
+
+        self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
 
     def send(self, fd, **kwargs):
         fromname = kwargs.get('fromname')
