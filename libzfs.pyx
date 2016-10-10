@@ -482,13 +482,13 @@ cdef class ZFS(object):
         cdef int ret
 
         with nogil:
-            ret = libzfs.zpool_disable_datasets(pool.handle, 1)
+            ret = libzfs.zpool_disable_datasets(pool.handle, True)
 
         if ret != 0:
             raise self.get_error()
 
         with nogil:
-            ret = libzfs.zpool_export(pool.handle, 1, "export")
+            ret = libzfs.zpool_export(pool.handle, True, "export")
 
         if ret != 0:
             raise self.get_error()
@@ -2055,7 +2055,7 @@ cdef class ZFSObject(object):
         cdef int ret
 
         with nogil:
-            ret = libzfs.zfs_destroy(self.handle, 1)
+            ret = libzfs.zfs_destroy(self.handle, True)
 
         if ret != 0:
             raise self.root.get_error()
