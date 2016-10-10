@@ -977,7 +977,7 @@ cdef class ZFSProperty(object):
             cdef const char *c_value
             cdef int ret
 
-            value = str(self.value)
+            value = str(value)
             c_value = value
 
             with nogil:
