@@ -974,17 +974,14 @@ cdef class ZFSProperty(object):
             return self.cvalue
 
         def __set__(self, value):
-            cdef const char *c_name
             cdef const char *c_value
             cdef int ret
 
-            name = self.name
             value = str(self.value)
-            c_name = name
             c_value = value
 
             with nogil:
-                ret = libzfs.zfs_prop_set(self.dataset.handle, c_name, c_value)
+                ret = libzfs.zfs_prop_set(self.dataset.handle, cname, c_value)
 
             if ret != 0:
                 raise self.dataset.root.get_error()
