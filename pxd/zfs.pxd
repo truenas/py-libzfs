@@ -44,6 +44,14 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZFS_NUM_PROPS
         SPA_VERSION
 
+    enum:
+        ZAP_MAXNAMELEN
+        ZAP_MAXVALUELEN
+
+    IF FREEBSD_VERSION >= 1003509:
+        enum:
+            ZFS_MAX_DATASET_NAME_LEN
+
     ctypedef enum zfs_ioc_t:
         ZFS_IOC_FIRST
         ZFS_IOC_POOL_CREATE
@@ -136,10 +144,6 @@ cdef extern from "sys/fs/zfs.h" nogil:
         DMU_OST_ANY
         DMU_OST_NUMTYPES
 
-    #define	ZAP_MAXNAMELEN 256
-    #define	ZAP_MAXVALUELEN (1024 * 8)
-    #define	ZAP_OLDMAXVALUELEN 1024
-    
     ctypedef enum zfs_userquota_prop_t:
         ZFS_PROP_USERUSED
         ZFS_PROP_USERQUOTA

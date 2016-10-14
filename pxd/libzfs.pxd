@@ -43,11 +43,14 @@ cdef extern from "libzfs.h" nogil:
         MAXNAMELEN
         MAXPATHLEN
 
-    cdef enum:
-        ZFS_MAXNAMELEN = MAXNAMELEN
-        ZPOOL_MAXNAMELEN = MAXNAMELEN
-        ZFS_MAXPROPLEN = MAXPATHLEN
-        ZPOOL_MAXPROPLEN = MAXPATHLEN
+    IF FREEBSD_VERSION < 1003509:
+        cdef enum:
+            ZFS_MAXNAMELEN
+            ZPOOL_MAXNAMELEN
+
+    enum:
+        ZFS_MAXPROPLEN
+        ZPOOL_MAXPROPLEN
 
     enum:
         EZFS_SUCCESS = 0

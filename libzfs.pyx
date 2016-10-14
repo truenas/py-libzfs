@@ -264,6 +264,14 @@ class DiffFileType(enum.Enum):
     SOCKET = '='
 
 
+IF FREEBSD_VERSION >= 1003509:
+    cdef enum:
+        MAX_DATASET_NAME_LEN = zfs.ZFS_MAX_DATASET_NAME_LEN
+ELSE:
+    cdef enum:
+        MAX_DATASET_NAME_LEN = libzfs.ZFS_MAXNAMELEN
+
+
 class DiffRecord(object):
     def __init__(self, raw):
         timestamp, cmd, typ, rest = raw.split(maxsplit=3)
@@ -927,10 +935,10 @@ cdef class ZPoolFeature(object):
 cdef class ZFSProperty(object):
     cdef readonly ZFSObject dataset
     cdef int propid
-    cdef char *cname
+    cdef const char *cname
     cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
     cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
-    cdef char csrcstr[libzfs.ZFS_MAXNAMELEN + 1]
+    cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
     cdef zfs.zprop_source_t csource
 
     def __init__(self):
@@ -955,7 +963,7 @@ cdef class ZFSProperty(object):
             self.cname = libzfs.zfs_prop_to_name(self.propid)
             libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
-                &self.csource, self.csrcstr, libzfs.ZFS_MAXNAMELEN,
+                &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
                 False
             )
 
