@@ -514,7 +514,7 @@ cdef class ZFS(object):
         cdef ZFSDataset dataset
 
         encoded = name.encode('utf-8')
-        c_name = name
+        c_name = encoded
 
         with nogil:
             handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
@@ -539,7 +539,7 @@ cdef class ZFS(object):
         cdef const char *c_name
 
         encoded = name.encode('utf-8')
-        c_name = name
+        c_name = encoded
 
         with nogil:
             handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_SNAPSHOT)
@@ -743,7 +743,7 @@ cdef class ZFS(object):
             for arg in args:
                 history_message += eval_arg(arg)
 
-            c_message = history_message
+            c_message = history_message.encode('utf-8')
 
             with nogil:
                 libzfs.zpool_log_history(self.handle, c_message)
