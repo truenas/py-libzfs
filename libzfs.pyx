@@ -1,4 +1,4 @@
-# cython: c_string_type=unicode, c_string_encoding=ascii
+# cython: c_string_type=unicode, c_string_encoding=utf-8
 #-
 # Copyright (c) 2014 iXsystems, Inc.
 # All rights reserved.
@@ -316,7 +316,7 @@ class ZFSException(RuntimeError):
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
     cdef int history
-    cdef char *history_prefix
+    cdef object history_prefix
 
     def __cinit__(self, history=False, history_prefix=''):
         self.handle = libzfs.libzfs_init()
@@ -412,9 +412,12 @@ cdef class ZFS(object):
                     continue
 
     def get(self, name):
-        cdef const char *c_name = name
+        cdef const char *c_name
         cdef libzfs.zpool_handle_t* handle = NULL
         cdef ZFSPool pool
+
+        encoded = name.encode('utf-8')
+        c_name = encoded
 
         with nogil:
             handle = libzfs.zpool_open_canfail(self.handle, c_name)
@@ -442,10 +445,11 @@ cdef class ZFS(object):
         if search_paths:
             iargs.path = <char **>malloc(len(search_paths) * sizeof(char *))
             iargs.paths = len(search_paths)
-            for i, p in enumerate(search_paths):
-                iargs.path[i] = <char *>p
+            for i, p in enumerate(i.encode('utf-8') for i in search_paths):
+                iargs.path[i] = p
 
         if cachefile:
+            cachefile = cachefile.encode('utf-8')
             iargs.cachefile = cachefile
 
         with nogil:
@@ -504,10 +508,13 @@ cdef class ZFS(object):
         self.write_history('zpool export', str(pool.name))
 
     def get_dataset(self, name):
-        cdef const char *c_name = name
+        cdef const char *c_name
         cdef libzfs.zfs_handle_t* handle = NULL
         cdef ZFSPool pool
         cdef ZFSDataset dataset
+
+        encoded = name.encode('utf-8')
+        c_name = name
 
         with nogil:
             handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
@@ -529,7 +536,10 @@ cdef class ZFS(object):
         cdef libzfs.zfs_handle_t* handle = NULL
         cdef ZFSPool pool
         cdef ZFSSnapshot snap
-        cdef const char *c_name = name
+        cdef const char *c_name
+
+        encoded = name.encode('utf-8')
+        c_name = name
 
         with nogil:
             handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_SNAPSHOT)
@@ -577,8 +587,11 @@ cdef class ZFS(object):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
         cdef NVList copts = NVList(otherdict=opts)
         cdef NVList cfsopts = NVList(otherdict=fsopts)
-        cdef const char *c_name = name
+        cdef const char *c_name
         cdef int ret
+
+        encoded = name.encode('utf-8')
+        c_name = encoded
 
         with nogil:
             ret = libzfs.zpool_create(
@@ -832,7 +845,7 @@ cdef class ZPoolProperty(object):
             cdef const char *c_value = value
             cdef int ret
 
-            name = self.name
+            name = self.name.encode('utf-8')
             c_name = name
 
             with nogil:
@@ -1056,9 +1069,10 @@ cdef class ZFSUserProperty(ZFSProperty):
             cdef const char *c_value
             cdef int ret
 
-            str_value = str(value)
+            value = str(value).encode('utf-8')
+            name = self.name.encode('utf-8')
             c_name = self.name
-            c_value = str_value
+            c_value = value
 
             if self.dataset:
                 with nogil:
@@ -1525,11 +1539,11 @@ cdef class ZFSPool(object):
 
     property root_dataset:
         def __get__(self):
-            cdef const char *c_name;
+            cdef const char *c_name
             cdef libzfs.zfs_handle_t* handle = NULL
             cdef ZFSDataset dataset
 
-            name = self.name
+            name = self.name.encode('utf-8')
             c_name = name
 
             with nogil:
@@ -1719,9 +1733,12 @@ cdef class ZFSPool(object):
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef uint64_t vol_reservation
-        cdef const char *c_name = name
+        cdef const char *c_name
         cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
         cdef int ret
+
+        encoded = name.encode('utf-8')
+        c_name = encoded
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
             vol_reservation = libzfs.zvol_volsize_to_reservation(
@@ -2020,7 +2037,7 @@ cdef class ZFSObject(object):
             'properties': {k: p.__getstate__() for k, p in self.properties.items()},
         }
 
-    property name:
+    property name   :
         def __get__(self):
             return libzfs.zfs_get_name(self.handle)
 
@@ -2071,7 +2088,7 @@ cdef class ZFSObject(object):
         cdef uint64_t space
         cdef int ret
 
-        name = self.name
+        name = self.name.encode('utf-8')
         c_name = name
 
         if fromname:
@@ -2341,9 +2358,12 @@ cdef class ZFSDataset(ZFSObject):
 
     def snapshot(self, name, fsopts=None, recursive=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts or {})
-        cdef const char *c_name = name
+        cdef const char *c_name
         cdef int c_recursive = recursive
         cdef int ret
+
+        encoded = name.encode('utf-8')
+        c_name = encoded
 
         with nogil:
             ret = libzfs.zfs_snapshot(
@@ -2472,7 +2492,7 @@ cdef class ZFSSnapshot(ZFSObject):
         cdef int c_recursive = recursive
         cdef int ret
 
-        snapshot_name = self.snapshot_name
+        snapshot_name = self.snapshot_name.encode('utf-8')
         c_snapshot_name = snapshot_name
         parent = <ZFSDataset>self.parent
 
@@ -2491,7 +2511,7 @@ cdef class ZFSSnapshot(ZFSObject):
         cdef int c_recursive = recursive
         cdef int ret
 
-        snapshot_name = self.snapshot_name
+        snapshot_name = self.snapshot_name.encode('utf-8')
         c_snapshot_name = snapshot_name
         parent = <ZFSDataset>self.parent
 
