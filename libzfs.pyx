@@ -427,7 +427,7 @@ cdef class ZFS(object):
         pool.handle = handle
         return pool
 
-    def find_import(self, cachefile=None, destroyed=False, search_paths=None):
+    def find_import(self, cachefile=None, name=None, destroyed=False, search_paths=None):
         cdef ZFSImportablePool pool
         cdef libzfs.importargs_t iargs
         cdef char* paths = "/dev"
@@ -435,7 +435,7 @@ cdef class ZFS(object):
 
         iargs.path = &paths
         iargs.paths = 1
-        iargs.poolname = NULL
+        iargs.poolname = name or NULL
         iargs.guid = 0
         iargs.cachefile = NULL
 
