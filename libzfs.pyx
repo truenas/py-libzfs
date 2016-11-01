@@ -620,7 +620,10 @@ cdef class ZFS(object):
 
     def destroy(self, name):
         cdef libzfs.zpool_handle_t* handle
-        cdef const char *c_name = name
+        cdef const char *c_name
+
+        encoded = name.encode('utf-8')
+        c_name = encoded
 
         with nogil:
             handle = libzfs.zpool_open(self.handle, c_name)
@@ -743,7 +746,8 @@ cdef class ZFS(object):
             for arg in args:
                 history_message += eval_arg(arg)
 
-            c_message = history_message.encode('utf-8')
+            history_message = history_message.encode('utf-8')
+            c_message = history_message
 
             with nogil:
                 libzfs.zpool_log_history(self.handle, c_message)
