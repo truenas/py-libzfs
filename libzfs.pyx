@@ -431,13 +431,19 @@ cdef class ZFS(object):
         cdef ZFSImportablePool pool
         cdef libzfs.importargs_t iargs
         cdef char* paths = "/dev"
+        cdef char* c_name
         cdef nvpair.nvlist_t* result
 
         iargs.path = &paths
         iargs.paths = 1
-        iargs.poolname = name or NULL
+        iargs.poolname = NULL
         iargs.guid = 0
         iargs.cachefile = NULL
+
+        if name:
+            encoded = name.encode('utf-8')
+            c_name = encoded
+            iargs.poolname = c_name
 
         if search_paths:
             iargs.path = <char **>malloc(len(search_paths) * sizeof(char *))
