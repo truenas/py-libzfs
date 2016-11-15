@@ -209,6 +209,11 @@ cdef class NVList(object):
                 nvpair.nvlist_add_string(self.handle, key, value)
                 return
 
+        if isinstance(value, type(None)):
+            if typeid == nvpair.DATA_TYPE_BOOLEAN:
+                nvpair.nvlist_add_boolean(self.handle, key)
+                return
+
         if isinstance(value, bool):
             if typeid == nvpair.DATA_TYPE_BOOLEAN:
                 nvpair.nvlist_add_boolean_value(self.handle, key, <boolean_t>value)
@@ -367,7 +372,7 @@ cdef class NVList(object):
         if type(key) is unicode:
             key = str(key)
 
-        if type(value) is bool:
+        if type(value) is bool or value is None:
             self.set(key, value, nvpair.DATA_TYPE_BOOLEAN)
 
         if type(value) is int:
