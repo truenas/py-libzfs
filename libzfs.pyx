@@ -651,9 +651,10 @@ cdef class ZFS(object):
             if props:
                 props_nvl = NVList(otherdict=props)
                 c_props_nvl = props_nvl.handle
+
             if limitds:
                 limitds_nvl = NVList(otherdict=limitds)
-                c_limitds_nvl = limitds.handle
+                c_limitds_nvl = limitds_nvl.handle
 
             with nogil:
                 ret = libzfs.zfs_receive(
