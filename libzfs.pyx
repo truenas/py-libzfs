@@ -2203,12 +2203,15 @@ cdef class ZFSDataset(ZFSObject):
             with nogil:
                 libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
-            for b in range(0, iter.length):
-                bookmark = ZFSBookmark.__new__(ZFSBookmark)
-                bookmark.root = self.root
-                bookmark.pool = self.pool
-                bookmark.handle = <libzfs.zfs_handle_t*>iter.array[b]
-                yield bookmark
+            try:
+                for b in range(0, iter.length):
+                    bookmark = ZFSBookmark.__new__(ZFSBookmark)
+                    bookmark.root = self.root
+                    bookmark.pool = self.pool
+                    bookmark.handle = <libzfs.zfs_handle_t*>iter.array[b]
+                    yield bookmark
+            finally:
+                free(iter.array)
 
     property snapshots_recursive:
         def __get__(self):
@@ -2233,22 +2236,25 @@ cdef class ZFSDataset(ZFSObject):
             with nogil:
                 libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>dependents)
 
-            for h in range(0, iter.length):
-                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
+            try:
+                for h in range(0, iter.length):
+                    type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
 
-                if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
-                    dataset = ZFSDataset.__new__(ZFSDataset)
-                    dataset.root = self.root
-                    dataset.pool = self.pool
-                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
-                    yield dataset
+                    if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
+                        dataset = ZFSDataset.__new__(ZFSDataset)
+                        dataset.root = self.root
+                        dataset.pool = self.pool
+                        dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                        yield dataset
 
-                if type == zfs.ZFS_TYPE_SNAPSHOT:
-                    snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
-                    snapshot.root = self.root
-                    snapshot.pool = self.pool
-                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
-                    yield snapshot
+                    if type == zfs.ZFS_TYPE_SNAPSHOT:
+                        snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                        snapshot.root = self.root
+                        snapshot.pool = self.pool
+                        snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                        yield snapshot
+            finally:
+                free(iter.array)
 
     property mountpoint:
         def __get__(self):
