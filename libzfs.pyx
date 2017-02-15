@@ -38,7 +38,7 @@ from datetime import datetime
 from libc.errno cimport errno
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset, strncpy
-from libc.stdlib cimport free
+from libc.stdlib cimport free, realloc
 
 
 include "nvpair.pxi"
@@ -272,6 +272,17 @@ ELSE:
         MAX_DATASET_NAME_LEN = libzfs.ZFS_MAXNAMELEN
 
 
+cdef struct iter_state:
+    uintptr_t *array
+    size_t length
+    size_t alloc
+
+
+cdef struct prop_iter_state:
+    zfs.zfs_type_t type
+    void *props
+
+
 class DiffRecord(object):
     def __init__(self, raw):
         timestamp, cmd, typ, rest = raw.split(maxsplit=3)
@@ -317,8 +328,12 @@ cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
     cdef int history
     cdef char *history_prefix
+    cdef object proptypes
 
     def __cinit__(self, history=False, history_prefix=''):
+        cdef zfs.zfs_type_t c_type
+        cdef prop_iter_state iter
+
         self.handle = libzfs.libzfs_init()
         if isinstance(history, bool):
             self.history = history
@@ -331,11 +346,35 @@ cdef class ZFS(object):
             else:
                 raise ZFSException(Error.BADTYPE, 'history_prefix is a string parameter')
 
+        # Cache all the proptypes upfront
+        self.proptypes = {}
+
+        for t in DatasetType.__members__.values():
+            proptypes = self.proptypes.setdefault(t, [])
+            c_type = <zfs.zfs_type_t>t
+            iter.type = c_type
+            iter.props = <void *>proptypes
+            with nogil:
+                libzfs.zprop_iter(self.__iterate_props, <void*>&iter, True, True, c_type)
+
     def __dealloc__(self):
         libzfs.libzfs_fini(self.handle)
 
     def __getstate__(self):
         return [p.__getstate__() for p in self.pools]
+
+    @staticmethod
+    cdef int __iterate_props(int proptype, void *arg) nogil:
+        cdef prop_iter_state *iter
+
+        iter = <prop_iter_state *>arg
+        if not zfs.zfs_prop_valid_for_type(proptype, iter.type):
+            return zfs.ZPROP_CONT
+
+        with gil:
+            proptypes = <object>iter.props
+            proptypes.append(proptype)
+            return zfs.ZPROP_CONT
 
     @staticmethod
     cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg) nogil:
@@ -1889,13 +1928,6 @@ cdef class ZFSPropertyDict(dict):
     cdef ZFSObject parent
     cdef object props
 
-    @staticmethod
-    cdef int __iterate_props(int proptype, void* arg) nogil:
-        with gil:
-            proptypes = <object>arg
-            proptypes.append(proptype)
-            return zfs.ZPROP_CONT
-
     def __repr__(self):
         return '{' + ', '.join(["'{0}': {1}".format(k, repr(v)) for k, v in self.items()]) + '}'
 
@@ -1903,20 +1935,16 @@ cdef class ZFSPropertyDict(dict):
         cdef ZFSProperty prop
         cdef ZFSUserProperty userprop
         cdef nvpair.nvlist_t *nvlist
-        cdef zfs.zfs_type_t c_type = <zfs.zfs_type_t>self.parent.type
-        proptypes = []
+
+        proptypes = self.parent.root.proptypes[self.parent.type]
         self.props = {}
 
         with nogil:
-            libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, c_type)
             nvlist = libzfs.zfs_get_user_props(self.parent.handle)
 
         nvl = NVList(<uintptr_t>nvlist)
 
         for x in proptypes:
-            if not zfs.zfs_prop_valid_for_type(x, self.parent.type):
-                continue
-
             prop = ZFSProperty.__new__(ZFSProperty)
             prop.dataset = self.parent
             prop.propid = x
@@ -2107,43 +2135,35 @@ cdef class ZFSDataset(ZFSObject):
         return ret
 
     @staticmethod
-    cdef int __iterate_children(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        with gil:
-            datasets = <object>arg
-            datasets.append(<uintptr_t>handle)
+    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef iter_state *iter
 
-    @staticmethod
-    cdef int __iterate_snapshots(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        with gil:
-            snapshots = <object>arg
-            snapshots.append(<uintptr_t>handle)
+        iter = <iter_state *>arg
+        if iter.length == iter.alloc:
+            iter.alloc += 128
+            iter.array = <uintptr_t *>realloc(iter.array, iter.alloc * sizeof(uintptr_t))
 
-    @staticmethod
-    cdef int __iterate_bookmarks(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        with gil:
-            bookmarks = <object>arg
-            bookmarks.append(<uintptr_t>handle)
-
-    @staticmethod
-    cdef int __iterate_dependents(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        with gil:
-            dependents = <object>arg
-            dependents.append(<uintptr_t>handle)
+        iter.array[iter.length] = <uintptr_t>handle
+        iter.length += 1
 
     property children:
         def __get__(self):
             cdef ZFSDataset dataset
+            cdef iter_state iter
 
             datasets = []
             with nogil:
-                libzfs.zfs_iter_filesystems(self.handle, self.__iterate_children, <void*>datasets)
+                libzfs.zfs_iter_filesystems(self.handle, self.__iterate, <void*>&iter)
 
-            for h in datasets:
-                dataset = ZFSDataset.__new__(ZFSDataset)
-                dataset.root = self.root
-                dataset.pool = self.pool
-                dataset.handle = <libzfs.zfs_handle_t*><uintptr_t>h
-                yield dataset
+            try:
+                for h in range(0, iter.length):
+                    dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.root = self.root
+                    dataset.pool = self.pool
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    yield dataset
+            finally:
+                free(iter.array)
 
     property children_recursive:
         def __get__(self):
@@ -2155,36 +2175,40 @@ cdef class ZFSDataset(ZFSObject):
     property snapshots:
         def __get__(self):
             cdef ZFSSnapshot snapshot
+            cdef iter_state iter
 
-            snapshots = []
+            memset(&iter, 0, sizeof(iter))
             with nogil:
-                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate_snapshots, <void*>snapshots)
+                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter)
 
-            for h in snapshots:
-                snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
-                snapshot.root = self.root
-                snapshot.pool = self.pool
-                snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
-                if snapshot.snapshot_name == '$ORIGIN':
-                    continue
+            try:
+                for h in range(0, iter.length):
+                    snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.root = self.root
+                    snapshot.pool = self.pool
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    if snapshot.snapshot_name == '$ORIGIN':
+                        continue
 
-                yield snapshot
+                    yield snapshot
+            finally:
+                free(iter.array)
 
     property bookmarks:
         def __get__(self):
             cdef ZFSBookmark bookmark
+            cdef iter_state iter
 
             bookmarks = []
             with nogil:
-                libzfs.zfs_iter_bookmarks(self.handle, self.__iterate_bookmarks, <void *>bookmarks)
+                libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
-            for b in bookmarks:
+            for b in range(0, iter.length):
                 bookmark = ZFSBookmark.__new__(ZFSBookmark)
                 bookmark.root = self.root
                 bookmark.pool = self.pool
-                bookmark.handle = <libzfs.zfs_handle_t*><uintptr_t>b
+                bookmark.handle = <libzfs.zfs_handle_t*>iter.array[b]
                 yield bookmark
-
 
     property snapshots_recursive:
         def __get__(self):
@@ -2203,26 +2227,27 @@ cdef class ZFSDataset(ZFSObject):
             cdef ZFSDataset dataset
             cdef ZFSSnapshot snapshot
             cdef zfs.zfs_type_t type
+            cdef iter_state iter
 
             dependents = []
             with nogil:
-                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate_dependents, <void*>dependents)
+                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>dependents)
 
-            for h in dependents:
-                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*><uintptr_t>h)
+            for h in range(0, iter.length):
+                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
 
                 if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
                     dataset = ZFSDataset.__new__(ZFSDataset)
                     dataset.root = self.root
                     dataset.pool = self.pool
-                    dataset.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     yield dataset
 
                 if type == zfs.ZFS_TYPE_SNAPSHOT:
                     snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
                     snapshot.root = self.root
                     snapshot.pool = self.pool
-                    snapshot.handle = <libzfs.zfs_handle_t*><uintptr_t>h
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     yield snapshot
 
     property mountpoint:
