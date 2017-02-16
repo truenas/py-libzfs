@@ -2232,7 +2232,7 @@ cdef class ZFSDataset(ZFSObject):
             cdef iter_state iter
 
             with nogil:
-                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>iter)
+                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>&iter)
 
             try:
                 for h in range(0, iter.length):
