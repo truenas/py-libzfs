@@ -2234,7 +2234,7 @@ cdef class ZFSDataset(ZFSObject):
 
             dependents = []
             with nogil:
-                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>dependents)
+                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>iter)
 
             try:
                 for h in range(0, iter.length):
