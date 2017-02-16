@@ -2199,7 +2199,6 @@ cdef class ZFSDataset(ZFSObject):
             cdef ZFSBookmark bookmark
             cdef iter_state iter
 
-            bookmarks = []
             with nogil:
                 libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
@@ -2232,7 +2231,6 @@ cdef class ZFSDataset(ZFSObject):
             cdef zfs.zfs_type_t type
             cdef iter_state iter
 
-            dependents = []
             with nogil:
                 libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>iter)
 
