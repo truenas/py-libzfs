@@ -530,6 +530,7 @@ cdef class ZFS(object):
             raise self.get_error()
 
         self.write_history('zpool import', str(pool.guid), newname if newname else pool.name)
+        return self.get(newname)
 
     def export_pool(self, ZFSPool pool):
         cdef int ret
