@@ -1974,9 +1974,6 @@ cdef class ZFSPropertyDict(dict):
         cdef const char *c_key
         cdef const char *c_value
 
-        if key in self.props:
-            raise KeyError('Cannot overwrite existing property')
-
         if type(value) is not ZFSUserProperty:
             raise ValueError('Value should be of type ZFSUserProperty')
 
