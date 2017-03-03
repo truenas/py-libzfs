@@ -2285,12 +2285,16 @@ cdef class ZFSDataset(ZFSObject):
 
         self.root.write_history('zfs mount', self.name)
 
-    def mount_recursive(self):
+    def mount_recursive(self, ignore_errors=False):
         if self.type != DatasetType.FILESYSTEM:
             return
 
         if self.properties['canmount'].value == 'on':
-            self.mount()
+            try:
+                self.mount()
+            except:
+                if not ignore_errors:
+                    raise
 
         for i in self.children:
             i.mount_recursive()
