@@ -124,7 +124,7 @@ ZFS_PROPERTY_CONVERTERS = {
     'mounted': ZfsConverter(bool, readonly=True, yes='yes', no='no'),
     'quota': ZfsConverter(int, nullable=True, null='none', read_null='0'),
     'reservation': ZfsConverter(int, nullable=True, null='none', read_null='0'),
-    'recordsize': ZfsConverter(str),
+    'recordsize': ZfsConverter(int, nullable=True),
     'mountpoint': ZfsConverter(str),
     'sharenfs': ZfsConverter(str, nullable=True, null='off'),
     'checksum': ZfsConverter(bool),
