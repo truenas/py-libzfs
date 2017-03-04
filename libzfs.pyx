@@ -2297,7 +2297,7 @@ cdef class ZFSDataset(ZFSObject):
                     raise
 
         for i in self.children:
-            i.mount_recursive()
+            i.mount_recursive(ignore_errors)
 
     def umount(self, force=False):
         cdef int flags = 0
