@@ -717,7 +717,7 @@ cdef class ZFS(object):
                 ELSE:
                     ret = libzfs.zfs_receive(handle, c_name, c_props_nvl, &flags, c_fd)
 
-        if ret != 0:
+        if ret not in (0, -2):
             raise self.get_error()
 
     def write_history(self, *args):
