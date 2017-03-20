@@ -48,7 +48,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZAP_MAXNAMELEN
         ZAP_MAXVALUELEN
 
-    IF FREEBSD_VERSION >= 1003509:
+    IF (FREEBSD_VERSION >= 1003509 and FREEBSD_VERSION <= 1100000) or FREEBSD_VERSION >= 1100504:
         enum:
             ZFS_MAX_DATASET_NAME_LEN
 
