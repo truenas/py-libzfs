@@ -43,7 +43,7 @@ cdef extern from "libzfs.h" nogil:
         MAXNAMELEN
         MAXPATHLEN
 
-    IF FREEBSD_VERSION < 1003509:
+    IF FREEBSD_VERSION < 1003509 or (FREEBSD_VERSION >= 1100000 and FREEBSD_VERSION < 1100504):
         cdef enum:
             ZFS_MAXNAMELEN
             ZPOOL_MAXNAMELEN
