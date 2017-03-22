@@ -512,10 +512,14 @@ cdef class ZFS(object):
 
             yield pool
 
-    def import_pool(self, ZFSImportablePool pool, newname, opts):
+    def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False):
         cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
         cdef int ret
+        cdef int flags = 0
+
+        if missing_log:
+            flags |= zfs.ZFS_IMPORT_MISSING_LOG
 
         with nogil:
             ret = libzfs.zpool_import_props(
@@ -523,7 +527,7 @@ cdef class ZFS(object):
                 pool.nvlist.handle,
                 c_newname,
                 copts.handle,
-                False
+                flags
             )
 
         if ret != 0:
@@ -2092,11 +2096,11 @@ cdef class ZFSObject(object):
 
         self.root.write_history('zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
 
-    def delete(self):
+    def delete(self, bint defer=False):
         cdef int ret
 
         with nogil:
-            ret = libzfs.zfs_destroy(self.handle, True)
+            ret = libzfs.zfs_destroy(self.handle, defer)
 
         if ret != 0:
             raise self.root.get_error()
