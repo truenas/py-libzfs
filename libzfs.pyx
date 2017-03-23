@@ -2105,6 +2105,8 @@ cdef class ZFSObject(object):
         if ret != 0:
             raise self.root.get_error()
 
+        self.root.write_history('zfs destroy', self.name)
+
     def get_send_space(self, fromname=None):
         cdef const char *cfromname = NULL
         cdef const char *c_name
