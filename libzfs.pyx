@@ -330,7 +330,7 @@ cdef class ZFS(object):
     cdef char *history_prefix
     cdef object proptypes
 
-    def __cinit__(self, history=False, history_prefix=''):
+    def __cinit__(self, history=True, history_prefix=''):
         cdef zfs.zfs_type_t c_type
         cdef prop_iter_state iter
 
