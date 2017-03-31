@@ -1107,7 +1107,7 @@ cdef class ZFSUserProperty(ZFSProperty):
             cdef const char *c_value
             cdef int ret
 
-            str_value = str(value)
+            str_value = str(value).encode('utf-8')
             c_name = self.name
             c_value = str_value
 

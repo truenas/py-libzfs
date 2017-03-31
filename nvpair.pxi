@@ -82,7 +82,7 @@ cdef class NVList(object):
 
         if datatype == nvpair.DATA_TYPE_STRING:
             nvpair.nvpair_value_string(pair, &cstr)
-            return cstr
+            return (<bytes>cstr).decode('utf-8')
 
         if datatype == nvpair.DATA_TYPE_BOOLEAN:
             nvpair.nvpair_value_boolean_value(pair, <boolean_t*>&boolean)
