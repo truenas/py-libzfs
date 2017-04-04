@@ -741,6 +741,8 @@ cdef class ZFS(object):
             if isinstance(argument, ZFSVdev):
                 return eval_zfsvdev(argument)
 
+            return str(argument)
+
         def eval_str(argument):
             return " " + argument
 
