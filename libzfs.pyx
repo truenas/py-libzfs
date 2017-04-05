@@ -2583,7 +2583,16 @@ cdef class ZFSSnapshot(ZFSObject):
 
             nvl = NVList(<uintptr_t>ptr)
             return dict(nvl)
+        
+    property mountpoint:
+        def __get__(self):
+            cdef char *mntpt
+            if libzfs.zfs_is_mounted(self.handle, &mntpt) == 0:
+                return None
 
+            result = mntpt
+            free(mntpt)
+            return result
 
 cdef class ZFSBookmark(ZFSObject):
     def __getstate__(self):
