@@ -2456,7 +2456,8 @@ cdef class ZFSSnapshot(ZFSObject):
         ret.update({
             'holds': self.holds,
             'dataset': self.parent.name,
-            'snapshot_name': self.snapshot_name
+            'snapshot_name': self.snapshot_name,
+            'mountpoint': self.mountpoint
         })
         return ret
 
