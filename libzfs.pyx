@@ -1792,8 +1792,8 @@ cdef class ZFSPool(object):
                     self.root.handle,
                     c_name
                 )
-                if ret != 0:
-                    raise self.root.get_error()
+            if ret != 0:
+                raise self.root.get_error()
 
         with nogil:
             ret = libzfs.zfs_create(
