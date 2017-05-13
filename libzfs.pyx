@@ -1788,10 +1788,12 @@ cdef class ZFSPool(object):
 
         if create_ancestors:
             with nogil:
-                libzfs.zfs_create_ancestors(
+                ret = libzfs.zfs_create_ancestors(
                     self.root.handle,
                     c_name
                 )
+                if ret != 0:
+                    raise self.root.get_error()
 
         with nogil:
             ret = libzfs.zfs_create(
