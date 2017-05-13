@@ -1772,7 +1772,7 @@ cdef class ZFSPool(object):
         cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
         return NVList(nvl)
 
-    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False):
+    def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
         cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef uint64_t vol_reservation
         cdef const char *c_name = name
@@ -1785,6 +1785,15 @@ cdef class ZFSPool(object):
                 cfsopts.handle)
 
             cfsopts['refreservation'] = vol_reservation
+
+        if create_ancestors:
+            with nogil:
+                ret = libzfs.zfs_create_ancestors(
+                    self.root.handle,
+                    c_name
+                )
+            if ret != 0:
+                raise self.root.get_error()
 
         with nogil:
             ret = libzfs.zfs_create(
