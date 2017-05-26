@@ -145,8 +145,8 @@ class VDevState(enum.IntEnum):
     FAULTED = zfs.VDEV_STATE_FAULTED
     DEGRADED = zfs.VDEV_STATE_DEGRADED
     HEALTHY = zfs.VDEV_STATE_HEALTHY
-    
-    
+
+
 class VDevAuxState(enum.IntEnum):
     NONE = zfs.VDEV_AUX_NONE
     OPEN_FAILED = zfs.VDEV_AUX_OPEN_FAILED
@@ -164,7 +164,7 @@ class VDevAuxState(enum.IntEnum):
     BAD_LOG = zfs.VDEV_AUX_BAD_LOG
     EXTERNAL = zfs.VDEV_AUX_EXTERNAL
     SPLIT_POOL = zfs.VDEV_AUX_SPLIT_POOL
-    ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG    
+    ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG
 
 
 class PoolState(enum.IntEnum):
@@ -217,8 +217,8 @@ class ScanState(enum.IntEnum):
     SCANNING = zfs.DSS_SCANNING
     FINISHED = zfs.DSS_FINISHED
     CANCELED = zfs.DSS_CANCELED
-    
-    
+
+
 class ZIOType(enum.IntEnum):
     NONE = zfs.ZIO_TYPE_NULL
     READ = zfs.ZIO_TYPE_READ
@@ -607,7 +607,7 @@ cdef class ZFS(object):
             raise err
 
     def get_dataset_by_path(self, path):
-        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_path_to_zhandle(self.handle, path, zfs.ZFS_TYPE_DATASET)
+        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_path_to_zhandle(self.handle, path, DatasetType.FILESYSTEM.value)
         cdef ZFSPool pool
         cdef ZFSDataset dataset
         if handle == NULL:
@@ -2593,7 +2593,7 @@ cdef class ZFSSnapshot(ZFSObject):
 
             nvl = NVList(<uintptr_t>ptr)
             return dict(nvl)
-        
+
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
