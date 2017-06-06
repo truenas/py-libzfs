@@ -2131,7 +2131,10 @@ cdef class ZFSObject(object):
             cfromname = fromname
 
         with nogil:
-            ret = libzfs.lzc_send_space(c_name, cfromname, &space)
+            IF FREEBSD_VERSION >= 1200030:
+                ret = libzfs.lzc_send_space(c_name, cfromname, 0, &space)
+            ELSE:
+                ret = libzfs.lzc_send_space(c_name, cfromname, &space)
 
         if ret != 0:
             raise ZFSException(Error.FAULT, "Cannot obtain space estimate: ")

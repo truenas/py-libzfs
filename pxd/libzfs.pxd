@@ -31,10 +31,18 @@ from types cimport *
 
 IF FREEBSD_VERSION >= 1000000:
     cdef extern from "libzfs_core.h" nogil:
-        enum lzc_send_flags:
-            LZC_SEND_FLAG_EMBED_DATA
+        IF FREEBSD_VERSION >= 1200030:
+            enum lzc_send_flags:
+                LZC_SEND_FLAG_EMBED_DATA
+                LZC_SEND_FLAG_LARGE_BLOCK
+                LZC_SEND_FLAG_COMPRESS
 
-        extern int lzc_send_space(const char *, const char *, uint64_t *)
+            extern int lzc_send_space(const char *, const char *, enum, uint64_t *)
+        ELSE:
+            enum lzc_send_flags:
+                LZC_SEND_FLAG_EMBED_DATA
+
+            extern int lzc_send_space(const char *, const char *, uint64_t *)
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
