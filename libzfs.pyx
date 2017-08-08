@@ -2131,7 +2131,7 @@ cdef class ZFSObject(object):
             cfromname = fromname
 
         with nogil:
-            IF FREEBSD_VERSION >= 1200030 or TRUEOS:
+            IF FREEBSD_VERSION >= 1101501:
                 ret = libzfs.lzc_send_space(c_name, cfromname, 0, &space)
             ELSE:
                 ret = libzfs.lzc_send_space(c_name, cfromname, &space)
