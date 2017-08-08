@@ -31,7 +31,7 @@ from types cimport *
 
 IF FREEBSD_VERSION >= 1000000:
     cdef extern from "libzfs_core.h" nogil:
-        IF FREEBSD_VERSION >= 1200030 or TRUEOS:
+        IF FREEBSD_VERSION >= 1101501:
             enum lzc_send_flags:
                 LZC_SEND_FLAG_EMBED_DATA
                 LZC_SEND_FLAG_LARGE_BLOCK
