@@ -2376,7 +2376,7 @@ cdef class ZFSDataset(ZFSObject):
         cdef zfs.zfs_cmd_t cmd
         cdef int ret
 
-        memset(&cmd, 0, cython.sizeof(libzfs.zfs_cmd))
+        memset(&cmd, 0, cython.sizeof(zfs.zfs_cmd_t))
 
         cmd.zc_cookie = fd
         strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)

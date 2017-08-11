@@ -54,6 +54,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZFS_IMPORT_ANY_HOST
         ZFS_IMPORT_MISSING_LOG
         ZFS_IMPORT_ONLY
+        ZFS_ONLINE_EXPAND
 
     IF (FREEBSD_VERSION >= 1003509 and FREEBSD_VERSION <= 1100000) or FREEBSD_VERSION >= 1100504:
         enum:
