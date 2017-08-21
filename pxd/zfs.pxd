@@ -364,6 +364,12 @@ cdef extern from "sys/fs/zfs.h" nogil:
         POOL_SCAN_RESILVER
         POOL_SCAN_FUNCS
         
+    IF TRUEOS:
+        ctypedef enum pool_scrub_cmd_t:
+            POOL_SCRUB_NORMAL = 0
+            POOL_SCRUB_PAUSE
+            POOL_SCRUB_FLAGS_END
+
     ctypedef enum zio_type_t:
         ZIO_TYPE_NULL = 0
         ZIO_TYPE_READ
@@ -372,18 +378,34 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZIO_TYPE_CLAIM
         ZIO_TYPE_IOCTL
 
-    ctypedef struct pool_scan_stat_t:
-        uint64_t	pss_func
-        uint64_t	pss_state
-        uint64_t	pss_start_time
-        uint64_t	pss_end_time
-        uint64_t	pss_to_examine
-        uint64_t	pss_examined
-        uint64_t	pss_to_process
-        uint64_t	pss_processed
-        uint64_t	pss_errors
-        uint64_t	pss_pass_exam
-        uint64_t	pss_pass_start
+    IF TRUEOS:
+        ctypedef struct pool_scan_stat_t:
+            uint64_t    pss_func
+            uint64_t    pss_state
+            uint64_t    pss_start_time
+            uint64_t    pss_end_time
+            uint64_t    pss_to_examine
+            uint64_t    pss_examined
+            uint64_t    pss_to_process
+            uint64_t    pss_processed
+            uint64_t    pss_errors
+            uint64_t    pss_pass_exam
+            uint64_t    pss_pass_start
+            uint64_t    pss_pass_scrub_pause
+            uint64_t    pss_pass_scrub_spent_paused
+    ELSE:
+         ctypedef struct pool_scan_stat_t:
+            uint64_t    pss_func
+            uint64_t    pss_state
+            uint64_t    pss_start_time
+            uint64_t    pss_end_time
+            uint64_t    pss_to_examine
+            uint64_t    pss_examined
+            uint64_t    pss_to_process
+            uint64_t    pss_processed
+            uint64_t    pss_errors
+            uint64_t    pss_pass_exam
+            uint64_t    pss_pass_start
     
     ctypedef enum dsl_scan_state_t:
         DSS_NONE
