@@ -24,14 +24,15 @@
 # SUCH DAMAGE.
 #
 
-import Cython.Compiler.Options
-Cython.Compiler.Options.annotate = True
 import os
 import subprocess
-from distutils.core import setup
-from Cython.Distutils.extension import Extension
-from Cython.Distutils import build_ext
+from setuptools import setup
 
+try:
+    from Cython.Build import build_ext
+    from Cython.Distutils.extension import Extension
+except ImportError:
+    raise ImportError("This package requires Cython to build properly. Please install it first.")
 
 if "FREEBSD_SRC" not in os.environ:
     os.environ["FREEBSD_SRC"] = "/usr/src"
@@ -57,21 +58,26 @@ system_includes = [
 
 system_includes = [os.path.expandvars(x) for x in system_includes]
 freebsd_version = int(subprocess.check_output("uname -K", shell=True).strip())
+trueos = os.getenv('TRUEOS')
 
 setup(
     name='libzfs',
     version='1.0',
     packages=[''],
     package_data={'': ['*.html', '*.c']},
+    setup_requires=[
+        'setuptools>=18.0',
+        'Cython',
+    ],
     cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension(
             "libzfs",
             ["libzfs.pyx"],
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
-            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0"],
+            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0",],
+            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version, 'TRUEOS': trueos},
             cython_include_dirs=["./pxd"],
-            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version, 'TRUEOS': os.getenv('TRUEOS')},
             include_dirs=system_includes,
             extra_link_args=["-g"],
         )
