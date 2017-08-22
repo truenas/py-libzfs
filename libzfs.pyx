@@ -1852,7 +1852,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF TRUEOS:
+            IF EXPERIMENTAL:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB)
@@ -1866,7 +1866,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF TRUEOS:
+            IF EXPERIMENTAL:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE)

@@ -59,6 +59,7 @@ system_includes = [
 system_includes = [os.path.expandvars(x) for x in system_includes]
 freebsd_version = int(subprocess.check_output("uname -K", shell=True).strip())
 trueos = os.getenv('TRUEOS')
+experimental = os.getenv('EXPERIMENTAL')
 
 setup(
     name='libzfs',
@@ -76,7 +77,7 @@ setup(
             ["libzfs.pyx"],
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
             extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g", "-O0",],
-            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version, 'TRUEOS': trueos},
+            cython_compile_time_env={'FREEBSD_VERSION': freebsd_version, 'TRUEOS': trueos, 'EXPERIMENTAL': experimental},
             cython_include_dirs=["./pxd"],
             include_dirs=system_includes,
             extra_link_args=["-g"],

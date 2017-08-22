@@ -364,7 +364,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         POOL_SCAN_RESILVER
         POOL_SCAN_FUNCS
         
-    IF TRUEOS:
+    IF EXPERIMENTAL:
         ctypedef enum pool_scrub_cmd_t:
             POOL_SCRUB_NORMAL = 0
             POOL_SCRUB_PAUSE
@@ -378,7 +378,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZIO_TYPE_CLAIM
         ZIO_TYPE_IOCTL
 
-    IF TRUEOS:
+    IF EXPERIMENTAL:
         ctypedef struct pool_scan_stat_t:
             uint64_t    pss_func
             uint64_t    pss_state
