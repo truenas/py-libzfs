@@ -29,7 +29,7 @@ import subprocess
 from setuptools import setup
 
 try:
-    from Cython.Build import build_ext
+    from Cython.Distutils import build_ext
     from Cython.Distutils.extension import Extension
 except ImportError:
     raise ImportError("This package requires Cython to build properly. Please install it first.")
