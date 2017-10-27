@@ -1521,7 +1521,7 @@ cdef class ZPoolScrub(object):
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
 
     def __getstate__(self):
-        return {
+        state = {
             'function': self.function.name if self.function else None,
             'state': self.state.name if self.stat else None,
             'start_time': self.start_time,
@@ -1531,6 +1531,9 @@ cdef class ZPoolScrub(object):
             'bytes_processed': self.bytes_to_scan,
             'errors': self.errors
         }
+        if hasattr(self, 'bytes_issued'):
+            state['bytes_issued'] = self.bytes_issued
+        return state
 
 
 cdef class ZFSPool(object):
