@@ -1492,6 +1492,14 @@ cdef class ZPoolScrub(object):
 
             return self.stat[5]
 
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+        property bytes_issued:
+            def __get__(self):
+                if not self.stat:
+                    return None
+
+                return self.stat[13]
+
     property errors:
         def __get__(self):
             if not self.stat:
@@ -1507,7 +1515,10 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
+            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+                return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
+            ELSE:
+                return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
 
     def __getstate__(self):
         return {
