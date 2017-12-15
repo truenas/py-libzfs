@@ -364,7 +364,9 @@ cdef extern from "sys/fs/zfs.h" nogil:
         POOL_SCAN_RESILVER
         POOL_SCAN_FUNCS
         
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+    ):
         ctypedef enum pool_scrub_cmd_t:
             POOL_SCRUB_NORMAL = 0
             POOL_SCRUB_PAUSE
@@ -378,7 +380,9 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZIO_TYPE_CLAIM
         ZIO_TYPE_IOCTL
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+    ):
         ctypedef struct pool_scan_stat_t:
             uint64_t    pss_func
             uint64_t    pss_state

@@ -1492,7 +1492,9 @@ cdef class ZPoolScrub(object):
 
             return self.stat[5]
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+    ):
         property bytes_issued:
             def __get__(self):
                 if not self.stat:
@@ -1515,7 +1517,9 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+            ):
                 return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
             ELSE:
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
@@ -1866,7 +1870,9 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+            ):
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB)
@@ -1880,7 +1886,9 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+            ):
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE)

@@ -56,7 +56,9 @@ cdef extern from "libzfs.h" nogil:
             ZFS_MAXNAMELEN
             ZPOOL_MAXNAMELEN
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+    ):
         cdef enum:
             EZFS_SCRUB_PAUSED
 
@@ -183,7 +185,9 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_destroy(zpool_handle_t *, const char *)
     extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *)
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044:
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
+        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
+    ):
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t, zfs.pool_scrub_cmd_t)
     ELSE:
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t)
