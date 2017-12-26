@@ -2306,7 +2306,7 @@ cdef class ZFSDataset(ZFSObject):
             if libzfs.zfs_is_mounted(self.handle, &mntpt) == 0:
                 return None
 
-            result = mntpt
+            result = str(mntpt)
             free(mntpt)
             return result
 
