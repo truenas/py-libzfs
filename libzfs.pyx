@@ -40,6 +40,8 @@ from libc.stdint cimport uintptr_t
 from libc.string cimport memset, strncpy
 from libc.stdlib cimport free, realloc
 
+GLOBAL_CONTEXT_LOCK = threading.Lock()
+
 
 include "nvpair.pxi"
 include "converter.pxi"
@@ -356,6 +358,21 @@ cdef class ZFS(object):
             iter.props = <void *>proptypes
             with nogil:
                 libzfs.zprop_iter(self.__iterate_props, <void*>&iter, True, True, c_type)
+
+    def __enter__(self):
+        GLOBAL_CONTEXT_LOCK.acquire()
+        return self
+
+    def __exit__(self, exc_type, value, traceback):
+        self.__libzfs_fini()
+        GLOBAL_CONTEXT_LOCK.release()
+        if exc_type is not None:
+            raise
+
+    def __libzfs_fini(self):
+        if self.handle:
+            libzfs.libzfs_fini(self.handle)
+            self.handle = NULL
 
     def __dealloc__(self):
         libzfs.libzfs_fini(self.handle)
