@@ -375,7 +375,7 @@ cdef class ZFS(object):
             self.handle = NULL
 
     def __dealloc__(self):
-        libzfs.libzfs_fini(self.handle)
+        self.__libzfs_fini()
 
     def __getstate__(self):
         return [p.__getstate__() for p in self.pools]
