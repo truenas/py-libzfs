@@ -1519,6 +1519,15 @@ cdef class ZPoolScrub(object):
 
                 return self.stat[13]
 
+        property pause:
+            def __get__(self):
+                if not self.stat:
+                    return None
+
+                if self.state != ScanState.SCANNING:
+                    return None
+                return datetime.fromtimestamp(self.stat[11])
+
     property errors:
         def __get__(self):
             if not self.stat:
@@ -1554,6 +1563,8 @@ cdef class ZPoolScrub(object):
         }
         if hasattr(self, 'bytes_issued'):
             state['bytes_issued'] = self.bytes_issued
+        if hasattr(self, 'pause'):
+            state['pause'] = self.pause
         return state
 
 
