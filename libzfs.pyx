@@ -1526,6 +1526,8 @@ cdef class ZPoolScrub(object):
 
                 if self.state != ScanState.SCANNING:
                     return None
+                if self.stat[11] == 0:
+                    return None
                 return datetime.fromtimestamp(self.stat[11])
 
     property errors:
