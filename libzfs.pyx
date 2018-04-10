@@ -2401,12 +2401,15 @@ cdef class ZFSDataset(ZFSObject):
         for i in self.children:
             i.umount_recursive(force)
 
-    def send(self, fd, fromname=None, toname=None, flags=set()):
+    def send(self, fd, fromname=None, toname=None, flags=None):
         cdef int cfd = fd
         cdef int err
         cdef char *ctoname
         cdef char *cfromname = NULL
         cdef libzfs.sendflags_t cflags
+
+        if isinstance(flags, set) is False:
+            flags = set()
 
         memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
 
@@ -2628,7 +2631,9 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
 
-    def send(self, fd, fromname, flags=set()):
+    def send(self, fd, fromname, flags=None):
+        if isinstance(flags, set) is False:
+            flags = set()
         return self.parent.send(fd, toname=self.snapshot_name, fromname=fromname, flags=flags)
 
     property snapshot_name:
