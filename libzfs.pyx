@@ -2401,19 +2401,19 @@ cdef class ZFSDataset(ZFSObject):
         for i in self.children:
             i.umount_recursive(force)
 
-    def send(self, fd, **kwargs):
+    def send(self, fd, fromname=None, toname=None, flags=None):
         cdef int cfd = fd
         cdef int err
         cdef char *ctoname
         cdef char *cfromname = NULL
         cdef libzfs.sendflags_t cflags
 
-        toname = kwargs.get('toname')
-        fromname = kwargs.get('fromname')
-        flags = kwargs.get('flags')
+        if isinstance(flags, set) is False:
+            flags = set()
+
         memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
 
-        if not toname:
+        if isinstance(toname, str) is False:
             raise ValueError('toname argument is required')
 
         ctoname = toname
@@ -2631,9 +2631,9 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
 
-    def send(self, fd, **kwargs):
-        fromname = kwargs.get('fromname')
-        flags = kwargs.get('flags')
+    def send(self, fd, fromname, flags=None):
+        if isinstance(flags, set) is False:
+            flags = set()
         return self.parent.send(fd, toname=self.snapshot_name, fromname=fromname, flags=flags)
 
     property snapshot_name:
