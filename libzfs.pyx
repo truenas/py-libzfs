@@ -2631,7 +2631,7 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
 
-    def send(self, fd, fromname, flags=None):
+    def send(self, fd, fromname=None, flags=None):
         if isinstance(flags, set) is False:
             flags = set()
         return self.parent.send(fd, toname=self.snapshot_name, fromname=fromname, flags=flags)
