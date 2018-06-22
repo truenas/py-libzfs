@@ -1821,15 +1821,32 @@ cdef class ZFSPool(object):
         return NVList(nvl)
 
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
-        cdef NVList cfsopts = NVList(otherdict=fsopts)
+        cdef NVList cfsopts
         cdef uint64_t vol_reservation
         cdef const char *c_name = name
         cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
-        cdef int ret
+        #cdef char[1024] msg
+        #cdef nvpair.nvlist_t *nvlist
+
+        # FIXME: for some reason it complains volsize is not valid property for VOLUME
+        #nvlist = libzfs.zfs_valid_proplist(self.root.handle, 4, cfsopts.handle, 0, NULL, self.handle, msg)
+        #if nvlist == NULL:
+        #    raise self.root.get_error()
+
+        # refreservation will not be set correctly if volblocksize is not an integer
+        # making change of volsize not work afterwards
+        for i in ('volsize', 'volblocksize'):
+            if i not in fsopts:
+                continue
+            value = fsopts[i]
+            if isinstance(value, str):
+                fsopts[i] = nicestrtonum(self.root, value)
+
+        cfsopts = NVList(otherdict=fsopts)
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
             vol_reservation = libzfs.zvol_volsize_to_reservation(
-                nicestrtonum(self.root, cfsopts['volsize']),
+                cfsopts['volsize'],
                 cfsopts.handle)
 
             cfsopts['refreservation'] = vol_reservation
