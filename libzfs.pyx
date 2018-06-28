@@ -640,12 +640,20 @@ cdef class ZFS(object):
         dataset.handle = handle
         return dataset
 
-    def create(self, name, topology, opts, fsopts):
+    def create(self, name, topology, opts, fsopts, enable_all_feat=True):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
-        cdef NVList copts = NVList(otherdict=opts)
+        cdef NVList copts
         cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef const char *c_name = name
         cdef int ret
+
+        if enable_all_feat:
+            opts = opts.copy()
+            for i in range(0, zfs.SPA_FEATURES):
+                feat = &zfs.spa_feature_table[i]
+                opts['feature{}'.format(feat)] = 'enabled'
+
+        copts = NVList(otherdict=opts)
 
         with nogil:
             ret = libzfs.zpool_create(
