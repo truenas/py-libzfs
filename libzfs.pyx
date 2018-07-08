@@ -2166,11 +2166,11 @@ cdef class ZFSObject(object):
             d.refresh()
             return d
 
-    def rename(self, new_name, nounmount=False, forceunmount=False):
+    def rename(self, new_name, nounmount=False, forceunmount=False, recursive=False):
         cdef libzfs.renameflags_t flags
         cdef const char *c_new_name = new_name
 
-        flags.recurse = False
+        flags.recurse = recursive
         flags.nounmount = nounmount
         flags.forceunmount = forceunmount
 
