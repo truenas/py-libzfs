@@ -529,14 +529,18 @@ cdef class ZFS(object):
 
             yield pool
 
-    def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False):
+    def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False):
         cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
         cdef int ret
         cdef int flags = 0
+        cdef ZFSPool newpool
 
         if missing_log:
             flags |= zfs.ZFS_IMPORT_MISSING_LOG
+
+        if any_host:
+            flags |= zfs.ZFS_IMPORT_ANY_HOST
 
         with nogil:
             ret = libzfs.zpool_import_props(
@@ -550,8 +554,16 @@ cdef class ZFS(object):
         if ret != 0:
             raise self.get_error()
 
+        newpool = self.get(newname)
+
+        with nogil:
+            ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
+
+        if ret != 0:
+            raise self.get_error()
+
         self.write_history('zpool import', str(pool.guid), newname if newname else pool.name)
-        return self.get(newname)
+        return newpool
 
     def export_pool(self, ZFSPool pool):
         cdef int ret
