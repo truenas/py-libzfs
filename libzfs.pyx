@@ -692,15 +692,23 @@ cdef class ZFS(object):
 
         return self.get(name)
 
-    def destroy(self, name):
+    def destroy(self, name, force=False):
         cdef libzfs.zpool_handle_t* handle
         cdef const char *c_name = name
+        cdef int rv
+        cdef boolean_t c_force = force
 
         with nogil:
             handle = libzfs.zpool_open(self.handle, c_name)
 
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
+
+        with nogil:
+            rv = libzfs.zpool_disable_datasets(handle, c_force)
+
+        if rv != 0:
+            raise self.get_error()
 
         if libzfs.zpool_destroy(handle, "destroy") != 0:
             raise ZFSException(self.errno, self.errstr)
