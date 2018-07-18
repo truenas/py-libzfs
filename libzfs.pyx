@@ -696,6 +696,7 @@ cdef class ZFS(object):
         cdef libzfs.zpool_handle_t* handle
         cdef const char *c_name = name
         cdef int rv
+        cdef boolean_t c_force = force
 
         with nogil:
             handle = libzfs.zpool_open(self.handle, c_name)
@@ -704,7 +705,7 @@ cdef class ZFS(object):
             raise ZFSException(Error.NOENT, 'Pool {0} not found'.format(name))
 
         with nogil:
-            rv = libzfs.zpool_disable_datasets(handle, force)
+            rv = libzfs.zpool_disable_datasets(handle, c_force)
 
         if rv != 0:
             raise self.get_error()
