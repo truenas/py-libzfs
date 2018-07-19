@@ -663,7 +663,7 @@ cdef class ZFS(object):
             opts = opts.copy()
             for i in range(0, zfs.SPA_FEATURES):
                 feat = &zfs.spa_feature_table[i]
-                opts['feature{}'.format(feat.fi_uname)] = 'enabled'
+                opts['feature@{}'.format(feat.fi_uname)] = 'enabled'
 
         copts = NVList(otherdict=opts)
 
