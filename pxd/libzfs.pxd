@@ -428,18 +428,33 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_rename(zfs_handle_t *, const char *, const char *,
         renameflags_t flags)
 
-    ctypedef struct sendflags_t:
-        int verbose
-        int replicate
-        int doall
-        int fromorigin
-        int dedup
-        int props
-        int dryrun
-        int parsable
-        int progress
-        int largeblock
-        int embed_data
+    IF FREEBSD_VERSION >= 1101501:
+        ctypedef struct sendflags_t:
+            int verbose
+            int replicate
+            int doall
+            int fromorigin
+            int dedup
+            int props
+            int dryrun
+            int parsable
+            int progress
+            int largeblock
+            int embed_data
+            int compress
+    ELSE:
+        ctypedef struct sendflags_t:
+            int verbose
+            int replicate
+            int doall
+            int fromorigin
+            int dedup
+            int props
+            int dryrun
+            int parsable
+            int progress
+            int largeblock
+            int embed_data
 
     ctypedef int (*snapfilter_cb_t)(zfs_handle_t *, void *)
 

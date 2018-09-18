@@ -248,6 +248,8 @@ class SendFlag(enum.Enum):
     PROGRESS = 7
     LARGEBLOCK = 8
     EMBED_DATA = 9
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1101501:
+        COMPRESS = 10
 
 
 class DiffRecordType(enum.Enum):
@@ -2770,6 +2772,10 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
 
     if SendFlag.EMBED_DATA in flags:
         cflags.embed_data = 1
+
+    IF EXPERIMENTAL or FREEBSD_VERSION >= 1101501:
+        if SendFlag.COMPRESS in flags:
+            cflags.compress = 1
 
 
 def nicestrtonum(ZFS zfs, value):
