@@ -1,4 +1,8 @@
-venv/
+autom4te.cache/
+.idea/
 build/
-*.html
+venv/
+config.log
+config.status
 *.c
+*.html
