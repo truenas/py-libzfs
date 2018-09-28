@@ -30,8 +30,8 @@ AC_DEFINE(NEED_SOLARIS_BOOLEAN)
 SECTION_TITLE([RUNNING TESTS ON zfs.h HEADER])
 
 AC_CHECK_HEADERS([sys/types.h], [], [AC_ERROR([A working lib is required])])
-AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_ERROR([A working zfs is required])],
-[#include <sys/types.h>
+AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_ERROR([A working zfs is required])],[
+	#include <sys/types.h>
 ])
 
 dnl following is a valid check if zfs_max_dataset_name_len exists
@@ -48,11 +48,11 @@ AC_DEFINE(_SYS_ZFS_IOCTL_H)
 AC_DEFINE(_XPG6)
 
 
-AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs/common/libzfs.h], [], [AC_ERROR([A working libzfs.h is required])],
-[#include <sys/types.h>
-#include <sys/mnttab.h>
-#include <sys/fs/zfs.h>
-#include <sys/zfs_ioctl.h>
+AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs/common/libzfs.h], [], [AC_ERROR([A working libzfs.h is required])], [
+	#include <sys/types.h>
+	#include <sys/mnttab.h>
+	#include <sys/fs/zfs.h>
+	#include <sys/zfs_ioctl.h>
 ])
 
 
@@ -60,123 +60,168 @@ dnl Checking function signature of zpool_scan
 AC_MSG_NOTICE([Checking function signature of zpool_scan])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-	[#include <libzfs.h>],
-        [
-            zpool_scan(NULL, NULL, NULL) /* ; */
-        ])],
-    [AC_DEFINE(HAVE_ZPOOL_SCAN, 3) AC_MSG_NOTICE([3 params])], [AC_DEFINE(HAVE_ZPOOL_SCAN, 2) AC_MSG_NOTICE([2 params])])
+		[#include <libzfs.h>],
+		[
+			zpool_scan(NULL, NULL, NULL) /* ; */
+		]
+	)],
+	[AC_DEFINE(HAVE_ZPOOL_SCAN, 3) AC_MSG_NOTICE([3 params])],
+	[AC_DEFINE(HAVE_ZPOOL_SCAN, 2) AC_MSG_NOTICE([2 params])]
+)
+
 
 dnl Checking function signature of zfs_send_one
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-        [#include <libzfs.h>],
-        [
-            zfs_send_one(NULL, NULL, 0, 0) /* ; */
-        ])],
-    [AC_DEFINE(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])], [AC_DEFINE(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])])
+		[#include <libzfs.h>],
+		[
+			zfs_send_one(NULL, NULL, 0, 0) /* ; */
+		]
+	)],
+	[AC_DEFINE(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])],
+	[AC_DEFINE(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])]
+)
+
 
 dnl Checking existence of an enum value
 AC_MSG_NOTICE([Checking EZFS_SCRUB_PAUSED presence])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-        [#include <libzfs.h>],
-        [
-            EZFS_SCRUB_PAUSED == EZFS_SCRUB_PAUSED /* ; */
-        ])],
-    [AC_DEFINE(HAVE_EZFS_SCRUB_PAUSED) AC_MSG_NOTICE([OK])], [AC_MSG_NOTICE([NOT FOUND])])
+		[#include <libzfs.h>],
+		[
+			EZFS_SCRUB_PAUSED == EZFS_SCRUB_PAUSED /* ; */
+		]
+	)],
+	[AC_DEFINE(HAVE_EZFS_SCRUB_PAUSED) AC_MSG_NOTICE([OK])],
+	[AC_MSG_NOTICE([NOT FOUND])]
+)
+
 
 dnl Checking params for zfs_receive
 AC_MSG_NOTICE([Checking params for zfs_receive])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-        [#include <libzfs.h>],
-        [
-            zfs_receive(NULL, NULL, NULL, NULL, 1, NULL) /* ; */
-        ])],
-    [AC_DEFINE(HAVE_ZFS_RECEIVE, 6) AC_MSG_NOTICE([6 params])], [AC_DEFINE(HAVE_ZFS_RECEIVE, 5) AC_MSG_NOTICE([5 params])])
+		[#include <libzfs.h>],
+		[
+			zfs_receive(NULL, NULL, NULL, NULL, 1, NULL) /* ; */
+		]
+	)],
+	[AC_DEFINE(HAVE_ZFS_RECEIVE, 6) AC_MSG_NOTICE([6 params])],
+	[AC_DEFINE(HAVE_ZFS_RECEIVE, 5) AC_MSG_NOTICE([5 params])]
+)
+
 
 dnl Checking existence of zfs_send_resume - if found, it is safe to assume that zfs_send_resume_token_to_nvlist exists too
 AC_MSG_NOTICE([Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist])
 
 exists=0
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
-         [#include <libzfs.h>],
-         [            
-            zfs_send_resume(NULL, NULL, 0, NULL) /* ; */
-        ])],
-    [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
+		[#include <libzfs.h>],
+		[            
+			zfs_send_resume(NULL, NULL, 0, NULL) /* ; */
+        	]
+	)],
+	[exists=1],
+	[AC_MSG_NOTICE([NOT FOUND])]
+)
+
 
 if test "$exists" == 1
 then
-AC_MSG_NOTICE([OK])
-AC_DEFINE(HAVE_ZFS_SEND_RESUME)
-AC_DEFINE(HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST)
+	AC_MSG_NOTICE([OK])
+	AC_DEFINE(HAVE_ZFS_SEND_RESUME)
+	AC_DEFINE(HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST)
 fi
+
 
 dnl Checking ZFS_MAXNAMELEN
 
 AX_CHECK_DEFINE([libzfs.h], [ZFS_MAXNAMELEN], [AC_DEFINE(HAVE_ZFS_MAXNAMELEN)], [])
 
+
 dnl Checking ZPOOL_MAXNAMELEN
+
 AX_CHECK_DEFINE([libzfs.h], [ZPOOL_MAXNAMELEN], [AC_DEFINE(HAVE_ZPOOL_MAXNAMELEN)], [])
+
 
 dnl Checking for resumable member in recvflags_t struct
 AC_MSG_NOTICE([Checking for resumable member in recvflags_t struct])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-         [#include <libzfs.h>],
-         [
-             recvflags_t t;
-             t.resumable = 1 /* ; */
-        ])],
-    [AC_DEFINE(HAVE_RECVFLAGS_T_RESUMABLE) AC_MSG_NOTICE([OK])], [AC_MSG_NOTICE([NOT FOUND])])
+		[#include <libzfs.h>],
+		[
+			recvflags_t t;
+			t.resumable = 1 /* ; */
+ 		]
+	)],
+	[AC_DEFINE(HAVE_RECVFLAGS_T_RESUMABLE) AC_MSG_NOTICE([OK])],
+	[AC_MSG_NOTICE([NOT FOUND])]
+)
+
 
 SECTION_TITLE([RUNNING TESTS ON libzfs_core.h HEADER])
 
 
-AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common/libzfs_core.h], [], [AC_ERROR([A working libzfs_core.h is required])],
-[#include <sys/types.h>
-#include <sys/param.h>
+AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common/libzfs_core.h], [], [AC_ERROR([A working libzfs_core.h is required])], [
+	#include <sys/types.h>
+	#include <sys/param.h>
 ])
+
 
 dnl Checking lzc_bookmark existence
 AC_MSG_NOTICE([Verifying lzc_bookmark existence])
+
 exists=0
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
-         [#include <libzfs_core.h>],
-         [
-            lzc_bookmark(NULL, NULL) /* ; */
-        ])],
-    [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
+		[#include <libzfs_core.h>],
+		[
+			lzc_bookmark(NULL, NULL) /* ; */
+		]
+	)],
+	[exists=1],
+	[AC_MSG_NOTICE([NOT FOUND])]
+)
+
 
 if test "$exists" == 1
 then
-AC_MSG_NOTICE([OK])
-AC_DEFINE(HAVE_lZC_BOOKMARK)
+	AC_MSG_NOTICE([OK])
+	AC_DEFINE(HAVE_lZC_BOOKMARK)
 
-dnl Verifying existence and params of lzc_send_space
-AC_MSG_NOTICE([Verifying existence and params of lzc_send_space])
-exists=0
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
-         [#include <libzfs_core.h>],
-         [
-            lzc_send_space(NULL, NULL, LZC_SEND_FLAG_EMBED_DATA, NULL) /* ; */
-        ])],
-    [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
+	dnl Verifying existence and params of lzc_send_space
+	AC_MSG_NOTICE([Verifying existence and params of lzc_send_space])
 
-if test "$exists" == 1
-then
-AC_MSG_NOTICE([4 params])
-AC_DEFINE(HAVE_lZC_SEND_SPACE, 4)
+	exists=0
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			[#include <libzfs_core.h>],
+			[
+				lzc_send_space(NULL, NULL, LZC_SEND_FLAG_EMBED_DATA, NULL) /* ; */
+			]
+		)],
+		[exists=1],
+		[AC_MSG_NOTICE([NOT FOUND])]
+	)
+
+	if test "$exists" == 1
+	then
+
+		AC_MSG_NOTICE([4 params])
+		AC_DEFINE(HAVE_lZC_SEND_SPACE, 4)
+
+	else
+
+		AC_MSG_NOTICE([3 params])
+		AC_DEFINE(HAVE_lZC_SEND_SPACE, 3)
+	fi
+
 else
-AC_MSG_NOTICE([3 params])
-AC_DEFINE(HAVE_lZC_SEND_SPACE, 3)
+
+	AC_MSG_NOTICE([lzc_send_space function not found])
+
 fi
 
-else
-AC_MSG_NOTICE([lzc_send_space function not found])
-fi
 
 SECTION_TITLE([GENERATING CONFIG.H])
 AC_CONFIG_HEADERS(config.h)
+
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT(Makefile)
