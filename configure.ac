@@ -64,7 +64,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
         [
             zpool_scan(NULL, NULL, NULL) /* ; */
         ])],
-    [AC_DEFINE(HAVE_ZPOOL_SCAN_3) AC_MSG_NOTICE([3 params])], [AC_DEFINE(HAVE_ZPOOL_SCAN_2) AC_MSG_NOTICE([2 params])])
+    [AC_DEFINE(HAVE_ZPOOL_SCAN, 3) AC_MSG_NOTICE([3 params])], [AC_DEFINE(HAVE_ZPOOL_SCAN, 2) AC_MSG_NOTICE([2 params])])
 
 dnl Checking function signature of zfs_send_one
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
@@ -74,7 +74,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
         [
             zfs_send_one(NULL, NULL, 0, 0) /* ; */
         ])],
-    [AC_DEFINE(HAVE_ZFS_SEND_ONE_4) AC_MSG_NOTICE([4 params])], [AC_DEFINE(HAVE_ZFS_SEND_ONE_3) AC_MSG_NOTICE([3 params])])
+    [AC_DEFINE(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])], [AC_DEFINE(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])])
 
 dnl Checking existence of an enum value
 AC_MSG_NOTICE([Checking EZFS_SCRUB_PAUSED presence])
@@ -92,7 +92,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
         [
             zfs_receive(NULL, NULL, NULL, NULL, 1, NULL) /* ; */
         ])],
-    [AC_DEFINE(HAVE_ZFS_RECEIVE_6) AC_MSG_NOTICE([6 params])], [AC_DEFINE(HAVE_ZFS_RECEIVE_6) AC_MSG_NOTICE([5 params])])
+    [AC_DEFINE(HAVE_ZFS_RECEIVE, 6) AC_MSG_NOTICE([6 params])], [AC_DEFINE(HAVE_ZFS_RECEIVE, 5) AC_MSG_NOTICE([5 params])])
 
 dnl Checking existence of zfs_send_resume - if found, it is safe to assume that zfs_send_resume_token_to_nvlist exists too
 AC_MSG_NOTICE([Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist])
@@ -101,7 +101,7 @@ exists=0
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
          [#include <libzfs.h>],
          [            
-            zfs_send_resume(NULL, NULL, 34, NULL) /* ; */
+            zfs_send_resume(NULL, NULL, 0, NULL) /* ; */
         ])],
     [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
 
@@ -116,12 +116,20 @@ dnl Checking ZFS_MAXNAMELEN
 
 AX_CHECK_DEFINE([libzfs.h], [ZFS_MAXNAMELEN], [AC_DEFINE(HAVE_ZFS_MAXNAMELEN)], [])
 
-dnl Checking ZFS_MAXNAMELEN
+dnl Checking ZPOOL_MAXNAMELEN
 AX_CHECK_DEFINE([libzfs.h], [ZPOOL_MAXNAMELEN], [AC_DEFINE(HAVE_ZPOOL_MAXNAMELEN)], [])
 
-dnl AC_LANG_PUSH([C])
-dnl AX_CHECK_FUNC_IN([/usr/src/sys/cddl/contrib/opensolaris/uts/common/sys/fs/zfs.h], [zfs_userquota_prop_prefixes])
-dnl AC_LANG_POP([C])
+
+
+SECTION_TITLE([RUNNING TESTS ON libzfs_core.h HEADER])
+
+
+AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common/libzfs_core.h], [], [AC_ERROR([A working libzfs_core.h is required])],
+[#include <sys/types.h>
+#include <sys/param.h>
+])
+
+
 
 SECTION_TITLE([GENERATING CONFIG.H])
 AC_CONFIG_HEADERS(config.h)
