@@ -4,5 +4,6 @@ build/
 venv/
 config.log
 config.status
+config.h
 *.c
 *.html
