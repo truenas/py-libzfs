@@ -129,7 +129,43 @@ AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common/libzf
 #include <sys/param.h>
 ])
 
+dnl Checking lzc_bookmark existence
+AC_MSG_NOTICE([Verifying lzc_bookmark existence])
+exists=0
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+         [#include <libzfs_core.h>],
+         [
+            lzc_bookmark(NULL, NULL) /* ; */
+        ])],
+    [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
 
+if test "$exists" == 1
+then
+AC_MSG_NOTICE([OK])
+AC_DEFINE(HAVE_lZC_BOOKMARK)
+
+dnl Verifying existence and params of lzc_send_space
+AC_MSG_NOTICE([Verifying existence and params of lzc_send_space])
+exists=0
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+         [#include <libzfs_core.h>],
+         [
+            lzc_send_space(NULL, NULL, LZC_SEND_FLAG_EMBED_DATA, NULL) /* ; */
+        ])],
+    [exists=1], [AC_MSG_NOTICE([NOT FOUND])])
+
+if test "$exists" == 1
+then
+AC_MSG_NOTICE([4 params])
+AC_DEFINE(HAVE_lZC_SEND_SPACE, 4)
+else
+AC_MSG_NOTICE([3 params])
+AC_DEFINE(HAVE_lZC_SEND_SPACE, 3)
+fi
+
+else
+AC_MSG_NOTICE([lzc_send_space function not found])
+fi
 
 SECTION_TITLE([GENERATING CONFIG.H])
 AC_CONFIG_HEADERS(config.h)

@@ -3738,7 +3738,80 @@ fi
 done
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying lzc_bookmark existence" >&5
+$as_echo "$as_me: Verifying lzc_bookmark existence" >&6;}
+exists=0
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs_core.h>
+int
+main ()
+{
 
+            lzc_bookmark(NULL, NULL) /* ; */
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  exists=1
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+if test "$exists" == 1
+then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+$as_echo "#define HAVE_lZC_BOOKMARK 1" >>confdefs.h
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence and params of lzc_send_space" >&5
+$as_echo "$as_me: Verifying existence and params of lzc_send_space" >&6;}
+exists=0
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs_core.h>
+int
+main ()
+{
+
+            lzc_send_space(NULL, NULL, LZC_SEND_FLAG_EMBED_DATA, NULL) /* ; */
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  exists=1
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+if test "$exists" == 1
+then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+$as_echo "$as_me: 4 params" >&6;}
+$as_echo "#define HAVE_lZC_SEND_SPACE 4" >>confdefs.h
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: 3 params" >&5
+$as_echo "$as_me: 3 params" >&6;}
+$as_echo "#define HAVE_lZC_SEND_SPACE 3" >>confdefs.h
+
+fi
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: lzc_send_space function not found" >&5
+$as_echo "$as_me: lzc_send_space function not found" >&6;}
+fi
 
 
 	echo >& 6
