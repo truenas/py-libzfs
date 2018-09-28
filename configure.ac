@@ -119,7 +119,15 @@ AX_CHECK_DEFINE([libzfs.h], [ZFS_MAXNAMELEN], [AC_DEFINE(HAVE_ZFS_MAXNAMELEN)], 
 dnl Checking ZPOOL_MAXNAMELEN
 AX_CHECK_DEFINE([libzfs.h], [ZPOOL_MAXNAMELEN], [AC_DEFINE(HAVE_ZPOOL_MAXNAMELEN)], [])
 
-
+dnl Checking for resumable member in recvflags_t struct
+AC_MSG_NOTICE([Checking for resumable member in recvflags_t struct])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+         [#include <libzfs.h>],
+         [
+             recvflags_t t;
+             t.resumable = 1 /* ; */
+        ])],
+    [AC_DEFINE(HAVE_RECVFLAGS_T_RESUMABLE) AC_MSG_NOTICE([OK])], [AC_MSG_NOTICE([NOT FOUND])])
 
 SECTION_TITLE([RUNNING TESTS ON libzfs_core.h HEADER])
 
