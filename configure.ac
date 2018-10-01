@@ -61,7 +61,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
-
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 dnl Following two defines are temporary for the time being as they stop some errors from happening if all the paths in cflags are defined in syncing with py-libzfs
 AC_DEFINE(_SYS_ZFS_CONTEXT_H)
@@ -115,6 +114,21 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
+dnl Checking typedef sendflags_t in zfs header
+AC_MSG_NOTICE([Checking typedef sendflags_t in libzfs header])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			int i = sizeof(sendflags_t);
+			i = i; /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 0) AC_MSG_NOTICE([Not found])]
 )
 
 

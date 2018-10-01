@@ -868,8 +868,7 @@ cdef class ZFS(object):
 
         return out
 
-    # TODO: HOW SHOULD WE HANDLE THIS ?
-    IF FREEBSD_VERSION >= 1003000:
+    IF HAVE_SENDFLAGS_T_TYPEDEF and HAVE_ZFS_SEND_RESUME:
         def send_resume(self, fd, token, flags=None):
             cdef libzfs.sendflags_t cflags
 
@@ -881,6 +880,7 @@ cdef class ZFS(object):
             if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
                 raise ZFSException(self.errno, self.errstr)
 
+    IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
         def describe_resume_token(self, token):
             cdef nvpair.nvlist_t *nvl
 
