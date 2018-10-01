@@ -739,7 +739,7 @@ cdef class ZFS(object):
             if resumable:
                 flags.resumable = True
 
-        IF TRUEOS:
+        IF HAVE_ZFS_RECEIVE == 7:
             if props:
                 props_nvl = NVList(otherdict=props)
                 c_props_nvl = props_nvl.handle
