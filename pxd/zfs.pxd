@@ -24,6 +24,8 @@
 # SUCH DAMAGE.
 #
 
+include "config.pxi"
+
 from types cimport *
 
 
@@ -56,7 +58,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZFS_IMPORT_ONLY
         ZFS_ONLINE_EXPAND
 
-    IF (FREEBSD_VERSION >= 1003509 and FREEBSD_VERSION <= 1100000) or FREEBSD_VERSION >= 1100504:
+    IF HAVE_ZFS_MAX_DATASET_NAME_LEN:
         enum:
             ZFS_MAX_DATASET_NAME_LEN
 
@@ -364,9 +366,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         POOL_SCAN_RESILVER
         POOL_SCAN_FUNCS
         
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
+    IF EXPERIMENTAL or HAVE_POOL_SCRUB_CMD_T:
         ctypedef enum pool_scrub_cmd_t:
             POOL_SCRUB_NORMAL = 0
             POOL_SCRUB_PAUSE
@@ -380,36 +380,8 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZIO_TYPE_CLAIM
         ZIO_TYPE_IOCTL
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
-        ctypedef struct pool_scan_stat_t:
-            uint64_t    pss_func
-            uint64_t    pss_state
-            uint64_t    pss_start_time
-            uint64_t    pss_end_time
-            uint64_t    pss_to_examine
-            uint64_t    pss_examined
-            uint64_t    pss_to_process
-            uint64_t    pss_processed
-            uint64_t    pss_errors
-            uint64_t    pss_pass_exam
-            uint64_t    pss_pass_start
-            uint64_t    pss_pass_scrub_pause
-            uint64_t    pss_pass_scrub_spent_paused
-    ELSE:
-         ctypedef struct pool_scan_stat_t:
-            uint64_t    pss_func
-            uint64_t    pss_state
-            uint64_t    pss_start_time
-            uint64_t    pss_end_time
-            uint64_t    pss_to_examine
-            uint64_t    pss_examined
-            uint64_t    pss_to_process
-            uint64_t    pss_processed
-            uint64_t    pss_errors
-            uint64_t    pss_pass_exam
-            uint64_t    pss_pass_start
+    ctypedef struct pool_scan_stat_t:
+        pass
     
     ctypedef enum dsl_scan_state_t:
         DSS_NONE
