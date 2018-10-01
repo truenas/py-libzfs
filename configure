@@ -3706,7 +3706,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist" >&5
 $as_echo "$as_me: Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist" >&6;}
 
-exists=0
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3722,7 +3721,10 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  exists=1
+  HAVE_ZFS_SEND_RESUME=1
+ HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
 else
   HAVE_ZFS_SEND_RESUME=0
  HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST=0
@@ -3732,17 +3734,6 @@ $as_echo "$as_me: NOT FOUND" >&6;}
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-
-
-if test "$exists" == 1
-then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
-$as_echo "$as_me: OK" >&6;}
-	HAVE_ZFS_SEND_RESUME=1
-
-	HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST=1
-
-fi
 
 
 

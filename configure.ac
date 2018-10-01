@@ -185,24 +185,15 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 dnl Checking existence of zfs_send_resume - if found, it is safe to assume that zfs_send_resume_token_to_nvlist exists too
 AC_MSG_NOTICE([Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist])
 
-exists=0
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
 			zfs_send_resume(NULL, NULL, 0, NULL) /* ; */
         	]
 	)],
-	[exists=1],
+	[AC_SUBST(HAVE_ZFS_SEND_RESUME, 1) AC_SUBST(HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_ZFS_SEND_RESUME, 0) AC_SUBST(HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
-
-
-if test "$exists" == 1
-then
-	AC_MSG_NOTICE([OK])
-	AC_SUBST(HAVE_ZFS_SEND_RESUME, 1)
-	AC_SUBST(HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST, 1)
-fi
 
 
 dnl Checking ZFS_MAXNAMELEN
