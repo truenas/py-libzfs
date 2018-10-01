@@ -249,7 +249,7 @@ class SendFlag(enum.Enum):
     PROGRESS = 7
     LARGEBLOCK = 8
     EMBED_DATA = 9
-    IF EXPERIMENTAL or HAVE_SENDFLAGS_T_COMPRESS:
+    IF HAVE_SENDFLAGS_T_COMPRESS:
         COMPRESS = 10
 
 
@@ -1547,7 +1547,7 @@ cdef class ZPoolScrub(object):
 
             return self.stat[5]
 
-    IF EXPERIMENTAL or HAVE_POOL_SCAN_STAT_T_PAUSE:
+    IF HAVE_POOL_SCAN_STAT_T_PAUSE:
         property bytes_issued:
             def __get__(self):
                 if not self.stat:
@@ -1581,7 +1581,7 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            IF EXPERIMENTAL or HAVE_POOL_SCAN_STAT_T_PAUSE:
+            IF HAVE_POOL_SCAN_STAT_T_PAUSE:
                 return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
             ELSE:
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
@@ -1951,7 +1951,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or HAVE_ZPOOL_SCAN == 3:
+            IF HAVE_ZPOOL_SCAN == 3:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB)
@@ -1965,7 +1965,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or HAVE_ZPOOL_SCAN == 3:
+            IF HAVE_ZPOOL_SCAN == 3:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE)
@@ -2767,7 +2767,7 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
     if SendFlag.EMBED_DATA in flags:
         cflags.embed_data = 1
 
-    IF EXPERIMENTAL or HAVE_SENDFLAGS_T_COMPRESS:
+    IF HAVE_SENDFLAGS_T_COMPRESS:
         if SendFlag.COMPRESS in flags:
             cflags.compress = 1
 

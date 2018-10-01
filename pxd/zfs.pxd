@@ -366,7 +366,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         POOL_SCAN_RESILVER
         POOL_SCAN_FUNCS
         
-    IF EXPERIMENTAL or HAVE_POOL_SCRUB_CMD_T:
+    IF HAVE_POOL_SCRUB_CMD_T:
         ctypedef enum pool_scrub_cmd_t:
             POOL_SCRUB_NORMAL = 0
             POOL_SCRUB_PAUSE
