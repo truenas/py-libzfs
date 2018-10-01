@@ -178,6 +178,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+dnl Checking for compress member in sendflags_t struct
+AC_MSG_NOTICE([Checking for compress member in sendflags_t struct])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.compress = 1 /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
 SECTION_TITLE([RUNNING TESTS ON libzfs_core.h HEADER])
 
 
