@@ -118,6 +118,19 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking LZC_SEND_FLAG_EMBED_DATA presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			LZC_SEND_FLAG_EMBED_DATA == LZC_SEND_FLAG_EMBED_DATA /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_LZC_SEND_FLAG_EMBED_DATA, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_LZC_SEND_FLAG_EMBED_DATA, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
 dnl Checking params for zfs_receive
 AC_MSG_NOTICE([Checking params for zfs_receive])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(

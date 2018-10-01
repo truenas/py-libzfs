@@ -629,6 +629,7 @@ HAVE_ZFS_MAXNAMELEN
 HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
 HAVE_ZFS_SEND_RESUME
 HAVE_ZFS_RECEIVE
+HAVE_LZC_SEND_FLAG_EMBED_DATA
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
 HAVE_ZPOOL_SCAN
@@ -3539,6 +3540,35 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_EZFS_SCRUB_PAUSED=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&5
+$as_echo "$as_me: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			LZC_SEND_FLAG_EMBED_DATA == LZC_SEND_FLAG_EMBED_DATA /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_LZC_SEND_FLAG_EMBED_DATA=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_LZC_SEND_FLAG_EMBED_DATA=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
 
