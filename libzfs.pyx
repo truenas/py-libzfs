@@ -1547,10 +1547,7 @@ cdef class ZPoolScrub(object):
 
             return self.stat[5]
 
-    # TODO: CHECK WHAT STAT RESOLVES TO IN C AND THEN ADD APPROPRIATE ACTIONS IN AUTOCONF
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
+    IF EXPERIMENTAL or HAVE_POOL_SCAN_STAT_T_PAUSE:
         property bytes_issued:
             def __get__(self):
                 if not self.stat:
@@ -1584,10 +1581,7 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            # TODO: SAME AS LAST TODO
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-            ):
+            IF EXPERIMENTAL or HAVE_POOL_SCAN_STAT_T_PAUSE:
                 return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
             ELSE:
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100

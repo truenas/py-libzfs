@@ -46,6 +46,22 @@ AX_CHECK_DEFINE(
 )
 
 
+dnl Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member
+AC_MSG_NOTICE([Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			pool_scan_stat_t o;
+			o.pss_pass_scrub_pause = 1;
+			o.pss_pass_scrub_spent_paused = 1 /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_PAUSE, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_PAUSE, 0) AC_MSG_NOTICE([Not found])]
+)
+
+
 dnl Checking typedef pool_scrub_cmd_t in zfs header
 AC_MSG_NOTICE([Checking typedef pool_scrub_cmt_t in zfs header])
 
