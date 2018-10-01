@@ -3858,7 +3858,7 @@ fi
 	echo '   GENERATING CONFIG.H' >& 6
 	echo '   GENERATING CONFIG.H   ' | sed -e's/./-/g' >&6
 
-ac_config_files="$ac_config_files config.pxi"
+ac_config_files="$ac_config_files pxd/config.pxi"
 
 
 
@@ -4569,7 +4569,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "config.pxi") CONFIG_FILES="$CONFIG_FILES config.pxi" ;;
+    "pxd/config.pxi") CONFIG_FILES="$CONFIG_FILES pxd/config.pxi" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

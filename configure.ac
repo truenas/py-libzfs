@@ -243,7 +243,7 @@ fi
 
 
 SECTION_TITLE([GENERATING CONFIG.H])
-AC_CONFIG_FILES([config.pxi])
+AC_CONFIG_FILES([pxd/config.pxi])
 
 
 dnl Process Makefile.in to create Makefile

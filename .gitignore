@@ -1,5 +1,6 @@
 autom4te.cache/
 build/
+pxd/config.pxi
 venv/
 config.log
 config.status
