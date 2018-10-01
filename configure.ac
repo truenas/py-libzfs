@@ -14,13 +14,17 @@ define(SECTION_TITLE,
 dnl works for checking define statements in c
 m4_include([m4/AX_CHECK_DEFINE.m4])
 
+freebsd_src=${FREEBSD_SRC:=/usr/src}
 
 dnl Setting appropriate CFLAGS
-CFLAGS="-nostdinc -I/usr/src/sys/cddl/compat/opensolaris/uts/common/ -I/usr/src/cddl/compat/opensolaris/include/ -I/usr/src/sys/cddl/contrib/opensolaris/uts/common/
--I/usr/src/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I/usr/src/sys/cddl/compat/opensolaris/sys/ -I/usr/src/sys/cddl/compat/opensolaris/ -I/usr/src/cddl/lib/libumem 
--I/usr/src/usr/src/cddl/compat/opensolaris/ -I/usr/src/usr/src/cddl/compat/opensolaris -I/usr/src/cddl/compat/opensolaris/lib/libumem -I/usr/src/cddl/contrib/opensolaris/lib/libzpool/common 
--I/usr/src/sys/cddl/contrib/opensolaris/common/zfs -I/usr/src/sys/cddl/contrib/opensolaris/uts/common/sys -I/usr/src/cddl/contrib/opensolaris/head -I/usr/src/cddl/contrib/opensolaris/lib/libnvpair 
--I/usr/src/cddl/contrib/opensolaris/lib/libuutil/common -I/usr/src/cddl/contrib/opensolaris/lib/libzfs/common -I/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS} -I/usr/include"
+CFLAGS="-nostdinc -I${freebsd_src}/sys/cddl/compat/opensolaris/uts/common/ -I${freebsd_src}/cddl/compat/opensolaris/include/ -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I${freebsd_src}/sys/cddl/compat/opensolaris/sys/ -I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/cddl/lib/libumem 
+-I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/sys/cddl/compat/opensolaris -I${freebsd_src}/cddl/compat/opensolaris/lib/libumem 
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common 
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys -I${freebsd_src}/cddl/contrib/opensolaris/head 
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair 
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS} 
+-I/usr/include"
 
 dnl Setting appropriate LDFLAGS
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
@@ -46,14 +50,14 @@ dnl Checking typedef pool_scrub_cmd_t in zfs header
 AC_MSG_NOTICE([Checking typedef pool_scrub_cmt_t in zfs header])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-                [#include <sys/fs/zfs.h>],
-                [
-                        int i = sizeof(pool_scrub_cmd_t);
+		[#include <sys/fs/zfs.h>],
+		[
+			int i = sizeof(pool_scrub_cmd_t);
 			i = i; /* ; */
-                ]
-        )],
-        [AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 1) AC_MSG_NOTICE([OK])],
-        [AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 0) AC_MSG_NOTICE([Not found])]
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 0) AC_MSG_NOTICE([Not found])]
 )
 
 

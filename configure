@@ -2892,12 +2892,16 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # AC_CHECK_FUNC
 
 
+freebsd_src=${FREEBSD_SRC:=/usr/src}
 
-CFLAGS="-nostdinc -I/usr/src/sys/cddl/compat/opensolaris/uts/common/ -I/usr/src/cddl/compat/opensolaris/include/ -I/usr/src/sys/cddl/contrib/opensolaris/uts/common/
--I/usr/src/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I/usr/src/sys/cddl/compat/opensolaris/sys/ -I/usr/src/sys/cddl/compat/opensolaris/ -I/usr/src/cddl/lib/libumem
--I/usr/src/usr/src/cddl/compat/opensolaris/ -I/usr/src/usr/src/cddl/compat/opensolaris -I/usr/src/cddl/compat/opensolaris/lib/libumem -I/usr/src/cddl/contrib/opensolaris/lib/libzpool/common
--I/usr/src/sys/cddl/contrib/opensolaris/common/zfs -I/usr/src/sys/cddl/contrib/opensolaris/uts/common/sys -I/usr/src/cddl/contrib/opensolaris/head -I/usr/src/cddl/contrib/opensolaris/lib/libnvpair
--I/usr/src/cddl/contrib/opensolaris/lib/libuutil/common -I/usr/src/cddl/contrib/opensolaris/lib/libzfs/common -I/usr/src/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS} -I/usr/include"
+CFLAGS="-nostdinc -I${freebsd_src}/sys/cddl/compat/opensolaris/uts/common/ -I${freebsd_src}/cddl/compat/opensolaris/include/ -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I${freebsd_src}/sys/cddl/compat/opensolaris/sys/ -I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/cddl/lib/libumem
+-I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/sys/cddl/compat/opensolaris -I${freebsd_src}/cddl/compat/opensolaris/lib/libumem
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys -I${freebsd_src}/cddl/contrib/opensolaris/head
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS}
+-I/usr/include"
 
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
@@ -3394,7 +3398,7 @@ int
 main ()
 {
 
-                        int i = sizeof(pool_scrub_cmd_t);
+			int i = sizeof(pool_scrub_cmd_t);
 			i = i; /* ; */
 
 

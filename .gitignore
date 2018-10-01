@@ -1,5 +1,4 @@
 autom4te.cache/
-.idea/
 build/
 venv/
 config.log
