@@ -17,19 +17,32 @@ m4_include([m4/AX_CHECK_DEFINE.m4])
 freebsd_src=${FREEBSD_SRC:=/usr/src}
 
 dnl Setting appropriate CFLAGS
-CFLAGS="-nostdinc -I${freebsd_src}/sys/cddl/compat/opensolaris/uts/common/ -I${freebsd_src}/cddl/compat/opensolaris/include/ -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/
--I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I${freebsd_src}/sys/cddl/compat/opensolaris/sys/ -I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/cddl/lib/libumem 
--I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/sys/cddl/compat/opensolaris -I${freebsd_src}/cddl/compat/opensolaris/lib/libumem 
+
+CFLAGS="-nostdinc 
+-I${freebsd_src}/cddl/lib/libumem 
+-I${freebsd_src}/sys/cddl/compat/opensolaris/ 
+-I${freebsd_src}/sys/cddl/compat/opensolaris 
+-I${freebsd_src}/cddl/compat/opensolaris/include 
+-I${freebsd_src}/cddl/compat/opensolaris/lib/libumem 
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common 
--I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys -I${freebsd_src}/cddl/contrib/opensolaris/head 
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs 
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs 
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys 
+-I${freebsd_src}/cddl/contrib/opensolaris/head 
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common 
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS} 
--I/usr/include"
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common 
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common 
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
+${CFLAGS} -I/usr/include"
 
 dnl Setting appropriate LDFLAGS
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
+
 AC_DEFINE(NEED_SOLARIS_BOOLEAN)
+AC_DEFINE(_XPG6)
+
 
 SECTION_TITLE([RUNNING TESTS ON zfs.h HEADER])
 
@@ -78,13 +91,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
-dnl Following two defines are temporary for the time being as they stop some errors from happening if all the paths in cflags are defined in syncing with py-libzfs
-AC_DEFINE(_SYS_ZFS_CONTEXT_H)
-AC_DEFINE(_SYS_ZFS_IOCTL_H)
-AC_DEFINE(_XPG6)
 
 
-AC_CHECK_HEADERS([/usr/src/cddl/contrib/opensolaris/lib/libzfs/common/libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
+AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
 	#include <sys/types.h>
 	#include <sys/mnttab.h>
 	#include <sys/fs/zfs.h>
@@ -177,7 +186,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			]
 		)],
 		[AC_SUBST(HAVE_ZFS_RECEIVE, 6) AC_MSG_NOTICE([6 params])],
-		AC_SUBST(HAVE_ZFS_RECEIVE, 5) AC_MSG_NOTICE([5 params])
+		[AC_SUBST(HAVE_ZFS_RECEIVE, 5) AC_MSG_NOTICE([5 params])]
 	)]
 )
 

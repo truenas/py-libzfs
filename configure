@@ -2910,18 +2910,32 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 freebsd_src=${FREEBSD_SRC:=/usr/src}
 
-CFLAGS="-nostdinc -I${freebsd_src}/sys/cddl/compat/opensolaris/uts/common/ -I${freebsd_src}/cddl/compat/opensolaris/include/ -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/
--I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/ -I${freebsd_src}/sys/cddl/compat/opensolaris/sys/ -I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/cddl/lib/libumem
--I${freebsd_src}/sys/cddl/compat/opensolaris/ -I${freebsd_src}/sys/cddl/compat/opensolaris -I${freebsd_src}/cddl/compat/opensolaris/lib/libumem
+
+CFLAGS="-nostdinc
+-I${freebsd_src}/cddl/lib/libumem
+-I${freebsd_src}/sys/cddl/compat/opensolaris/
+-I${freebsd_src}/sys/cddl/compat/opensolaris
+-I${freebsd_src}/cddl/compat/opensolaris/include
+-I${freebsd_src}/cddl/compat/opensolaris/lib/libumem
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common
--I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs -I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys -I${freebsd_src}/cddl/contrib/opensolaris/head
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys
+-I${freebsd_src}/cddl/contrib/opensolaris/head
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common ${CFLAGS}
--I/usr/include"
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
+${CFLAGS} -I/usr/include"
 
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
+
 $as_echo "#define NEED_SOLARIS_BOOLEAN 1" >>confdefs.h
+
+$as_echo "#define _XPG6 1" >>confdefs.h
+
 
 
 
@@ -3473,26 +3487,20 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	echo '   RUNNING TESTS ON libzfs.h HEADER' >& 6
 	echo '   RUNNING TESTS ON libzfs.h HEADER   ' | sed -e's/./-/g' >&6
 
-$as_echo "#define _SYS_ZFS_CONTEXT_H 1" >>confdefs.h
-
-$as_echo "#define _SYS_ZFS_IOCTL_H 1" >>confdefs.h
-
-$as_echo "#define _XPG6 1" >>confdefs.h
 
 
-
-for ac_header in /usr/src/cddl/contrib/opensolaris/lib/libzfs/common/libzfs.h
+for ac_header in libzfs.h
 do :
-  ac_fn_c_check_header_compile "$LINENO" "/usr/src/cddl/contrib/opensolaris/lib/libzfs/common/libzfs.h" "ac_cv_header__usr_src_cddl_contrib_opensolaris_lib_libzfs_common_libzfs_h" "
+  ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
 	#include <sys/types.h>
 	#include <sys/mnttab.h>
 	#include <sys/fs/zfs.h>
 	#include <sys/zfs_ioctl.h>
 
 "
-if test "x$ac_cv_header__usr_src_cddl_contrib_opensolaris_lib_libzfs_common_libzfs_h" = xyes; then :
+if test "x$ac_cv_header_libzfs_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE__USR_SRC_CDDL_CONTRIB_OPENSOLARIS_LIB_LIBZFS_COMMON_LIBZFS_H 1
+#define HAVE_LIBZFS_H 1
 _ACEOF
 
 else
