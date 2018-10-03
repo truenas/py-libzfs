@@ -5,6 +5,11 @@ py-libzfs
 
 py-libzfs is a fairly straight-forward set of Python bindings for libzfs for FreeBSD.
 
+
+**INSTALLATION**
+
+`./configure && make install`
+
 **FEATURES:**
 - Access to pools, datasets, snapshots, properties, pool disks
 - Many others!

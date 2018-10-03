@@ -24,25 +24,22 @@
 # SUCH DAMAGE.
 #
 
+include "config.pxi"
+
 cimport nvpair
 cimport zfs
 from types cimport *
 
 
-IF FREEBSD_VERSION >= 1000000:
+IF HAVE_LZC_BOOKMARK:
     cdef extern from "libzfs_core.h" nogil:
-        IF FREEBSD_VERSION >= 1101501:
-            enum lzc_send_flags:
-                LZC_SEND_FLAG_EMBED_DATA
-                LZC_SEND_FLAG_LARGE_BLOCK
-                LZC_SEND_FLAG_COMPRESS
-
+        IF HAVE_LZC_SEND_SPACE == 4:
             extern int lzc_send_space(const char *, const char *, enum, uint64_t *)
         ELSE:
-            enum lzc_send_flags:
-                LZC_SEND_FLAG_EMBED_DATA
-
             extern int lzc_send_space(const char *, const char *, uint64_t *)
+
+        enum lzc_send_flags:
+                LZC_SEND_FLAG_EMBED_DATA
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
@@ -51,14 +48,12 @@ cdef extern from "libzfs.h" nogil:
         MAXNAMELEN
         MAXPATHLEN
 
-    IF FREEBSD_VERSION < 1003509 or (FREEBSD_VERSION >= 1100000 and FREEBSD_VERSION < 1100504):
+    IF HAVE_ZFS_MAXNAMELEN or HAVE_ZPOOL_MAXNAMELEN:
         cdef enum:
             ZFS_MAXNAMELEN
             ZPOOL_MAXNAMELEN
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
+    IF HAVE_EZFS_SCRUB_PAUSED:
         cdef enum:
             EZFS_SCRUB_PAUSED
 
@@ -185,9 +180,7 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_destroy(zpool_handle_t *, const char *)
     extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *)
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
+    IF HAVE_ZPOOL_SCAN == 3:
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t, zfs.pool_scrub_cmd_t)
     ELSE:
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t)
@@ -428,7 +421,7 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_rename(zfs_handle_t *, const char *, const char *,
         renameflags_t flags)
 
-    IF FREEBSD_VERSION >= 1101501:
+    IF HAVE_SENDFLAGS_T_COMPRESS:
         ctypedef struct sendflags_t:
             int verbose
             int replicate
@@ -461,12 +454,12 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_send(zfs_handle_t *, const char *, const char *,
         sendflags_t *, int, snapfilter_cb_t, void *, nvpair.nvlist_t **) nogil
 
-    IF FREEBSD_VERSION >= 1000000:
+    IF HAVE_ZFS_SEND_ONE == 4:
         extern int zfs_send_one(zfs_handle_t *, const char *, int, int) nogil
     ELSE:
         extern int zfs_send_one(zfs_handle_t *, const char *, int) nogil
 
-    IF FREEBSD_VERSION >= 1003000:
+    IF HAVE_ZFS_SEND_RESUME or HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
         extern int zfs_send_resume(libzfs_handle_t *, sendflags_t *, int outfd, const char *)
         extern nvpair.nvlist_t *zfs_send_resume_token_to_nvlist(libzfs_handle_t *hdl, const char *token)
 
@@ -497,16 +490,15 @@ cdef extern from "libzfs.h" nogil:
         ZFS_DIFF_TIMESTAMP = 0x2,
         ZFS_DIFF_CLASSIFY = 0x4
 
-    IF TRUEOS:
+    IF HAVE_ZFS_RECEIVE == 7:
         extern int zfs_receive(libzfs_handle_t *, const char *, recvflags_t *,
             int, nvpair.nvlist_t *, nvpair.nvlist_t *, void *) # XXX: last argument should be avl_tree_t *
+    ELIF HAVE_ZFS_RECEIVE == 6:
+        extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
+            recvflags_t *, int, void *) # XXX: last argument should be avl_tree_t *
     ELSE:
-        IF FREEBSD_VERSION > 1002000:
-            extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
-                recvflags_t *, int, void *) # XXX: last argument should be avl_tree_t *
-        ELSE:
-            extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
-                recvflags_t *, int) # XXX: last argument should be avl_tree_t *
+        extern int zfs_receive(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
+            recvflags_t *, int) # XXX: last argument should be avl_tree_t *
 
     extern int zfs_show_diffs(zfs_handle_t *, int, const char *, const char *,
         int)

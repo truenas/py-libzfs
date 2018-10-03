@@ -43,6 +43,7 @@ from libc.stdlib cimport free, realloc
 GLOBAL_CONTEXT_LOCK = threading.Lock()
 
 
+include "config.pxi"
 include "nvpair.pxi"
 include "converter.pxi"
 
@@ -248,7 +249,7 @@ class SendFlag(enum.Enum):
     PROGRESS = 7
     LARGEBLOCK = 8
     EMBED_DATA = 9
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1101501:
+    IF HAVE_SENDFLAGS_T_COMPRESS:
         COMPRESS = 10
 
 
@@ -268,7 +269,7 @@ class DiffFileType(enum.Enum):
     SOCKET = '='
 
 
-IF (FREEBSD_VERSION >= 1003509 and FREEBSD_VERSION <= 1100000) or FREEBSD_VERSION >= 1100504:
+IF HAVE_ZFS_MAX_DATASET_NAME_LEN:
     cdef enum:
         MAX_DATASET_NAME_LEN = zfs.ZFS_MAX_DATASET_NAME_LEN
 ELSE:
@@ -317,7 +318,7 @@ class DiffRecord(object):
 
 
 
-IF FREEBSD_VERSION >= 1000000:
+IF HAVE_LZC_SEND_FLAG_EMBED_DATA:
     class SendFlags(enum.IntEnum):
         EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
 
@@ -734,11 +735,11 @@ cdef class ZFS(object):
         if nomount:
             flags.nomount = True
 
-        IF FREEBSD_VERSION >= 1003000:
+        IF HAVE_RECVFLAGS_T_RESUMABLE:
             if resumable:
                 flags.resumable = True
 
-        IF TRUEOS:
+        IF HAVE_ZFS_RECEIVE == 7:
             if props:
                 props_nvl = NVList(otherdict=props)
                 c_props_nvl = props_nvl.handle
@@ -763,7 +764,7 @@ cdef class ZFS(object):
                 c_props_nvl = props_nvl.handle
 
             with nogil:
-                IF FREEBSD_VERSION > 1002000:
+                IF HAVE_ZFS_RECEIVE == 6:
                     ret = libzfs.zfs_receive(handle, c_name, c_props_nvl, &flags, c_fd, NULL)
                 ELSE:
                     ret = libzfs.zfs_receive(handle, c_name, c_props_nvl, &flags, c_fd)
@@ -867,7 +868,7 @@ cdef class ZFS(object):
 
         return out
 
-    IF FREEBSD_VERSION >= 1003000:
+    IF HAVE_SENDFLAGS_T_TYPEDEF and HAVE_ZFS_SEND_RESUME:
         def send_resume(self, fd, token, flags=None):
             cdef libzfs.sendflags_t cflags
 
@@ -879,6 +880,7 @@ cdef class ZFS(object):
             if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
                 raise ZFSException(self.errno, self.errstr)
 
+    IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
         def describe_resume_token(self, token):
             cdef nvpair.nvlist_t *nvl
 
@@ -1545,9 +1547,7 @@ cdef class ZPoolScrub(object):
 
             return self.stat[5]
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-        int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-    ):
+    IF HAVE_POOL_SCAN_STAT_T_PAUSE:
         property bytes_issued:
             def __get__(self):
                 if not self.stat:
@@ -1581,9 +1581,7 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-            ):
+            IF HAVE_POOL_SCAN_STAT_T_PAUSE:
                 return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
             ELSE:
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
@@ -1953,9 +1951,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-            ):
+            IF HAVE_ZPOOL_SCAN == 3:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_SCRUB)
@@ -1969,9 +1965,7 @@ cdef class ZFSPool(object):
         cdef int ret
 
         with nogil:
-            IF EXPERIMENTAL or FREEBSD_VERSION >= 1200044 or (
-                int(FREEBSD_VERSION / 100000) == 11 and FREEBSD_VERSION > 1101505
-            ):
+            IF HAVE_ZPOOL_SCAN == 3:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE, zfs.POOL_SCRUB_NORMAL)
             ELSE:
                 ret = libzfs.zpool_scan(self.handle, zfs.POOL_SCAN_NONE)
@@ -2242,7 +2236,7 @@ cdef class ZFSObject(object):
             cfromname = fromname
 
         with nogil:
-            IF FREEBSD_VERSION >= 1101501:
+            IF HAVE_LZC_SEND_SPACE == 4:
                 ret = libzfs.lzc_send_space(c_name, cfromname, 0, &space)
             ELSE:
                 ret = libzfs.lzc_send_space(c_name, cfromname, &space)
@@ -2773,7 +2767,7 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
     if SendFlag.EMBED_DATA in flags:
         cflags.embed_data = 1
 
-    IF EXPERIMENTAL or FREEBSD_VERSION >= 1101501:
+    IF HAVE_SENDFLAGS_T_COMPRESS:
         if SendFlag.COMPRESS in flags:
             cflags.compress = 1
 

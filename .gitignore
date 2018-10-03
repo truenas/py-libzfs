@@ -1,4 +1,9 @@
-venv/
+autom4te.cache/
 build/
-*.html
+pxd/config.pxi
+venv/
+config.log
+config.status
+config.h
 *.c
+*.html
