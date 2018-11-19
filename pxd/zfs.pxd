@@ -1,3 +1,4 @@
+# cython: language_level=3, c_string_type=unicode, c_string_encoding=default
 #-
 # Copyright (c) 2014 iXsystems, Inc.
 # All rights reserved.
