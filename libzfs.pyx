@@ -714,7 +714,10 @@ cdef class ZFS(object):
         if rv != 0:
             raise self.get_error()
 
-        if libzfs.zpool_destroy(handle, "destroy") != 0:
+        with nogil:
+            rv = libzfs.zpool_destroy(handle, "destroy")
+
+        if rv != 0:
             raise ZFSException(self.errno, self.errstr)
 
     def receive(self, name, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
@@ -1316,12 +1319,10 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        if libzfs.zpool_vdev_attach(
-            self.zpool.handle,
-            first_child.path,
-            vdev.path,
-            root.nvlist.handle,
-            False) != 0:
+        with nogil:
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, first_child.path, vdev.path, root.nvlist.handle, False)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
@@ -1343,12 +1344,10 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        if libzfs.zpool_vdev_attach(
-            self.zpool.handle,
-            self.path,
-            vdev.path,
-            root.nvlist.handle,
-            True) != 0:
+        with nogil:
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, self.path, vdev.path, root.nvlist.handle, 1)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path, vdev.path)
@@ -1361,7 +1360,10 @@ cdef class ZFSVdev(object):
         if self.parent.type not in ('mirror', 'spare'):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
-        if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
+        with nogil:
+            rv = libzfs.zpool_vdev_detach(self.zpool.handle, self.path)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path)
@@ -1369,7 +1371,10 @@ cdef class ZFSVdev(object):
     def remove(self):
         cdef const char *command = 'zpool remove'
 
-        if libzfs.zpool_vdev_remove(self.zpool.handle, self.path):
+        with nogil:
+            rv = libzfs.zpool_vdev_remove(self.zpool.handle, self.path)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path)
@@ -1379,7 +1384,10 @@ cdef class ZFSVdev(object):
         if self.type not in ('disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
-        if libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary) != 0:
+        with nogil:
+            rv = libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, '-t' if temporary else '',self.zpool.name, self.path)
@@ -1395,17 +1403,26 @@ cdef class ZFSVdev(object):
         if expand:
             flags |= zfs.ZFS_ONLINE_EXPAND
 
-        if libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate) != 0:
+        with nogil:
+            rv = libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, '-e' if expand else '',self.zpool.name, self.path)
 
     def degrade(self, aux):
-        if libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux)):
+        with nogil:
+            rv = libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux))
+
+        if rv != 0:
             raise self.root.get_error()
 
     def fault(self, aux):
-        if libzfs.zpool_vdev_fault(self.zpool.handle, self.guid, int(aux)):
+        with nogil:
+            rv = libzfs.zpool_vdev_fault(self.zpool.handle, self.guid, int(aux))
+
+        if rv != 0:
             raise self.root.get_error()
 
     property type:
@@ -1911,7 +1928,8 @@ cdef class ZFSPool(object):
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
         cdef int ret
 
-        ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
+        with nogil:
+            ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
 
         if ret != 0:
             raise self.root.get_error()
@@ -2830,3 +2848,8 @@ def clear_label(device):
         raise OSError(errno, os.strerror(errno))
 
     os.close(fd)
+
+
+# TODO: Test all the changes and see if any usages are left wrt Middlewared - we should probably cover usages other then
+# the ones we have in middlewared. There are a few bugs which would raise exceptions under nogil, have them covered as
+# well
