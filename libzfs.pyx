@@ -1319,8 +1319,11 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
+        cdef const char *first_child_path = first_child.path
+        cdef const char *vdev_path = vdev.path
+
         with nogil:
-            rv = libzfs.zpool_vdev_attach(self.zpool.handle, first_child.path, vdev.path, root.nvlist.handle, False)
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, first_child_path, vdev_path, root.nvlist.handle, 0)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1344,8 +1347,11 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
+        cdef const char *path = self.path
+        cdef const char *vdev_path = vdev.path
+
         with nogil:
-            rv = libzfs.zpool_vdev_attach(self.zpool.handle, self.path, vdev.path, root.nvlist.handle, 1)
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, path, vdev_path, root.nvlist.handle, 1)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1360,8 +1366,10 @@ cdef class ZFSVdev(object):
         if self.parent.type not in ('mirror', 'spare'):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
+        cdef const char *path = self.path
+
         with nogil:
-            rv = libzfs.zpool_vdev_detach(self.zpool.handle, self.path)
+            rv = libzfs.zpool_vdev_detach(self.zpool.handle, path)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1370,9 +1378,10 @@ cdef class ZFSVdev(object):
 
     def remove(self):
         cdef const char *command = 'zpool remove'
+        cdef const char *path = self.path
 
         with nogil:
-            rv = libzfs.zpool_vdev_remove(self.zpool.handle, self.path)
+            rv = libzfs.zpool_vdev_remove(self.zpool.handle, path)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1384,8 +1393,11 @@ cdef class ZFSVdev(object):
         if self.type not in ('disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
+        cdef const char *path = self.path
+        cdef int c_temporary = int(temporary)
+
         with nogil:
-            rv = libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary)
+            rv = libzfs.zpool_vdev_offline(self.zpool.handle, path, c_temporary)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1403,8 +1415,10 @@ cdef class ZFSVdev(object):
         if expand:
             flags |= zfs.ZFS_ONLINE_EXPAND
 
+        cdef const char *path = self.path
+
         with nogil:
-            rv = libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate)
+            rv = libzfs.zpool_vdev_online(self.zpool.handle, path, flags, &newstate)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1412,15 +1426,21 @@ cdef class ZFSVdev(object):
         self.root.write_history(command, '-e' if expand else '',self.zpool.name, self.path)
 
     def degrade(self, aux):
+        cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
+        cdef int c_guid = self.guid
+
         with nogil:
-            rv = libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux))
+            rv = libzfs.zpool_vdev_degrade(self.zpool.handle, c_guid, c_aux)
 
         if rv != 0:
             raise self.root.get_error()
 
     def fault(self, aux):
+        cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
+        cdef int c_guid = self.guid
+
         with nogil:
-            rv = libzfs.zpool_vdev_fault(self.zpool.handle, self.guid, int(aux))
+            rv = libzfs.zpool_vdev_fault(self.zpool.handle, c_guid, c_aux)
 
         if rv != 0:
             raise self.root.get_error()
@@ -2850,6 +2870,4 @@ def clear_label(device):
     os.close(fd)
 
 
-# TODO: Test all the changes and see if any usages are left wrt Middlewared - we should probably cover usages other then
-# the ones we have in middlewared. There are a few bugs which would raise exceptions under nogil, have them covered as
-# well
+# TODO: MAKE SURE ALL USAGES OF ZFS RELATED TASKS ARE COVERED WRT RELEASING GIL
