@@ -2249,12 +2249,18 @@ cdef class ZFSObject(object):
 
 
 cdef class ZFSDataset(ZFSObject):
-    def __getstate__(self, recursive=True):
+    def __getstate__(self, recursive=True, snapshots=False, snapshots_recursive=False):
         ret = super(ZFSDataset, self).__getstate__()
         ret['mountpoint'] = self.mountpoint
 
         if recursive:
             ret['children'] = [i.__getstate__() for i in self.children]
+
+        if snapshots:
+            ret['snapshots'] = [s.__getstate__() for s in self.snapshots]
+
+        if snapshots_recursive:
+            ret['snapshots_recursive'] = [s.__getstate__() for s in self.snapshots_recursive]
 
         return ret
 
