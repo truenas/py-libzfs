@@ -1,4 +1,5 @@
-# cython: c_string_type=unicode, c_string_encoding=ascii
+# encoding: utf-8
+# cython: language_level=3, c_string_type=unicode, c_string_encoding=default
 #-
 # Copyright (c) 2014 iXsystems, Inc.
 # All rights reserved.
@@ -1055,8 +1056,8 @@ cdef class ZFSProperty(object):
             cdef const char *c_value
             cdef int ret
 
-            value = str(value)
-            c_value = value
+            str_value = str(value).encode('utf-8')
+            c_value = str_value
 
             with nogil:
                 ret = libzfs.zfs_prop_set(self.dataset.handle, self.cname, c_value)
@@ -2071,9 +2072,9 @@ cdef class ZFSPropertyDict(dict):
         if userprop.dataset is None:
             # detached user property
             userprop.dataset = self.parent
-            value = str(userprop.value)
+            str_value = str(userprop.value).encode('utf-8')
+            c_value = str_value
             c_key = key
-            c_value = value
 
             with nogil:
                 ret = libzfs.zfs_prop_set(self.parent.handle, c_key, c_value)
