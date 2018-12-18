@@ -651,9 +651,11 @@ cdef class ZFS(object):
 
     def get_dataset_by_path(self, path):
         cdef libzfs.zfs_handle_t* handle
+        cdef char *c_path = path
+        dataset_type = DatasetType.FILESYSTEM.value
 
         with nogil:
-            handle = libzfs.zfs_path_to_zhandle(self.handle, path, DatasetType.FILESYSTEM.value)
+            handle = libzfs.zfs_path_to_zhandle(self.handle, c_path, dataset_type)
 
         cdef ZFSPool pool
         cdef ZFSDataset dataset
@@ -892,15 +894,17 @@ cdef class ZFS(object):
     IF HAVE_SENDFLAGS_T_TYPEDEF and HAVE_ZFS_SEND_RESUME:
         def send_resume(self, fd, token, flags=None):
             cdef libzfs.sendflags_t cflags
-            cdef int ret
+            cdef int ret, c_fd
+            cdef char *c_token = token
 
             memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
 
             if flags:
                 convert_sendflags(flags, &cflags)
 
+            c_fd = fd
             with nogil:
-                ret = libzfs.zfs_send_resume(self.handle, &cflags, fd, token)
+                ret = libzfs.zfs_send_resume(self.handle, &cflags, c_fd, c_token)
 
             if ret != 0:
                 raise ZFSException(self.errno, self.errstr)
@@ -908,9 +912,10 @@ cdef class ZFS(object):
     IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
         def describe_resume_token(self, token):
             cdef nvpair.nvlist_t *nvl
+            cdef char *c_token = token
 
             with nogil:
-                nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, token)
+                nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, c_token)
 
             if nvl == NULL:
                 raise ZFSException(self.errno, self.errstr)
@@ -1090,18 +1095,17 @@ cdef class ZFSProperty(object):
     def refresh(self):
         with nogil:
             self.cname = libzfs.zfs_prop_to_name(self.propid)
-            with nogil:
-                libzfs.zfs_prop_get(
-                    self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
-                    &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
-                    0
-                )
+            libzfs.zfs_prop_get(
+                self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
+                &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
+                0
+            )
 
-                libzfs.zfs_prop_get(
-                    self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
-                    NULL, NULL, 0,
-                    1
-                )
+            libzfs.zfs_prop_get(
+                self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
+                NULL, NULL, 0,
+                1
+            )
 
     property name:
         def __get__(self):
@@ -1926,7 +1930,7 @@ cdef class ZFSPool(object):
 
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
         cdef NVList cfsopts
-        cdef uint64_t vol_reservation
+        cdef uint64_t vol_reservation, vol_size
         cdef const char *c_name = name
         cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
         #cdef char[1024] msg
@@ -1947,7 +1951,6 @@ cdef class ZFSPool(object):
                 fsopts[i] = nicestrtonum(self.root, value)
 
         cfsopts = NVList(otherdict=fsopts)
-        cdef uint64_t vol_size, vol_reservation
         vol_size = cfsopts['volsize']
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
