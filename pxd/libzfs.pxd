@@ -508,7 +508,7 @@ cdef extern from "libzfs.h" nogil:
     extern const char *zfs_type_to_name(zfs_type_t)
     extern void zfs_refresh_properties(zfs_handle_t *)
     extern int zfs_name_valid(const char *, zfs_type_t)
-    extern zfs_handle_t *zfs_path_to_zhandle(libzfs_handle_t *, char *, zfs_type_t)
+    extern zfs_handle_t *zfs_path_to_zhandle(libzfs_handle_t *, char *, zfs.zfs_type_t)
     extern int zfs_dataset_exists(libzfs_handle_t *, const char *,
         zfs_type_t)
     extern int zfs_spa_version(zfs_handle_t *, int *)

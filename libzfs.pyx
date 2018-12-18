@@ -340,7 +340,9 @@ cdef class ZFS(object):
         cdef zfs.zfs_type_t c_type
         cdef prop_iter_state iter
 
-        self.handle = libzfs.libzfs_init()
+        with nogil:
+            self.handle = libzfs.libzfs_init()
+
         if isinstance(history, bool):
             self.history = history
         else:
@@ -375,7 +377,9 @@ cdef class ZFS(object):
 
     def __libzfs_fini(self):
         if self.handle:
-            libzfs.libzfs_fini(self.handle)
+            with nogil:
+                libzfs.libzfs_fini(self.handle)
+
             self.handle = NULL
 
     def __dealloc__(self):
@@ -601,7 +605,10 @@ cdef class ZFS(object):
         pool = ZFSPool.__new__(ZFSPool)
         pool.root = self
         pool.free = False
-        pool.handle = libzfs.zfs_get_pool_handle(handle)
+
+        with nogil:
+            pool.handle = libzfs.zfs_get_pool_handle(handle)
+
         dataset = ZFSDataset.__new__(ZFSDataset)
         dataset.root = self
         dataset.pool = pool
@@ -623,7 +630,10 @@ cdef class ZFS(object):
         pool = ZFSPool.__new__(ZFSPool)
         pool.root = self
         pool.free = False
-        pool.handle = libzfs.zfs_get_pool_handle(handle)
+
+        with nogil:
+            pool.handle = libzfs.zfs_get_pool_handle(handle)
+
         snap = ZFSSnapshot.__new__(ZFSSnapshot)
         snap.root = self
         snap.pool = pool
@@ -640,7 +650,13 @@ cdef class ZFS(object):
             raise err
 
     def get_dataset_by_path(self, path):
-        cdef libzfs.zfs_handle_t* handle = libzfs.zfs_path_to_zhandle(self.handle, path, DatasetType.FILESYSTEM.value)
+        cdef libzfs.zfs_handle_t* handle
+        cdef char *c_path = path
+        cdef zfs.zfs_type_t dataset_type = DatasetType.FILESYSTEM.value
+
+        with nogil:
+            handle = libzfs.zfs_path_to_zhandle(self.handle, c_path, dataset_type)
+
         cdef ZFSPool pool
         cdef ZFSDataset dataset
         if handle == NULL:
@@ -649,7 +665,10 @@ cdef class ZFS(object):
         pool = ZFSPool.__new__(ZFSPool)
         pool.root = self
         pool.free = False
-        pool.handle = libzfs.zfs_get_pool_handle(handle)
+
+        with nogil:
+            pool.handle = libzfs.zfs_get_pool_handle(handle)
+
         dataset = ZFSDataset.__new__(ZFSDataset)
         dataset.root = self
         dataset.pool = pool
@@ -714,7 +733,10 @@ cdef class ZFS(object):
         if rv != 0:
             raise self.get_error()
 
-        if libzfs.zpool_destroy(handle, "destroy") != 0:
+        with nogil:
+            rv = libzfs.zpool_destroy(handle, "destroy")
+
+        if rv != 0:
             raise ZFSException(self.errno, self.errstr)
 
     def receive(self, name, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
@@ -872,20 +894,29 @@ cdef class ZFS(object):
     IF HAVE_SENDFLAGS_T_TYPEDEF and HAVE_ZFS_SEND_RESUME:
         def send_resume(self, fd, token, flags=None):
             cdef libzfs.sendflags_t cflags
+            cdef int ret, c_fd
+            cdef char *c_token = token
 
             memset(&cflags, 0, cython.sizeof(libzfs.sendflags_t))
 
             if flags:
                 convert_sendflags(flags, &cflags)
 
-            if libzfs.zfs_send_resume(self.handle, &cflags, fd, token) != 0:
+            c_fd = fd
+            with nogil:
+                ret = libzfs.zfs_send_resume(self.handle, &cflags, c_fd, c_token)
+
+            if ret != 0:
                 raise ZFSException(self.errno, self.errstr)
 
     IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
         def describe_resume_token(self, token):
             cdef nvpair.nvlist_t *nvl
+            cdef char *c_token = token
 
-            nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, token)
+            with nogil:
+                nvl = libzfs.zfs_send_resume_token_to_nvlist(self.handle, c_token)
+
             if nvl == NULL:
                 raise ZFSException(self.errno, self.errstr)
 
@@ -1303,6 +1334,7 @@ cdef class ZFSVdev(object):
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'
         cdef ZFSVdev root
+        cdef int rv
 
         if self.type not in ('mirror', 'disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can attach disks to mirrors and stripes only")
@@ -1316,12 +1348,13 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        if libzfs.zpool_vdev_attach(
-            self.zpool.handle,
-            first_child.path,
-            vdev.path,
-            root.nvlist.handle,
-            False) != 0:
+        cdef const char *first_child_path = first_child.path
+        cdef const char *vdev_path = vdev.path
+
+        with nogil:
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, first_child_path, vdev_path, root.nvlist.handle, 0)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
@@ -1329,6 +1362,7 @@ cdef class ZFSVdev(object):
     def replace(self, ZFSVdev vdev):
         cdef const char *command = 'zpool replace'
         cdef ZFSVdev root
+        cdef int rv
 
         if self.type == 'file':
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
@@ -1343,33 +1377,45 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        if libzfs.zpool_vdev_attach(
-            self.zpool.handle,
-            self.path,
-            vdev.path,
-            root.nvlist.handle,
-            True) != 0:
+        cdef const char *path = self.path
+        cdef const char *vdev_path = vdev.path
+
+        with nogil:
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, path, vdev_path, root.nvlist.handle, 1)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path, vdev.path)
 
     def detach(self):
         cdef const char *command = 'zpool detach'
+        cdef int rv
         if self.type not in ('file', 'disk'):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
         if self.parent.type not in ('mirror', 'spare'):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
-        if libzfs.zpool_vdev_detach(self.zpool.handle, self.path) != 0:
+        cdef const char *path = self.path
+
+        with nogil:
+            rv = libzfs.zpool_vdev_detach(self.zpool.handle, path)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path)
 
     def remove(self):
         cdef const char *command = 'zpool remove'
+        cdef const char *path = self.path
+        cdef int rv
 
-        if libzfs.zpool_vdev_remove(self.zpool.handle, self.path):
+        with nogil:
+            rv = libzfs.zpool_vdev_remove(self.zpool.handle, path)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, self.zpool.name, self.path)
@@ -1379,7 +1425,14 @@ cdef class ZFSVdev(object):
         if self.type not in ('disk', 'file'):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
-        if libzfs.zpool_vdev_offline(self.zpool.handle, self.path, temporary) != 0:
+        cdef const char *path = self.path
+        cdef int c_temporary = int(temporary)
+        cdef int rv
+
+        with nogil:
+            rv = libzfs.zpool_vdev_offline(self.zpool.handle, path, c_temporary)
+
+        if rv != 0:
             raise self.root.get_error()
 
         self.root.write_history(command, '-t' if temporary else '',self.zpool.name, self.path)
@@ -1395,17 +1448,37 @@ cdef class ZFSVdev(object):
         if expand:
             flags |= zfs.ZFS_ONLINE_EXPAND
 
-        if libzfs.zpool_vdev_online(self.zpool.handle, self.path, flags, &newstate) != 0:
+        cdef const char *path = self.path
+        cdef int rv
+
+        with nogil:
+            rv = libzfs.zpool_vdev_online(self.zpool.handle, path, flags, &newstate)
+
+        if rv != 0:
             raise self.root.get_error()
 
-        self.root.write_history(command, '-e' if expand else '',self.zpool.name, self.path)
+        self.root.write_history(command, '-e' if expand else '', self.zpool.name, self.path)
 
     def degrade(self, aux):
-        if libzfs.zpool_vdev_degrade(self.zpool.handle, self.guid, int(aux)):
+        cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
+        cdef uint64_t c_guid = self.guid
+        cdef int rv
+
+        with nogil:
+            rv = libzfs.zpool_vdev_degrade(self.zpool.handle, c_guid, c_aux)
+
+        if rv != 0:
             raise self.root.get_error()
 
     def fault(self, aux):
-        if libzfs.zpool_vdev_fault(self.zpool.handle, self.guid, int(aux)):
+        cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
+        cdef uint64_t c_guid = self.guid
+        cdef int rv
+
+        with nogil:
+            rv = libzfs.zpool_vdev_fault(self.zpool.handle, c_guid, c_aux)
+
+        if rv != 0:
             raise self.root.get_error()
 
     property type:
@@ -1857,7 +1930,7 @@ cdef class ZFSPool(object):
 
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
         cdef NVList cfsopts
-        cdef uint64_t vol_reservation
+        cdef uint64_t vol_reservation, vol_size
         cdef const char *c_name = name
         cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
         #cdef char[1024] msg
@@ -1878,13 +1951,18 @@ cdef class ZFSPool(object):
                 fsopts[i] = nicestrtonum(self.root, value)
 
         cfsopts = NVList(otherdict=fsopts)
+        vol_size = cfsopts['volsize']
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
-            vol_reservation = libzfs.zvol_volsize_to_reservation(
-                cfsopts['volsize'],
-                cfsopts.handle)
+            with nogil:
+                vol_reservation = libzfs.zvol_volsize_to_reservation(
+                    vol_size,
+                    cfsopts.handle
+                )
 
             cfsopts['refreservation'] = vol_reservation
+
+        cdef int ret
 
         if create_ancestors:
             with nogil:
@@ -1911,7 +1989,8 @@ cdef class ZFSPool(object):
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
         cdef int ret
 
-        ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
+        with nogil:
+            ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
 
         if ret != 0:
             raise self.root.get_error()
@@ -2185,7 +2264,9 @@ cdef class ZFSObject(object):
         def __get__(self):
             cdef zfs.zfs_type_t typ
 
-            typ = libzfs.zfs_get_type(self.handle)
+            with nogil:
+                typ = libzfs.zfs_get_type(self.handle)
+
             return DatasetType(typ)
 
     property properties:
@@ -2204,6 +2285,8 @@ cdef class ZFSObject(object):
         flags.recurse = recursive
         flags.nounmount = nounmount
         flags.forceunmount = forceunmount
+
+        cdef int ret
 
         with nogil:
             ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
@@ -2387,7 +2470,12 @@ cdef class ZFSDataset(ZFSObject):
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
-            if libzfs.zfs_is_mounted(self.handle, &mntpt) == 0:
+            cdef int ret
+
+            with nogil:
+                ret = libzfs.zfs_is_mounted(self.handle, &mntpt)
+
+            if ret == 0:
                 return None
 
             result = str(mntpt)
@@ -2702,8 +2790,12 @@ cdef class ZFSSnapshot(ZFSObject):
         def __get__(self):
             cdef nvpair.nvlist_t* ptr
             cdef NVList nvl
+            cdef int ret
 
-            if libzfs.zfs_get_holds(self.handle, &ptr) != 0:
+            with nogil:
+                ret = libzfs.zfs_get_holds(self.handle, &ptr)
+
+            if ret != 0:
                 raise self.root.get_error()
 
             nvl = NVList(<uintptr_t>ptr)
@@ -2712,7 +2804,12 @@ cdef class ZFSSnapshot(ZFSObject):
     property mountpoint:
         def __get__(self):
             cdef char *mntpt
-            if libzfs.zfs_is_mounted(self.handle, &mntpt) == 0:
+            cdef int ret
+
+            with nogil:
+                ret = libzfs.zfs_is_mounted(self.handle, &mntpt)
+
+            if ret == 0:
                 return None
 
             result = mntpt
