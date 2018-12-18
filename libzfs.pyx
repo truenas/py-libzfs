@@ -1951,9 +1951,9 @@ cdef class ZFSPool(object):
                 fsopts[i] = nicestrtonum(self.root, value)
 
         cfsopts = NVList(otherdict=fsopts)
-        vol_size = cfsopts['volsize']
 
         if fstype == DatasetType.VOLUME and not sparse_vol:
+            vol_size = cfsopts['volsize']
             with nogil:
                 vol_reservation = libzfs.zvol_volsize_to_reservation(
                     vol_size,
