@@ -652,7 +652,7 @@ cdef class ZFS(object):
     def get_dataset_by_path(self, path):
         cdef libzfs.zfs_handle_t* handle
         cdef char *c_path = path
-        dataset_type = DatasetType.FILESYSTEM.value
+        cdef zfs.zfs_type_t dataset_type = DatasetType.FILESYSTEM.value
 
         with nogil:
             handle = libzfs.zfs_path_to_zhandle(self.handle, c_path, dataset_type)
@@ -1098,13 +1098,13 @@ cdef class ZFSProperty(object):
             libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
                 &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
-                0
+                False
             )
 
             libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
                 NULL, NULL, 0,
-                1
+                True
             )
 
     property name:
@@ -1457,11 +1457,11 @@ cdef class ZFSVdev(object):
         if rv != 0:
             raise self.root.get_error()
 
-        self.root.write_history(command, '-e' if expand else '',self.zpool.name, self.path)
+        self.root.write_history(command, '-e' if expand else '', self.zpool.name, self.path)
 
     def degrade(self, aux):
         cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
-        cdef int c_guid = self.guid
+        cdef uint64_t c_guid = self.guid
         cdef int rv
 
         with nogil:
@@ -1472,7 +1472,7 @@ cdef class ZFSVdev(object):
 
     def fault(self, aux):
         cdef zfs.vdev_aux_t c_aux = VDevAuxState(int(aux))
-        cdef int c_guid = self.guid
+        cdef uint64_t c_guid = self.guid
         cdef int rv
 
         with nogil:
