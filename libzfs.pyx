@@ -30,6 +30,7 @@ import os
 import stat
 import enum
 import errno
+import time
 import threading
 import cython
 cimport libzfs
@@ -1602,7 +1603,7 @@ cdef class ZPoolScrub(object):
 
     property end_time:
         def __get__(self):
-            if not self.stat:
+            if not self.stat or self.state == ScanState.SCANNING:
                 return None
 
             return datetime.fromtimestamp(self.stat[3])
@@ -1620,6 +1621,18 @@ cdef class ZPoolScrub(object):
                 return None
 
             return self.stat[5]
+
+    property total_secs_left:
+        def __get__(self):
+            if not self.stat or self.state != ScanState.SCANNING:
+                return None
+
+            examined = self.bytes_scanned
+            total = self.bytes_to_scan
+            elapsed = (int(time.time()) - self.stat[10]) or 1
+            pass_exam = self.stat[9] or 1
+            rate = pass_exam / elapsed
+            return int((total - examined) / rate)
 
     IF HAVE_POOL_SCAN_STAT_T_PAUSE:
         property bytes_issued:
@@ -1669,7 +1682,8 @@ cdef class ZPoolScrub(object):
             'percentage': self.percentage,
             'bytes_to_process': self.bytes_scanned,
             'bytes_processed': self.bytes_to_scan,
-            'errors': self.errors
+            'errors': self.errors,
+            'total_secs_left': self.total_secs_left
         }
         if hasattr(self, 'bytes_issued'):
             state['bytes_issued'] = self.bytes_issued
