@@ -2765,9 +2765,9 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs release', '-r' if recursive else '', tag, self.name)
 
-    def delete(self, recursive=False):
+    def delete(self, recursive=False, defer=False):
         if not recursive:
-            super(ZFSSnapshot, self).delete()
+            super(ZFSSnapshot, self).delete(defer=defer)
         else:
             self.parent.destroy_snapshot(self.snapshot_name)
 
