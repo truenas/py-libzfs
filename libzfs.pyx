@@ -1156,7 +1156,7 @@ cdef class ZFSProperty(object):
 
         dsets = [self.dataset]
         if recursive:
-            dsets = dsets.extend(list(self.dataset.children_recursive))
+            dsets.extend(list(self.dataset.children_recursive))
 
         for d in dsets:
             dset = <ZFSObject>d
