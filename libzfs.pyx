@@ -1191,23 +1191,23 @@ cdef class ZFSVdevStats(object):
 
     property read_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][21]
+            return self.nvlist['vdev_stats'][20]
 
     property write_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][22]
+            return self.nvlist['vdev_stats'][21]
 
     property checksum_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][23]
+            return self.nvlist['vdev_stats'][22]
 
     property ops:
         def __get__(self):
-            return self.nvlist['vdev_stats'][8:13]
+            return self.nvlist['vdev_stats'][8:14]
 
     property bytes:
         def __get__(self):
-            return self.nvlist['vdev_stats'][14:19]
+            return self.nvlist['vdev_stats'][14:20]
 
     property configured_ashift:
         def __get__(self):
