@@ -1963,7 +1963,7 @@ cdef class ZFSPool(object):
                 PoolStatus.NON_NATIVE_ASHIFT: 'One or more devices are configured to use a non-native block size. '
                                               'Expect reduced performance.'
             }
-            return f'{code.name}{f" - {status_mapping.get(code.value)}" if code.value in status_mapping else ""}'
+            return status_mapping.get(code.value)
 
     property error_count:
         def __get__(self):
