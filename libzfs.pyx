@@ -1754,7 +1754,7 @@ cdef class ZFSPool(object):
             'hostname': self.hostname,
             'status': self.status,
             'status_detail': self.status_detail,
-            'status_code': self.status_code,
+            'status_code': self.status_code.name,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
