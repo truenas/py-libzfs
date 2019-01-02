@@ -82,6 +82,8 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_IS_HOLE
     const char* ZPOOL_CONFIG_DDT_HISTOGRAM
     const char* ZPOOL_CONFIG_DDT_OBJ_STATS
+    const char* ZPOOL_CONFIG_LOAD_INFO
+    const char* ZPOOL_CONFIG_UNSUP_FEAT
 
     enum:
         ZIO_TYPES
