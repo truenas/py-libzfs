@@ -1754,6 +1754,7 @@ cdef class ZFSPool(object):
             'hostname': self.hostname,
             'status': self.status,
             'status_detail': self.status_detail,
+            'status_code': self.status_code.name,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
@@ -1903,10 +1904,66 @@ cdef class ZFSPool(object):
             stats = self.config['vdev_tree']['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
 
-    property status_detail:
+    property status_code:
         def __get__(self):
             cdef char* msg_id
             return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
+
+    def __unsup_features(self):
+        try:
+            nvinfo = self.get_raw_config()[zfs.ZPOOL_CONFIG_LOAD_INFO]
+            return dict(nvinfo[zfs.ZPOOL_CONFIG_UNSUP_FEAT])
+        except ValueError as e:
+            return str(e)
+
+    property status_detail:
+        def __get__(self):
+            code = self.status_code
+            status_mapping = {
+                PoolStatus.MISSING_DEV_R: 'One or more devices could not be opened. Sufficient replicas exist for '
+                                          'the pool to continue functioning in a degraded state.',
+                PoolStatus.MISSING_DEV_NR: 'One or more devices could not be opened. There are insufficient '
+                                           'replicas for the pool to continue functioning.',
+                PoolStatus.CORRUPT_LABEL_R: 'One or more devices could not be used because the label is missing or '
+                                            'invalid. Sufficient replicas exist for the pool to continue functioning '
+                                            'in a degraded state.',
+                PoolStatus.CORRUPT_LABEL_NR: 'One or more devices could not be used because the label is missing '
+                                             'or invalid. There are insufficient replicas for the pool to continue '
+                                             'functioning.',
+                PoolStatus.FAILING_DEV: 'One or more devices has experienced an unrecoverable error. An attempt was '
+                                        'made to correct the error. Applications are unaffected.',
+                PoolStatus.OFFLINE_DEV: 'One or more devices has been taken offline by the administrator. Sufficient '
+                                        'replicas exist for the pool to continue functioning in a degraded state.',
+                PoolStatus.REMOVED_DEV: 'One or more devices has been removed by the administrator. Sufficient '
+                                        'replicas exist for the pool to continue functioning in a degraded state.',
+                PoolStatus.RESILVERING: 'One or more devices is currently being resilvered. The pool will continue '
+                                        'to function, possibly in a degraded state.',
+                PoolStatus.CORRUPT_DATA: 'One or more devices has experienced an error resulting in data '
+                                         'corruption. Applications may be affected.',
+                PoolStatus.CORRUPT_POOL: 'The pool metadata is corrupted and the pool cannot be opened.',
+                PoolStatus.VERSION_OLDER: 'The pool is formatted using a legacy on-disk format. The pool can still '
+                                          'be used, but some features are unavailable.',
+                PoolStatus.VERSION_NEWER: 'The pool has been upgraded to a newer, incompatible on-disk version. '
+                                          'The pool cannot be accessed on this system.',
+                PoolStatus.FEAT_DISABLED: 'Some supported features are not enabled on the pool. The pool can still '
+                                          'be used, but some features are unavailable.',
+                PoolStatus.UNSUP_FEAT_READ: 'The pool cannot be accessed on this system because it uses the following '
+                                            f'feature(s) not supported on this system: {self.__unsup_features()}',
+                PoolStatus.UNSUP_FEAT_WRITE: 'The pool can only be accessed in read-only mode on this system. It '
+                                             'cannot be accessed in read-write mode because it uses the following '
+                                             f'feature(s) not supported on this system: {self.__unsup_features()}',
+                PoolStatus.FAULTED_DEV_R: 'One or more devices are faulted in response to persistent errors. '
+                                          'Sufficient replicas exist for the pool to continue functioning in a '
+                                          'degraded state.',
+                PoolStatus.FAULTED_DEV_NR: 'One or more devices are faulted in response to persistent errors. '
+                                           'There are insufficient replicas for the pool to continue functioning.',
+                PoolStatus.IO_FAILURE_CONTINUE: 'One or more devices are faulted in response to IO failures.',
+                PoolStatus.BAD_LOG: 'An intent log record could not be read. Waiting for administrator intervention '
+                                    'to fix the faulted pool.',
+                PoolStatus.NON_NATIVE_ASHIFT: 'One or more devices are configured to use a non-native block size. '
+                                              'Expect reduced performance.'
+            }
+            return status_mapping.get(code.value)
 
     property error_count:
         def __get__(self):
