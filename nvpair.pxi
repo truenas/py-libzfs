@@ -173,6 +173,9 @@ cdef class NVList(object):
             nvpair.nvpair_value_nvlist_array(pair, <nvpair.nvlist_t***>&carray, &carraylen)
             return [dict(NVList(x)) if wrap_dict else NVList(x) for x in (<uintptr_t *>carray)[:carraylen]]
 
+    cdef int nvlist_lookup_uint64_array(self, nvpair.nvlist_t* nvl, const char* buf, uint64_t **a, uint_t *n):
+        return nvpair.nvlist_lookup_uint64_array(nvl, buf, a, n)
+
     def __contains__(self, key):
         return nvpair.nvlist_exists(self.handle, key)
 

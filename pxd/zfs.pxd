@@ -42,6 +42,47 @@ cdef extern from "sys/mount.h":
 
 
 cdef extern from "sys/fs/zfs.h" nogil:
+    # The following are configuration names used in the nvlist describing a pool's configuration
+    const char* ZPOOL_CONFIG_VERSION
+    const char* ZPOOL_CONFIG_POOL_NAME
+    const char* ZPOOL_CONFIG_POOL_STATE
+    const char* ZPOOL_CONFIG_POOL_TXG
+    const char* ZPOOL_CONFIG_POOL_GUID
+    const char* ZPOOL_CONFIG_CREATE_TXG
+    const char* ZPOOL_CONFIG_TOP_GUID
+    const char* ZPOOL_CONFIG_VDEV_TREE
+    const char* ZPOOL_CONFIG_TYPE
+    const char* ZPOOL_CONFIG_CHILDREN
+    const char* ZPOOL_CONFIG_ID
+    const char* ZPOOL_CONFIG_GUID
+    const char* ZPOOL_CONFIG_PATH
+    const char* ZPOOL_CONFIG_DEVID
+    const char* ZPOOL_CONFIG_METASLAB_ARRAY
+    const char* ZPOOL_CONFIG_METASLAB_SHIFT
+    const char* ZPOOL_CONFIG_ASHIFT
+    const char* ZPOOL_CONFIG_ASIZE
+    const char* ZPOOL_CONFIG_DTL
+    const char* ZPOOL_CONFIG_SCAN_STATS
+    const char* ZPOOL_CONFIG_VDEV_STATS
+    const char* ZPOOL_CONFIG_WHOLE_DISK
+    const char* ZPOOL_CONFIG_ERRCOUNT
+    const char* ZPOOL_CONFIG_NOT_PRESENT
+    const char* ZPOOL_CONFIG_SPARES
+    const char* ZPOOL_CONFIG_IS_SPARE
+    const char* ZPOOL_CONFIG_NPARITY
+    const char* ZPOOL_CONFIG_HOSTID
+    const char* ZPOOL_CONFIG_HOSTNAME
+    const char* ZPOOL_CONFIG_LOADED_TIME
+    const char* ZPOOL_CONFIG_UNSPARE
+    const char* ZPOOL_CONFIG_PHYS_PATH
+    const char* ZPOOL_CONFIG_IS_LOG
+    const char* ZPOOL_CONFIG_L2CACHE
+    const char* ZPOOL_CONFIG_HOLE_ARRAY
+    const char* ZPOOL_CONFIG_VDEV_CHILDREN
+    const char* ZPOOL_CONFIG_IS_HOLE
+    const char* ZPOOL_CONFIG_DDT_HISTOGRAM
+    const char* ZPOOL_CONFIG_DDT_OBJ_STATS
+
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
@@ -391,7 +432,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         DSS_FINISHED
         DSS_CANCELED
         DSS_NUM_STATES
-        
+
     ctypedef struct vdev_stat_t:
         hrtime_t	vs_timestamp
         uint64_t	vs_state

@@ -331,6 +331,11 @@ class ZFSException(RuntimeError):
         self.code = code
 
 
+class ZFSVdevStatsException(ZFSException):
+    def __init__(self, code):
+        super(ZFSVdevStatsException, self).__init__(code, 'Failed to fetch ZFS Vdev Stats')
+
+
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
     cdef int history
@@ -1223,7 +1228,9 @@ cdef class ZFSUserProperty(ZFSProperty):
 
 cdef class ZFSVdevStats(object):
     cdef readonly ZFSVdev vdev
-    cdef NVList nvlist
+    cdef NVList _nvlist
+    cdef zfs.vdev_stat_t *vs;
+    cdef uint_t total
 
     def __getstate__(self):
         return {
@@ -1238,56 +1245,74 @@ cdef class ZFSVdevStats(object):
             'configured_ashift': self.configured_ashift,
             'logical_ashift': self.logical_ashift,
             'physical_ashift': self.physical_ashift,
-            'fragmentation': self.fragmentation
+            'fragmentation': self.fragmentation,
+            'self_healed': self.self_healed
         }
+
+    property nvlist:
+        def __get__(self):
+            return self._nvlist
+
+        def __set__(self, value):
+            self._nvlist = value
+            ret = self._nvlist.nvlist_lookup_uint64_array(
+                <nvpair.nvlist_t*>self._nvlist.handle, zfs.ZPOOL_CONFIG_VDEV_STATS, <uint64_t **>&self.vs, &self.total
+            )
+            if ret != 0:
+                raise ZFSVdevStatsException(ret)
 
     property timestamp:
         def __get__(self):
-            return self.nvlist['vdev_stats'][0]
+            return self.vs.vs_timestamp
 
     property size:
         def __get__(self):
-            return self.nvlist['vdev_stats'][4]
+            return self.vs.vs_space
 
     property allocated:
         def __get__(self):
-            return self.nvlist['vdev_stats'][3]
+            return self.vs.vs_alloc
 
     property read_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][21]
+            return self.vs.vs_read_errors
 
     property write_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][22]
+            return self.vs.vs_write_errors
 
     property checksum_errors:
         def __get__(self):
-            return self.nvlist['vdev_stats'][23]
+            return self.vs.vs_checksum_errors
 
     property ops:
         def __get__(self):
-            return self.nvlist['vdev_stats'][8:13]
+            return self.vs.vs_ops
 
     property bytes:
         def __get__(self):
-            return self.nvlist['vdev_stats'][14:19]
+            return self.vs.vs_bytes
 
     property configured_ashift:
         def __get__(self):
-            return self.nvlist['vdev_stats'][26]
+            return self.vs.vs_configured_ashift
 
     property logical_ashift:
         def __get__(self):
-            return self.nvlist['vdev_stats'][27]
+            return self.vs.vs_logical_ashift
 
     property physical_ashift:
         def __get__(self):
-            return self.nvlist['vdev_stats'][28]
+            return self.vs.vs_physical_ashift
 
     property fragmentation:
         def __get__(self):
-            return self.nvlist['vdev_stats'][29]
+            return self.vs.vs_fragmentation
+
+    property self_healed:
+        def __get__(self):
+            # This is in bytes
+            return self.vs.vs_self_healed
 
 
 cdef class ZFSVdev(object):
@@ -1728,6 +1753,7 @@ cdef class ZFSPool(object):
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
+            'status_detail': self.status_detail,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
@@ -1876,6 +1902,11 @@ cdef class ZFSPool(object):
         def __get__(self):
             stats = self.config['vdev_tree']['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
+
+    property status_detail:
+        def __get__(self):
+            cdef char* msg_id
+            return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     property error_count:
         def __get__(self):
