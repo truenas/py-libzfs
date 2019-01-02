@@ -84,10 +84,10 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_DDT_OBJ_STATS
 
     enum:
+        ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
         ZFS_NUM_PROPS
         SPA_VERSION
-        ZIO_TYPES
 
     enum:
         ZAP_MAXNAMELEN

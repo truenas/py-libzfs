@@ -332,8 +332,8 @@ class ZFSException(RuntimeError):
 
 
 class ZFSVdevStatsException(ZFSException):
-    def __init__(self):
-        super(ZFSVdevStatsException, self).__init__(errno, 'Failed to fetch ZFS Vdev Stats')
+    def __init__(self, code):
+        super(ZFSVdevStatsException, self).__init__(code, 'Failed to fetch ZFS Vdev Stats')
 
 
 cdef class ZFS(object):
@@ -1259,7 +1259,7 @@ cdef class ZFSVdevStats(object):
                 <nvpair.nvlist_t*>self._nvlist.handle, zfs.ZPOOL_CONFIG_VDEV_STATS, <uint64_t **>&self.vs, &self.total
             )
             if ret != 0:
-                raise ZFSVdevStatsException()
+                raise ZFSVdevStatsException(ret)
 
     property timestamp:
         def __get__(self):
@@ -1753,6 +1753,7 @@ cdef class ZFSPool(object):
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
+            'status_detail': self.status_detail,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
@@ -1901,6 +1902,11 @@ cdef class ZFSPool(object):
         def __get__(self):
             stats = self.config['vdev_tree']['vdev_stats']
             return libzfs.zpool_state_to_name(stats[1], stats[2])
+
+    property status_detail:
+        def __get__(self):
+            cdef char* msg_id
+            return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     property error_count:
         def __get__(self):
