@@ -1755,6 +1755,7 @@ cdef class ZFSPool(object):
             'status': self.status,
             'status_detail': self.status_detail,
             'status_code': self.status_code.name,
+            'healthy': self.healthy,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
@@ -1908,6 +1909,15 @@ cdef class ZFSPool(object):
         def __get__(self):
             cdef char* msg_id
             return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
+
+    property healthy:
+        def __get__(self):
+            return self.status_code in (
+                PoolStatus.OK,
+                PoolStatus.VERSION_OLDER,
+                PoolStatus.NON_NATIVE_ASHIFT,
+                PoolStatus.FEAT_DISABLED,
+            )
 
     def __unsup_features(self):
         try:
