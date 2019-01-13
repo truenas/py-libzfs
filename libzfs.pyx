@@ -421,18 +421,18 @@ cdef class ZFS(object):
 
     cdef ZFSVdev make_vdev_tree(self, topology):
         cdef ZFSVdev root
-        root = ZFSVdev(self, 'root')
+        root = ZFSVdev(self, zfs.VDEV_TYPE_ROOT)
         root.children = topology.get('data', [])
 
         if 'cache' in topology:
-            root.nvlist['l2cache'] = [(<ZFSVdev>i).nvlist for i in topology['cache']]
+            root.nvlist[zfs.ZPOOL_CONFIG_L2CACHE] = [(<ZFSVdev>i).nvlist for i in topology['cache']]
 
         if 'spare' in topology:
-            root.nvlist['spares'] = [(<ZFSVdev>i).nvlist for i in topology['spare']]
+            root.nvlist[zfs.ZPOOL_CONFIG_SPARES] = [(<ZFSVdev>i).nvlist for i in topology['spare']]
 
         if 'log' in topology:
             for i in topology['log']:
-                (<ZFSVdev>i).nvlist['is_log'] = 1L
+                (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
                 root.add_child_vdev(i)
 
         return root
@@ -1352,20 +1352,20 @@ cdef class ZFSVdev(object):
         return ret
 
     def add_child_vdev(self, ZFSVdev vdev):
-        if 'children' not in self.nvlist:
-            self.nvlist.set('children', [], nvpair.DATA_TYPE_NVLIST_ARRAY)
+        if zfs.ZPOOL_CONFIG_CHILDREN not in self.nvlist:
+            self.nvlist.set(zfs.ZPOOL_CONFIG_CHILDREN, [], nvpair.DATA_TYPE_NVLIST_ARRAY)
 
-        self.nvlist['children'] = self.nvlist.get_raw('children') + [vdev.nvlist]
+        self.nvlist[zfs.ZPOOL_CONFIG_CHILDREN] = self.nvlist.get_raw(zfs.ZPOOL_CONFIG_CHILDREN) + [vdev.nvlist]
 
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'
         cdef ZFSVdev root
         cdef int rv
 
-        if self.type not in ('mirror', 'disk', 'file'):
+        if self.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
             raise ZFSException(Error.NOTSUP, "Can attach disks to mirrors and stripes only")
 
-        if self.type == 'mirror':
+        if self.type == zfs.VDEV_TYPE_MIRROR:
             first_child = next(self.children)
         else:
             first_child = self
@@ -1390,13 +1390,13 @@ cdef class ZFSVdev(object):
         cdef ZFSVdev root
         cdef int rv
 
-        if self.type == 'file':
+        if self.type == zfs.VDEV_TYPE_FILE:
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
 
         if not self.parent:
             raise ZFSException(Error.NOTSUP, "Cannot replace a top-level vdev")
 
-        if self.parent.type not in ('mirror', 'raidz1', 'raidz2', 'raidz3'):
+        if self.parent.type not in (zfs.VDEV_TYPE_MIRROR, 'raidz1', 'raidz2', 'raidz3'):
             raise ZFSException(Error.NOTSUP, "Can replace disks in mirror and raidz* vdevs only")
 
         root = self.root.make_vdev_tree({
@@ -1417,10 +1417,10 @@ cdef class ZFSVdev(object):
     def detach(self):
         cdef const char *command = 'zpool detach'
         cdef int rv
-        if self.type not in ('file', 'disk'):
+        if self.type not in (zfs.VDEV_TYPE_FILE, zfs.VDEV_TYPE_DISK):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
-        if self.parent.type not in ('mirror', 'spare'):
+        if self.parent.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_SPARE):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
         cdef const char *path = self.path
@@ -1448,7 +1448,7 @@ cdef class ZFSVdev(object):
 
     def offline(self, temporary=False):
         cdef const char *command = 'zpool offline'
-        if self.type not in ('disk', 'file'):
+        if self.type not in (zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
         cdef const char *path = self.path
@@ -1468,7 +1468,7 @@ cdef class ZFSVdev(object):
         cdef int flags = 0
         cdef zfs.vdev_state_t newstate
 
-        if self.type not in ('disk', 'file'):
+        if self.type not in (zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
             raise ZFSException(Error.NOTSUP, "Can make disks online only")
 
         if expand:
@@ -1510,40 +1510,48 @@ cdef class ZFSVdev(object):
     property type:
         def __get__(self):
             value = self.nvlist.get('type')
-            if value == 'raidz':
+            if value == zfs.VDEV_TYPE_RAIDZ:
                 return value + str(self.nvlist.get('nparity'))
 
             return value
 
         def __set__(self, value):
-            if value not in ('root', 'disk', 'file', 'raidz1', 'raidz2', 'raidz3', 'mirror'):
+            if value not in (
+                zfs.VDEV_TYPE_ROOT,
+                zfs.VDEV_TYPE_DISK,
+                zfs.VDEV_TYPE_FILE,
+                'raidz1',
+                'raidz2',
+                'raidz3',
+                zfs.VDEV_TYPE_MIRROR
+            ):
                 raise ValueError('Invalid vdev type')
 
             self.nvlist['type'] = value
 
-            if value.startswith('raidz'):
-                self.nvlist['type'] = 'raidz'
+            if value.startswith(zfs.VDEV_TYPE_RAIDZ):
+                self.nvlist['type'] = zfs.VDEV_TYPE_RAIDZ
                 self.nvlist['nparity'] = long(value[-1])
 
     property guid:
         def __get__(self):
-            return self.nvlist.get('guid')
+            return self.nvlist.get(zfs.ZPOOL_CONFIG_GUID)
 
     property path:
         def __get__(self):
-            return self.nvlist.get('path')
+            return self.nvlist.get(zfs.ZPOOL_CONFIG_PATH)
 
         def __set__(self, value):
-            self.nvlist['path'] = value
+            self.nvlist[zfs.ZPOOL_CONFIG_PATH] = value
 
     property status:
         def __get__(self):
-            stats = self.nvlist['vdev_stats']
+            stats = self.nvlist[zfs.ZPOOL_CONFIG_VDEV_STATS]
             return libzfs.zpool_state_to_name(stats[1], stats[2])
 
     property size:
         def __get__(self):
-            return self.nvlist['asize'] << self.nvlist['ashift']
+            return self.nvlist[zfs.ZPOOL_CONFIG_ASIZE] << self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT]
 
     property stats:
         def __get__(self):
@@ -1558,10 +1566,10 @@ cdef class ZFSVdev(object):
         def __get__(self):
             cdef ZFSVdev vdev
 
-            if 'children' not in self.nvlist:
+            if zfs.ZPOOL_CONFIG_CHILDREN not in self.nvlist:
                 return
 
-            for i in self.nvlist.get_raw('children'):
+            for i in self.nvlist.get_raw(zfs.ZPOOL_CONFIG_CHILDREN):
                 vdev = ZFSVdev.__new__(ZFSVdev)
                 vdev.nvlist = i
                 vdev.zpool = self.zpool
@@ -1571,7 +1579,7 @@ cdef class ZFSVdev(object):
                 yield vdev
 
         def __set__(self, value):
-            self.nvlist['children'] = [(<ZFSVdev>i).nvlist for i in value]
+            self.nvlist[zfs.ZPOOL_CONFIG_CHILDREN] = [(<ZFSVdev>i).nvlist for i in value]
 
     property disks:
         def __get__(self):
@@ -1581,9 +1589,9 @@ cdef class ZFSVdev(object):
             except ValueError:
                 # status may not be available in user defined ZFSVdev
                 pass
-            if self.type == 'disk':
+            if self.type == zfs.VDEV_TYPE_DISK:
                 return [self.path]
-            elif self.type == 'file':
+            elif self.type == zfs.VDEV_TYPE_FILE:
                 return []
             else:
                 result = []
@@ -1602,8 +1610,8 @@ cdef class ZPoolScrub(object):
         self.root = root
         self.pool = pool
         self.stat = None
-        if 'scan_stats' in pool.config['vdev_tree']:
-            self.stat = pool.config['vdev_tree']['scan_stats']
+        if zfs.ZPOOL_CONFIG_SCAN_STATS in pool.config[zfs.ZPOOL_CONFIG_VDEV_TREE]:
+            self.stat = pool.config[zfs.ZPOOL_CONFIG_VDEV_TREE][zfs.ZPOOL_CONFIG_SCAN_STATS]
 
     property state:
         def __get__(self):
@@ -1801,7 +1809,7 @@ cdef class ZFSPool(object):
     property root_vdev:
         def __get__(self):
             cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
 
             vdev = ZFSVdev.__new__(ZFSVdev)
             vdev.root = self.root
@@ -1812,13 +1820,13 @@ cdef class ZFSPool(object):
     property data_vdevs:
         def __get__(self):
             cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
 
-            if 'children' not in vdev_tree:
+            if zfs.ZPOOL_CONFIG_CHILDREN not in vdev_tree:
                 return
 
-            for child in vdev_tree.get_raw('children'):
-                if not child['is_log']:
+            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_CHILDREN):
+                if not child[zfs.ZPOOL_CONFIG_IS_LOG]:
                     vdev = ZFSVdev.__new__(ZFSVdev)
                     vdev.root = self.root
                     vdev.zpool = self
@@ -1829,13 +1837,13 @@ cdef class ZFSPool(object):
     property log_vdevs:
         def __get__(self):
             cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
 
-            if 'children' not in vdev_tree:
+            if zfs.ZPOOL_CONFIG_CHILDREN not in vdev_tree:
                 return
 
-            for child in vdev_tree.get_raw('children'):
-                if child['is_log']:
+            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_CHILDREN):
+                if child[zfs.ZPOOL_CONFIG_IS_LOG]:
                     vdev = ZFSVdev.__new__(ZFSVdev)
                     vdev.root = self.root
                     vdev.zpool = self
@@ -1846,12 +1854,12 @@ cdef class ZFSPool(object):
     property cache_vdevs:
         def __get__(self):
             cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
 
-            if 'l2cache' not in vdev_tree:
+            if zfs.ZPOOL_CONFIG_L2CACHE not in vdev_tree:
                 return
 
-            for child in vdev_tree.get_raw('l2cache'):
+            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_L2CACHE):
                     vdev = ZFSVdev.__new__(ZFSVdev)
                     vdev.root = self.root
                     vdev.zpool = self
@@ -1862,12 +1870,12 @@ cdef class ZFSPool(object):
     property spare_vdevs:
         def __get__(self):
             cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw('vdev_tree')
+            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
 
-            if 'spares' not in vdev_tree:
+            if zfs.ZPOOL_CONFIG_SPARES not in vdev_tree:
                 return
 
-            for child in vdev_tree.get_raw('spares'):
+            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_SPARES):
                     vdev = ZFSVdev.__new__(ZFSVdev)
                     vdev.root = self.root
                     vdev.zpool = self
@@ -1890,19 +1898,19 @@ cdef class ZFSPool(object):
 
     property guid:
         def __get__(self):
-            return self.config['pool_guid']
+            return self.config[zfs.ZPOOL_CONFIG_POOL_GUID]
 
     property hostname:
         def __get__(self):
-            return self.config.get('hostname')
+            return self.config.get(zfs.ZPOOL_CONFIG_HOSTNAME)
 
     property state:
         def __get__(self):
-            return PoolState(self.config['state'])
+            return PoolState(self.config[zfs.ZPOOL_CONFIG_POOL_STATE])
 
     property status:
         def __get__(self):
-            stats = self.config['vdev_tree']['vdev_stats']
+            stats = self.config[zfs.ZPOOL_CONFIG_VDEV_TREE][zfs.ZPOOL_CONFIG_VDEV_STATS]
             return libzfs.zpool_state_to_name(stats[1], stats[2])
 
     property status_code:
@@ -1977,7 +1985,7 @@ cdef class ZFSPool(object):
 
     property error_count:
         def __get__(self):
-            return self.config.get('error_count')
+            return self.config.get(zfs.ZPOOL_CONFIG_ERRCOUNT)
 
     property config:
         def __get__(self):
@@ -2170,7 +2178,7 @@ cdef class ZFSPool(object):
     def clear(self):
         cdef NVList policy = NVList()
         cdef int ret
-        policy["rewind-request"] = zfs.ZPOOL_NO_REWIND
+        policy[zfs.ZPOOL_REWIND_REQUEST] = zfs.ZPOOL_NO_REWIND
 
         with nogil:
             ret = libzfs.zpool_clear(self.handle, NULL, policy.handle)
