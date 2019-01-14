@@ -85,6 +85,24 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_LOAD_INFO
     const char* ZPOOL_CONFIG_UNSUP_FEAT
 
+    const char* VDEV_TYPE_ROOT
+    const char* VDEV_TYPE_MIRROR
+    const char* VDEV_TYPE_REPLACING
+    const char* VDEV_TYPE_RAIDZ
+    const char* VDEV_TYPE_DISK
+    const char* VDEV_TYPE_FILE
+    const char* VDEV_TYPE_MISSING
+    const char* VDEV_TYPE_HOLE
+    const char* VDEV_TYPE_SPARE
+    const char* VDEV_TYPE_LOG
+    const char* VDEV_TYPE_L2CACHE
+
+    const char* ZPOOL_REWIND_POLICY
+    const char* ZPOOL_REWIND_REQUEST
+    const char* ZPOOL_REWIND_REQUEST_TXG
+    const char* ZPOOL_REWIND_META_THRESH
+    const char* ZPOOL_REWIND_DATA_THRESH
+
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
@@ -336,28 +354,10 @@ cdef extern from "sys/fs/zfs.h" nogil:
         uint64_t	zrp_maxdata
         uint64_t	zrp_txg
 
-    #define	ZPOOL_REWIND_POLICY		"rewind-policy"
-    #define	ZPOOL_REWIND_REQUEST		"rewind-request"
-    #define	ZPOOL_REWIND_REQUEST_TXG	"rewind-request-txg"
-    #define	ZPOOL_REWIND_META_THRESH	"rewind-meta-thresh"
-    #define	ZPOOL_REWIND_DATA_THRESH	"rewind-data-thresh"
-    
     
     #define	ZPOOL_CONFIG_LOAD_TIME		"rewind_txg_ts"
     #define	ZPOOL_CONFIG_LOAD_DATA_ERRORS	"verify_data_errors"
     #define	ZPOOL_CONFIG_REWIND_TIME	"seconds_of_rewind"
-    
-    #define	VDEV_TYPE_ROOT			"root"
-    #define	VDEV_TYPE_MIRROR		"mirror"
-    #define	VDEV_TYPE_REPLACING		"replacing"
-    #define	VDEV_TYPE_RAIDZ			"raidz"
-    #define	VDEV_TYPE_DISK			"disk"
-    #define	VDEV_TYPE_FILE			"file"
-    #define	VDEV_TYPE_MISSING		"missing"
-    #define	VDEV_TYPE_HOLE			"hole"
-    #define	VDEV_TYPE_SPARE			"spare"
-    #define	VDEV_TYPE_LOG			"log"
-    #define	VDEV_TYPE_L2CACHE		"l2cache"
 
     #define	SPA_MINDEVSIZE		(64ULL << 20)
 
