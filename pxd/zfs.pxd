@@ -97,11 +97,12 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* VDEV_TYPE_LOG
     const char* VDEV_TYPE_L2CACHE
 
-    const char* ZPOOL_REWIND_POLICY
-    const char* ZPOOL_REWIND_REQUEST
-    const char* ZPOOL_REWIND_REQUEST_TXG
-    const char* ZPOOL_REWIND_META_THRESH
-    const char* ZPOOL_REWIND_DATA_THRESH
+    # Pool load policy parameter
+    const char* ZPOOL_LOAD_POLICY
+    const char* ZPOOL_LOAD_REWIND_POLICY
+    const char* ZPOOL_LOAD_REQUEST_TXG
+    const char* ZPOOL_LOAD_META_THRESH
+    const char* ZPOOL_LOAD_DATA_THRESH
 
     enum:
         ZIO_TYPES
