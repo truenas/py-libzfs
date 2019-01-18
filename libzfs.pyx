@@ -326,6 +326,9 @@ class ZFSException(RuntimeError):
         super(ZFSException, self).__init__(message)
         self.code = code
 
+    def __reduce__(self):
+        return (self.__class__, (self.code, self.args))
+
 
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
