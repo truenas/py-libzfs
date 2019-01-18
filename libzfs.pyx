@@ -330,6 +330,9 @@ class ZFSException(RuntimeError):
         super(ZFSException, self).__init__(message)
         self.code = code
 
+    def __reduce__(self):
+        return (self.__class__, (self.code, self.args))
+
 
 class ZFSVdevStatsException(ZFSException):
     def __init__(self, code):
