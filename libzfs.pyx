@@ -1758,14 +1758,12 @@ cdef class ZFSPool(object):
         except (ZFSException, AttributeError):
             root_ds = None
 
-        return {
+        state = {
             'name': self.name,
             'id': self.name,
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
-            'status_detail': self.status_detail,
-            'status_code': self.status_code.name,
             'healthy': self.healthy,
             'error_count': self.error_count,
             'root_dataset': root_ds,
@@ -1780,6 +1778,14 @@ cdef class ZFSPool(object):
                 'spare': [i.__getstate__() for i in self.spare_vdevs]
             },
         }
+
+        if self.handle != NULL:
+            state.update({
+                'status_code': self.status_code.name,
+                'status_detail': self.status_detail
+            })
+
+        return state
 
     @staticmethod
     cdef int __iterate_props(int proptype, void* arg) nogil:
@@ -1919,7 +1925,8 @@ cdef class ZFSPool(object):
     property status_code:
         def __get__(self):
             cdef char* msg_id
-            return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
+            if self.handle != NULL:
+                return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     property healthy:
         def __get__(self):
@@ -1940,6 +1947,9 @@ cdef class ZFSPool(object):
     property status_detail:
         def __get__(self):
             code = self.status_code
+            if code is None:
+                return None
+
             status_mapping = {
                 PoolStatus.MISSING_DEV_R: 'One or more devices could not be opened. Sufficient replicas exist for '
                                           'the pool to continue functioning in a degraded state.',
