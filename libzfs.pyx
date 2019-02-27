@@ -1447,6 +1447,12 @@ cdef class ZFSVdev(object):
 
     property disks:
         def __get__(self):
+            try:
+                if self.status in ('UNAVAIL', 'OFFLINE'):
+                    return []
+            except ValueError:
+                # status may not be available in user defined ZFSVdev
+                pass
             if self.type == 'disk':
                 return [self.path]
             elif self.type == 'file':
