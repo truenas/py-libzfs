@@ -14,31 +14,40 @@ define(SECTION_TITLE,
 dnl works for checking define statements in c
 m4_include([m4/AX_CHECK_DEFINE.m4])
 
-freebsd_src=${FREEBSD_SRC:=/usr/src}
-
-dnl Setting appropriate CFLAGS
-
-CFLAGS="-nostdinc 
--I${freebsd_src}/cddl/lib/libumem 
--I${freebsd_src}/sys/cddl/compat/opensolaris/ 
--I${freebsd_src}/sys/cddl/compat/opensolaris 
--I${freebsd_src}/cddl/compat/opensolaris/include 
--I${freebsd_src}/cddl/compat/opensolaris/lib/libumem 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common 
--I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs 
--I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs 
--I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys 
--I${freebsd_src}/cddl/contrib/opensolaris/head 
--I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common 
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
-${CFLAGS} -I/usr/include"
-
-dnl Setting appropriate LDFLAGS
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
+if [[ -f "/usr/local/include/libzfs/libzfs.h" ]]; then
+	zof=true
+
+	CFLAGS="${CFLAGS} 
+-I/usr/local/include/libzfs/ 
+-I/usr/local/include/libspl/
+"
+	LDFLAGS="-L/usr/local/lib ${LDFLAGS}"
+
+else
+	zof=false
+	freebsd_src=${FREEBSD_SRC:=/usr/src}
+
+        CFLAGS="-nostdinc
+-I${freebsd_src}/cddl/lib/libumem
+-I${freebsd_src}/sys/cddl/compat/opensolaris/
+-I${freebsd_src}/sys/cddl/compat/opensolaris
+-I${freebsd_src}/cddl/compat/opensolaris/include
+-I${freebsd_src}/cddl/compat/opensolaris/lib/libumem
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzpool/common
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/common/zfs
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common/sys
+-I${freebsd_src}/cddl/contrib/opensolaris/head
+-I${freebsd_src}/sys/cddl/contrib/opensolaris/uts/common
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
+${CFLAGS} -I/usr/include"
+
+fi
 
 AC_DEFINE(NEED_SOLARIS_BOOLEAN)
 AC_DEFINE(_XPG6)
