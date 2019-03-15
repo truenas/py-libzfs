@@ -104,12 +104,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
-AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
-	#include <sys/types.h>
-	#include <sys/mnttab.h>
-	#include <sys/fs/zfs.h>
-	#include <sys/zfs_ioctl.h>
-])
+if [[ "$zof" = false ]]; then
+	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
+		#include <sys/types.h>
+		#include <sys/mnttab.h>
+		#include <sys/fs/zfs.h>
+		#include <sys/zfs_ioctl.h>
+	])
+else
+	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
+		#include <sys/types.h>
+		#include <sys/mnttab.h>
+		#include <sys/fs/zfs.h>
+	])
+fi
 
 
 dnl Checking function signature of zpool_scan
@@ -129,16 +137,28 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 dnl Checking function signature of zfs_send_one
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[#include <libzfs.h>],
-		[
-			zfs_send_one(NULL, NULL, 0, 0) /* ; */
-		]
-	)],
-	[AC_SUBST(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])],
-	[AC_SUBST(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])]
-)
-
+if [[ "$zof" = false ]]; then
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[#include <libzfs.h>],
+			[
+				zfs_send_one(NULL, NULL, 0, 0) /* ; */
+			]
+		)],
+		[AC_SUBST(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])],
+		[AC_SUBST(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])]
+	)
+else
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[#include <libzfs.h>],
+			[
+				sendflags_t flag = { 0 };
+				zfs_send_one(NULL, NULL, 0, flag) /* ; */
+			]
+		)],
+		[AC_SUBST(HAVE_ZFS_SEND_ONE, 4) AC_MSG_NOTICE([4 params])],
+		[AC_SUBST(HAVE_ZFS_SEND_ONE, 3) AC_MSG_NOTICE([3 params])]
+	)
+fi
 
 dnl Checking existence of an enum value
 AC_MSG_NOTICE([Checking EZFS_SCRUB_PAUSED presence])
