@@ -2706,21 +2706,24 @@ cdef class ZFSDataset(ZFSObject):
             raise self.root.get_error()
 
     def get_send_progress(self, fd):
-        cdef zfs.zfs_cmd_t cmd
-        cdef int ret
+        IF HAVE_ZFS_IOCTL_HEADER:
+            cdef zfs.zfs_cmd_t cmd
+            memset(&cmd, 0, cython.sizeof(zfs.zfs_cmd_t))
 
-        memset(&cmd, 0, cython.sizeof(zfs.zfs_cmd_t))
+            cdef int ret
 
-        cmd.zc_cookie = fd
-        strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)
+            cmd.zc_cookie = fd
+            strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)
 
-        with nogil:
-            ret = libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd)
+            with nogil:
+                ret = libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd)
 
-        if ret != 0:
-            raise ZFSException(Error.FAULT, "Cannot obtain send progress")
+            if ret != 0:
+                raise ZFSException(Error.FAULT, "Cannot obtain send progress")
 
-        return cmd.zc_cookie
+            return cmd.zc_cookie
+        ELSE:
+            raise NotImplementedError()
 
     def promote(self):
         cdef int ret

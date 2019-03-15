@@ -477,10 +477,11 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ddt_stat_t	ddh_stat[64]
 
 
-cdef extern from "sys/zfs_ioctl.h":
-    ctypedef struct zfs_cmd_t:
-        char		zc_name[MAXPATHLEN]
-        uint64_t	zc_cookie
+IF HAVE_ZFS_IOCTL_HEADER:
+    cdef extern from "sys/zfs_ioctl.h":
+        ctypedef struct zfs_cmd_t:
+            char		zc_name[MAXPATHLEN]
+            uint64_t	zc_cookie
 
 
 cdef extern from "zfeature_common.h":
