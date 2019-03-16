@@ -245,7 +245,11 @@ cdef extern from "libzfs.h" nogil:
         ZPOOL_STATUS_NON_NATIVE_ASHIFT
         ZPOOL_STATUS_OK
 
-    extern zpool_status_t zpool_get_status(zpool_handle_t *, char **)
+    IF HAVE_ZPOOL_GET_STATUS == 3 and HAVE_ZPOOL_ERRATA_T_ENUM:
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **, zfs.zpool_errata_t *)
+    ELSE:
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **)
+
     extern zpool_status_t zpool_import_status(nvpair.nvlist_t *, char **)
     extern void zpool_dump_ddt(const zfs.ddt_stat_t *dds, const zfs.ddt_histogram_t *ddh)
     extern nvpair.nvlist_t *zpool_get_config(zpool_handle_t *, nvpair.nvlist_t **)

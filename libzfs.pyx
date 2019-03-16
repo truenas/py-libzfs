@@ -1926,7 +1926,10 @@ cdef class ZFSPool(object):
         def __get__(self):
             cdef char* msg_id
             if self.handle != NULL:
-                return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
+                IF HAVE_ZPOOL_GET_STATUS == 3:
+                    return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id, NULL))
+                ELSE:
+                    return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     property healthy:
         def __get__(self):

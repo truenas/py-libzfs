@@ -104,6 +104,10 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_LOAD_META_THRESH
     const char* ZPOOL_LOAD_DATA_THRESH
 
+    IF HAVE_ZPOOL_ERRATA_T_ENUM:
+        ctypedef enum zpool_errata_t:
+            pass
+
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
