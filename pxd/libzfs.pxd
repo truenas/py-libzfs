@@ -47,7 +47,8 @@ IF HAVE_LZC_BOOKMARK:
 
 IF HAVE_LIBZUTIL_HEADER:
     cdef extern from 'libzutil.h' nogil:
-        pass
+        IF HAVE_ZPOOL_READ_LABEL_LIBZUTIL and HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
+            extern int zpool_read_label(int, nvpair.nvlist_t **, int *)
 
 
 cdef extern from "libzfs.h" nogil:
@@ -554,7 +555,9 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_in_use(libzfs_handle_t *, int, zfs.pool_state_t *, char **,
         int *)
 
-    extern int zpool_read_label(int, nvpair.nvlist_t **)
+    IF HAVE_ZPOOL_READ_LABEL_LIBZFS and HAVE_ZPOOL_READ_LABEL_PARAMS == 2:
+        extern int zpool_read_label(int, nvpair.nvlist_t **)
+
     extern int zpool_clear_label(int)
     extern int zvol_check_dump_config(char *)
 
