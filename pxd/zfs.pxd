@@ -380,25 +380,44 @@ cdef extern from "sys/fs/zfs.h" nogil:
         VDEV_STATE_FAULTED
         VDEV_STATE_DEGRADED
         VDEV_STATE_HEALTHY
-    
-    ctypedef enum vdev_aux_t:
-        VDEV_AUX_NONE
-        VDEV_AUX_OPEN_FAILED
-        VDEV_AUX_CORRUPT_DATA
-        VDEV_AUX_NO_REPLICAS
-        VDEV_AUX_BAD_GUID_SUM
-        VDEV_AUX_TOO_SMALL
-        VDEV_AUX_BAD_LABEL
-        VDEV_AUX_VERSION_NEWER
-        VDEV_AUX_VERSION_OLDER
-        VDEV_AUX_UNSUP_FEAT
-        VDEV_AUX_SPARED
-        VDEV_AUX_ERR_EXCEEDED
-        VDEV_AUX_IO_FAILURE
-        VDEV_AUX_BAD_LOG
-        VDEV_AUX_EXTERNAL
-        VDEV_AUX_SPLIT_POOL
-        VDEV_AUX_ASHIFT_TOO_BIG
+
+    IF HAVE_VDEV_AUX_ASHIFT_TOO_BIG:
+        ctypedef enum vdev_aux_t:
+            VDEV_AUX_NONE
+            VDEV_AUX_OPEN_FAILED
+            VDEV_AUX_CORRUPT_DATA
+            VDEV_AUX_NO_REPLICAS
+            VDEV_AUX_BAD_GUID_SUM
+            VDEV_AUX_TOO_SMALL
+            VDEV_AUX_BAD_LABEL
+            VDEV_AUX_VERSION_NEWER
+            VDEV_AUX_VERSION_OLDER
+            VDEV_AUX_UNSUP_FEAT
+            VDEV_AUX_SPARED
+            VDEV_AUX_ERR_EXCEEDED
+            VDEV_AUX_IO_FAILURE
+            VDEV_AUX_BAD_LOG
+            VDEV_AUX_EXTERNAL
+            VDEV_AUX_SPLIT_POOL
+            VDEV_AUX_ASHIFT_TOO_BIG
+    ELSE:
+        ctypedef enum vdev_aux_t:
+            VDEV_AUX_NONE
+            VDEV_AUX_OPEN_FAILED
+            VDEV_AUX_CORRUPT_DATA
+            VDEV_AUX_NO_REPLICAS
+            VDEV_AUX_BAD_GUID_SUM
+            VDEV_AUX_TOO_SMALL
+            VDEV_AUX_BAD_LABEL
+            VDEV_AUX_VERSION_NEWER
+            VDEV_AUX_VERSION_OLDER
+            VDEV_AUX_UNSUP_FEAT
+            VDEV_AUX_SPARED
+            VDEV_AUX_ERR_EXCEEDED
+            VDEV_AUX_IO_FAILURE
+            VDEV_AUX_BAD_LOG
+            VDEV_AUX_EXTERNAL
+            VDEV_AUX_SPLIT_POOL
         
     ctypedef enum pool_state_t:
         POOL_STATE_ACTIVE = 0

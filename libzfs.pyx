@@ -169,7 +169,8 @@ class VDevAuxState(enum.IntEnum):
     BAD_LOG = zfs.VDEV_AUX_BAD_LOG
     EXTERNAL = zfs.VDEV_AUX_EXTERNAL
     SPLIT_POOL = zfs.VDEV_AUX_SPLIT_POOL
-    ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG
+    IF HAVE_VDEV_AUX_ASHIFT_TOO_BIG:
+        ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG
 
 
 class PoolState(enum.IntEnum):
