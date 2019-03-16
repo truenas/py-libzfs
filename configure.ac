@@ -334,6 +334,21 @@ dnl Checking ZFS_MAXNAMELEN
 AX_CHECK_DEFINE([libzfs.h], [ZFS_MAXNAMELEN], [AC_SUBST(HAVE_ZFS_MAXNAMELEN, 1)], [AC_SUBST(HAVE_ZFS_MAXNAMELEN, 0)])
 
 
+dnl Checking renameflags_t existence
+
+AC_MSG_NOTICE([Checking existence of renameflags_t in libzfs.h])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			renameflags_t flag;
+		]
+	)],
+	[AC_SUBST(HAVE_RENAMEFLAGS_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_RENAMEFLAGS_T, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
 dnl Checking ZPOOL_MAXNAMELEN
 
 AX_CHECK_DEFINE([libzfs.h], [ZPOOL_MAXNAMELEN], [AC_SUBST(HAVE_ZPOOL_MAXNAMELEN, 1)], [AC_SUBST(HAVE_ZPOOL_MAXNAMELEN, 0)])
