@@ -115,12 +115,30 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 SECTION_TITLE([RUNNING TESTS ON libzutil.h HEADER])
+
 dnl Checking libzutil header existence
 
 AC_CHECK_HEADERS([libzutil.h],
 	[AC_SUBST(HAVE_LIBZUTIL_HEADER, 1) AC_MSG_NOTICE(OK)],
 	[AC_SUBST(HAVE_LIBZUTIL_HEADER, 0) AC_MSG_NOTICE(NOT FOUND)],
 	[]
+)
+
+
+dnl Checking function zpool_read_label existence
+AC_MSG_NOTICE([Checking existence of zpool_read_label in libzutil.h header])
+
+dnl Let's default HAVE_ZPOOL_READ_LABEL_PARAMS value to 0
+AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 0)
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                [#include <libzutil.h>],
+                [
+                        zpool_read_label(0, NULL, NULL) /* ; */
+                ]
+        )],
+        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
+        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
 
@@ -143,8 +161,21 @@ else
 fi
 
 
+dnl Checking function zpool_read_label existence
+AC_MSG_NOTICE([Checking existence of zpool_read_label in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_read_label(0, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 2) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
 dnl Checking function signature of zpool_get_status
-AC_MSG_NOTICE([Checking existence of zpool_get_status])
+AC_MSG_NOTICE([Checking function signature of zpool_get_status])
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
