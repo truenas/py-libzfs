@@ -70,6 +70,18 @@ AX_CHECK_DEFINE(
 	[AC_SUBST(HAVE_ZFS_MAX_DATASET_NAME_LEN, 0)]
 )
 
+dnl Checking if VDEV_AUX_ASHIFT_TOO_BIG enum exists
+
+AC_MSG_NOTICE([Checking existence of VDEV_AUX_ASHIFT_TOO_BIG enum in zfs header])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			VDEV_AUX_ASHIFT_TOO_BIG == VDEV_AUX_ASHIFT_TOO_BIG /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_VDEV_AUX_ASHIFT_TOO_BIG, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_VDEV_AUX_ASHIFT_TOO_BIG, 0) AC_MSG_NOTICE([Not found])]
+)
 
 dnl Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member
 AC_MSG_NOTICE([Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member])
