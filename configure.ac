@@ -346,6 +346,14 @@ AC_CHECK_HEADERS([zfs_ioctl.h],
 	[]
 )
 
+SECTION_TITLE([RUNNING TESTS ON nvpair.h HEADER])
+
+AC_CHECK_HEADERS([sys/nvpair.h],
+        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
+        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 0) AC_MSG_NOTICE([Nvpair.h header not under sys subdirectory])],
+        []
+)
+
 SECTION_TITLE([GENERATING CONFIG.H])
 AC_CONFIG_FILES([pxd/config.pxi])
 
