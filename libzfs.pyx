@@ -213,7 +213,8 @@ class PoolStatus(enum.IntEnum):
     RESILVERING = libzfs.ZPOOL_STATUS_RESILVERING
     OFFLINE_DEV = libzfs.ZPOOL_STATUS_OFFLINE_DEV
     REMOVED_DEV = libzfs.ZPOOL_STATUS_REMOVED_DEV
-    NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
+    IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+        NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
     OK = libzfs.ZPOOL_STATUS_OK
 
 
@@ -1933,12 +1934,16 @@ cdef class ZFSPool(object):
 
     property healthy:
         def __get__(self):
-            return self.status_code in (
+            ok = [
                 PoolStatus.OK,
                 PoolStatus.VERSION_OLDER,
-                PoolStatus.NON_NATIVE_ASHIFT,
-                PoolStatus.FEAT_DISABLED,
-            )
+                PoolStatus.FEAT_DISABLED
+            ]
+
+            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+                ok.append(PoolStatus.NON_NATIVE_ASHIFT)
+
+            return self.status_code in ok
 
     def __unsup_features(self):
         try:
@@ -1993,10 +1998,13 @@ cdef class ZFSPool(object):
                                            'There are insufficient replicas for the pool to continue functioning.',
                 PoolStatus.IO_FAILURE_CONTINUE: 'One or more devices are faulted in response to IO failures.',
                 PoolStatus.BAD_LOG: 'An intent log record could not be read. Waiting for administrator intervention '
-                                    'to fix the faulted pool.',
-                PoolStatus.NON_NATIVE_ASHIFT: 'One or more devices are configured to use a non-native block size. '
-                                              'Expect reduced performance.'
+                                    'to fix the faulted pool.'
             }
+
+            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+                status_mapping[PoolStatus.NON_NATIVE_ASHIFT] = 'One or more devices are configured to use a ' \
+                                                               'non-native block size. Expect reduced performance.'
+
             return status_mapping.get(code.value)
 
     property error_count:
