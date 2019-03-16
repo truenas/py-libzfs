@@ -120,6 +120,19 @@ else
 fi
 
 
+dnl Checking function signature of zpool_get_status
+AC_MSG_NOTICE([Checking existence of zpool_get_status])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_get_status(NULL, NULL, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_GET_STATUS, 3) AC_MSG_NOTICE([3 PARAMS])],
+	[AC_SUBST(HAVE_ZPOOL_GET_STATUS, 2) AC_MSG_NOTICE([2 PARAMS])]
+)
+
 dnl Checking function signature of zpool_scan
 AC_MSG_NOTICE([Checking function signature of zpool_scan])
 
