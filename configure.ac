@@ -62,6 +62,7 @@ AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_ERROR([A working zfs header is required
 	#include <sys/types.h>
 ])
 
+
 dnl following is a valid check if zfs_max_dataset_name_len exists
 AX_CHECK_DEFINE(
 	[sys/fs/zfs.h], [ZFS_MAX_DATASET_NAME_LEN],
@@ -85,6 +86,19 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_PAUSE, 0) AC_MSG_NOTICE([Not found])]
 )
 
+dnl Checking zpool_errata_t existence
+
+AC_MSG_NOTICE([Checking existence of zpool_errata_t])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			zpool_errata_t errata;
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_ERRATA_T_ENUM, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_ERRATA_T_ENUM, 0) AC_MSG_NOTICE([Not found])]
+)
 
 dnl Checking typedef pool_scrub_cmd_t in zfs header
 AC_MSG_NOTICE([Checking typedef pool_scrub_cmt_t in zfs header])
