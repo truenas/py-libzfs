@@ -2424,22 +2424,36 @@ cdef class ZFSObject(object):
             return d
 
     def rename(self, new_name, nounmount=False, forceunmount=False, recursive=False):
-        cdef libzfs.renameflags_t flags
         cdef const char *c_new_name = new_name
-
-        flags.recurse = recursive
-        flags.nounmount = nounmount
-        flags.forceunmount = forceunmount
-
         cdef int ret
 
-        with nogil:
-            ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+        IF HAVE_RENAMEFLAGS_T:
+            cdef libzfs.renameflags_t flags
+            flags.recurse = recursive
+            flags.nounmount = nounmount
+            flags.forceunmount = forceunmount
+
+            with nogil:
+                ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+
+            history = ['zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name]
+
+        ELSE:
+            if nounmount:
+                raise RuntimeError('nounmount option is not supported on this system')
+
+            cdef boolean_t recursive_f = recursive
+            cdef boolean_t force_unmount_f = forceunmount
+
+            with nogil:
+                ret = libzfs.zfs_rename(self.handle, c_new_name, recursive_f, force_unmount_f)
+
+            history = ['zfs rename', '-f' if forceunmount else '', self.name]
 
         if ret != 0:
             raise self.root.get_error()
 
-        self.root.write_history('zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
+        self.root.write_history(*history)
 
     def delete(self, bint defer=False):
         cdef int ret

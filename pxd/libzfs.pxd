@@ -452,13 +452,17 @@ cdef extern from "libzfs.h" nogil:
         nvpair.nvlist_t *props)
     extern int zfs_rollback(zfs_handle_t *, zfs_handle_t *, int)
 
-    ctypedef struct renameflags_t:
-        int recurse
-        int nounmount
-        int forceunmount
+    IF HAVE_RENAMEFLAGS_T:
+        ctypedef struct renameflags_t:
+            int recurse
+            int nounmount
+            int forceunmount
 
-    extern int zfs_rename(zfs_handle_t *, const char *, const char *,
-        renameflags_t flags)
+        extern int zfs_rename(zfs_handle_t *, const char *, const char *, renameflags_t flags)
+
+    ELSE:
+
+        extern int zfs_rename(zfs_handle_t *, const char *, boolean_t, boolean_t)
 
     IF HAVE_SENDFLAGS_T_COMPRESS:
         ctypedef struct sendflags_t:
