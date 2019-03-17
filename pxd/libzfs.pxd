@@ -47,8 +47,17 @@ IF HAVE_LZC_BOOKMARK:
 
 IF HAVE_LIBZUTIL_HEADER:
     cdef extern from 'libzutil.h' nogil:
+
+        ctypedef struct pool_config_ops_t:
+            pass
+
+        extern const pool_config_ops_t libzfs_config_ops;
+
         IF HAVE_ZPOOL_READ_LABEL_LIBZUTIL and HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
             extern int zpool_read_label(int, nvpair.nvlist_t **, int *)
+
+        IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
+            extern nvpair.nvlist_t *zpool_search_import(void *, importargs_t *, const pool_config_ops_t *)
 
 
 cdef extern from "libzfs.h" nogil:
@@ -307,7 +316,9 @@ cdef extern from "libzfs.h" nogil:
         int unique
         int exists
 
-    extern nvpair.nvlist_t *zpool_search_import(libzfs_handle_t *, importargs_t *)
+    IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+        extern nvpair.nvlist_t *zpool_search_import(libzfs_handle_t *, importargs_t *)
+
     extern nvpair.nvlist_t *zpool_find_import(libzfs_handle_t *, int, char **)
     extern nvpair.nvlist_t *zpool_find_import_cached(libzfs_handle_t *, const char *,
         char *, uint64_t)
