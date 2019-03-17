@@ -45,6 +45,11 @@ IF HAVE_LZC_BOOKMARK:
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
+IF HAVE_LIBZUTIL_HEADER:
+    cdef extern from 'libzutil.h' nogil:
+        pass
+
+
 cdef extern from "libzfs.h" nogil:
     cdef enum:
         MAXNAMELEN
