@@ -261,8 +261,12 @@ cdef extern from "sys/fs/zfs.h" nogil:
     int zfs_prop_index_to_string(int, uint64_t, const char **)
     int zfs_prop_string_to_index(int, const char *, uint64_t *)
     uint64_t zfs_prop_random_value(int, uint64_t seed)
-    boolean_t zfs_prop_valid_for_type(int, zfs_type_t)
-    
+
+    IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
+        boolean_t zfs_prop_valid_for_type(int, zfs_type_t, boolean_t)
+    ELSE:
+        boolean_t zfs_prop_valid_for_type(int, zfs_type_t)
+
     int zpool_name_to_prop(const char *)
     const char *zpool_prop_to_name(int)
     const char *zpool_prop_default_string(int)

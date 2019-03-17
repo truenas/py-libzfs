@@ -402,9 +402,16 @@ cdef class ZFS(object):
     @staticmethod
     cdef int __iterate_props(int proptype, void *arg) nogil:
         cdef prop_iter_state *iter
+        cdef boolean_t ret = False
 
         iter = <prop_iter_state *>arg
-        if not zfs.zfs_prop_valid_for_type(proptype, iter.type):
+
+        IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
+            ret = zfs.zfs_prop_valid_for_type(proptype, iter.type, ret)
+        ELSE:
+            ret = zfs.zfs_prop_valid_for_type(proptype, iter.type)
+
+        if not ret:
             return zfs.ZPROP_CONT
 
         with gil:
