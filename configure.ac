@@ -49,6 +49,8 @@ ${CFLAGS} -I/usr/include"
 
 fi
 
+CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
+
 AC_DEFINE(NEED_SOLARIS_BOOLEAN)
 AC_DEFINE(_XPG6)
 
