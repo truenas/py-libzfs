@@ -153,6 +153,20 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
         [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
+dnl Checking function zpool_search_import signature and existence
+AC_MSG_NOTICE([Checking existence of zpool_search_import in libzutil.h header])
+
+AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 0)
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzutil.h>],
+		[
+			zpool_search_import(NULL, NULL, NULL);
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 3) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
 
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
@@ -172,6 +186,19 @@ else
 	])
 fi
 
+dnl Checking function zpool_search_import existence
+
+AC_MSG_NOTICE([Checking existence of zpool_search_import in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_search_import(NULL, NULL);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS, 1) AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 2) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
 
 dnl Checking function zpool_read_label existence
 AC_MSG_NOTICE([Checking existence of zpool_read_label in libzfs.h header])
