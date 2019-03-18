@@ -24,15 +24,21 @@ dnl We allow setting a zof variable which the users can set to force autoconf to
 AC_ARG_VAR(zof, AS_HELP_STRING([Force configure to run ZoL(f) checks]))
 AC_ARG_VAR(freebsd_src, AS_HELP_STRING([Provide path for freebsd source tree. This defaults to /usr/src/]))
 
-if [[ -f "/usr/local/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
+if [[ "$prefix" = "NONE" ]]; then
+	header_prefix=/usr/local
+else
+	header_prefix=$prefix
+fi
+
+if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	zof=true
 
 	CFLAGS="${CFLAGS} 
--I/usr/local/include/libzfs/ 
--I/usr/local/include/libspl/
+-I${header_prefix}/include/libzfs/
+-I${header_prefix}/include/libspl/
 -D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 "
-	LDFLAGS="-L/usr/local/lib ${LDFLAGS}"
+	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
 else
 	zof=false
