@@ -3057,12 +3057,6 @@ def nicestrtonum(ZFS zfs, value):
     return result
 
 
-def vdev_label_offset(psize, l, offset):
-    return offset + l * sizeof(zfs.vdev_label_t) + 0 \
-        if l < zfs.VDEV_LABELS / 2 \
-        else psize - zfs.VDEV_LABELS * sizeof(zfs.vdev_label_t)
-
-
 def read_label(device):
     cdef nvpair.nvlist_t *handle
     cdef NVList nvlist
