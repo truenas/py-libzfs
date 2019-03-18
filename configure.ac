@@ -30,6 +30,7 @@ if [[ -f "/usr/local/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	CFLAGS="${CFLAGS} 
 -I/usr/local/include/libzfs/ 
 -I/usr/local/include/libspl/
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 "
 	LDFLAGS="-L/usr/local/lib ${LDFLAGS}"
 
@@ -37,7 +38,7 @@ else
 	zof=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
-        CFLAGS="-nostdinc
+        CFLAGS="${CFLAGS} 
 -I${freebsd_src}/cddl/lib/libumem
 -I${freebsd_src}/sys/cddl/compat/opensolaris/
 -I${freebsd_src}/sys/cddl/compat/opensolaris
@@ -52,10 +53,8 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libnvpair
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
--I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
-${CFLAGS} -I/usr/include"
-	AC_DEFINE(NEED_SOLARIS_BOOLEAN)
-	AC_DEFINE(_XPG6)
+-I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
+-DNEED_SOLARIS_BOOLEAN -D_XPG6"
 
 fi
 
@@ -556,7 +555,12 @@ AC_CHECK_HEADERS([sys/nvpair.h],
 SECTION_TITLE([GENERATING CONFIG.H])
 
 AC_CONFIG_FILES([pxd/config.pxi])
+AC_MSG_NOTICE([GENERATED pxd/config.pxi])
 
+SECTION_TITLE([GENERATING config.py])
+
+AC_CONFIG_FILES([config.py])
+AC_MSG_NOTICE([GENERATED config.py])
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT(Makefile)
