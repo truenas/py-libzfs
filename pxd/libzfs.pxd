@@ -45,6 +45,21 @@ IF HAVE_LZC_BOOKMARK:
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
+IF HAVE_LIBZUTIL_HEADER:
+    cdef extern from 'libzutil.h' nogil:
+
+        ctypedef struct pool_config_ops_t:
+            pass
+
+        extern const pool_config_ops_t libzfs_config_ops;
+
+        IF HAVE_ZPOOL_READ_LABEL_LIBZUTIL and HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
+            extern int zpool_read_label(int, nvpair.nvlist_t **, int *)
+
+        IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
+            extern nvpair.nvlist_t *zpool_search_import(void *, importargs_t *, const pool_config_ops_t *)
+
+
 cdef extern from "libzfs.h" nogil:
     cdef enum:
         MAXNAMELEN
@@ -218,34 +233,65 @@ cdef extern from "libzfs.h" nogil:
     extern const char *zpool_prop_to_name(int prop)
     extern const char *zpool_prop_values(int prop)
 
-    ctypedef enum zpool_status_t:
-        ZPOOL_STATUS_CORRUPT_CACHE
-        ZPOOL_STATUS_MISSING_DEV_R
-        ZPOOL_STATUS_MISSING_DEV_NR
-        ZPOOL_STATUS_CORRUPT_LABEL_R
-        ZPOOL_STATUS_CORRUPT_LABEL_NR
-        ZPOOL_STATUS_BAD_GUID_SUM
-        ZPOOL_STATUS_CORRUPT_POOL
-        ZPOOL_STATUS_CORRUPT_DATA
-        ZPOOL_STATUS_FAILING_DEV
-        ZPOOL_STATUS_VERSION_NEWER
-        ZPOOL_STATUS_HOSTID_MISMATCH
-        ZPOOL_STATUS_IO_FAILURE_WAIT
-        ZPOOL_STATUS_IO_FAILURE_CONTINUE
-        ZPOOL_STATUS_BAD_LOG
-        ZPOOL_STATUS_UNSUP_FEAT_READ
-        ZPOOL_STATUS_UNSUP_FEAT_WRITE
-        ZPOOL_STATUS_FAULTED_DEV_R
-        ZPOOL_STATUS_FAULTED_DEV_NR
-        ZPOOL_STATUS_VERSION_OLDER
-        ZPOOL_STATUS_FEAT_DISABLED
-        ZPOOL_STATUS_RESILVERING
-        ZPOOL_STATUS_OFFLINE_DEV
-        ZPOOL_STATUS_REMOVED_DEV
-        ZPOOL_STATUS_NON_NATIVE_ASHIFT
-        ZPOOL_STATUS_OK
+    IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+        ctypedef enum zpool_status_t:
+            ZPOOL_STATUS_CORRUPT_CACHE
+            ZPOOL_STATUS_MISSING_DEV_R
+            ZPOOL_STATUS_MISSING_DEV_NR
+            ZPOOL_STATUS_CORRUPT_LABEL_R
+            ZPOOL_STATUS_CORRUPT_LABEL_NR
+            ZPOOL_STATUS_BAD_GUID_SUM
+            ZPOOL_STATUS_CORRUPT_POOL
+            ZPOOL_STATUS_CORRUPT_DATA
+            ZPOOL_STATUS_FAILING_DEV
+            ZPOOL_STATUS_VERSION_NEWER
+            ZPOOL_STATUS_HOSTID_MISMATCH
+            ZPOOL_STATUS_IO_FAILURE_WAIT
+            ZPOOL_STATUS_IO_FAILURE_CONTINUE
+            ZPOOL_STATUS_BAD_LOG
+            ZPOOL_STATUS_UNSUP_FEAT_READ
+            ZPOOL_STATUS_UNSUP_FEAT_WRITE
+            ZPOOL_STATUS_FAULTED_DEV_R
+            ZPOOL_STATUS_FAULTED_DEV_NR
+            ZPOOL_STATUS_VERSION_OLDER
+            ZPOOL_STATUS_FEAT_DISABLED
+            ZPOOL_STATUS_RESILVERING
+            ZPOOL_STATUS_OFFLINE_DEV
+            ZPOOL_STATUS_REMOVED_DEV
+            ZPOOL_STATUS_NON_NATIVE_ASHIFT
+            ZPOOL_STATUS_OK
+    ELSE:
+        ctypedef enum zpool_status_t:
+            ZPOOL_STATUS_CORRUPT_CACHE
+            ZPOOL_STATUS_MISSING_DEV_R
+            ZPOOL_STATUS_MISSING_DEV_NR
+            ZPOOL_STATUS_CORRUPT_LABEL_R
+            ZPOOL_STATUS_CORRUPT_LABEL_NR
+            ZPOOL_STATUS_BAD_GUID_SUM
+            ZPOOL_STATUS_CORRUPT_POOL
+            ZPOOL_STATUS_CORRUPT_DATA
+            ZPOOL_STATUS_FAILING_DEV
+            ZPOOL_STATUS_VERSION_NEWER
+            ZPOOL_STATUS_HOSTID_MISMATCH
+            ZPOOL_STATUS_IO_FAILURE_WAIT
+            ZPOOL_STATUS_IO_FAILURE_CONTINUE
+            ZPOOL_STATUS_BAD_LOG
+            ZPOOL_STATUS_UNSUP_FEAT_READ
+            ZPOOL_STATUS_UNSUP_FEAT_WRITE
+            ZPOOL_STATUS_FAULTED_DEV_R
+            ZPOOL_STATUS_FAULTED_DEV_NR
+            ZPOOL_STATUS_VERSION_OLDER
+            ZPOOL_STATUS_FEAT_DISABLED
+            ZPOOL_STATUS_RESILVERING
+            ZPOOL_STATUS_OFFLINE_DEV
+            ZPOOL_STATUS_REMOVED_DEV
+            ZPOOL_STATUS_OK
 
-    extern zpool_status_t zpool_get_status(zpool_handle_t *, char **)
+    IF HAVE_ZPOOL_GET_STATUS == 3 and HAVE_ZPOOL_ERRATA_T_ENUM:
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **, zfs.zpool_errata_t *)
+    ELSE:
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **)
+
     extern zpool_status_t zpool_import_status(nvpair.nvlist_t *, char **)
     extern void zpool_dump_ddt(const zfs.ddt_stat_t *dds, const zfs.ddt_histogram_t *ddh)
     extern nvpair.nvlist_t *zpool_get_config(zpool_handle_t *, nvpair.nvlist_t **)
@@ -270,7 +316,9 @@ cdef extern from "libzfs.h" nogil:
         int unique
         int exists
 
-    extern nvpair.nvlist_t *zpool_search_import(libzfs_handle_t *, importargs_t *)
+    IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+        extern nvpair.nvlist_t *zpool_search_import(libzfs_handle_t *, importargs_t *)
+
     extern nvpair.nvlist_t *zpool_find_import(libzfs_handle_t *, int, char **)
     extern nvpair.nvlist_t *zpool_find_import_cached(libzfs_handle_t *, const char *,
         char *, uint64_t)
@@ -415,13 +463,17 @@ cdef extern from "libzfs.h" nogil:
         nvpair.nvlist_t *props)
     extern int zfs_rollback(zfs_handle_t *, zfs_handle_t *, int)
 
-    ctypedef struct renameflags_t:
-        int recurse
-        int nounmount
-        int forceunmount
+    IF HAVE_RENAMEFLAGS_T:
+        ctypedef struct renameflags_t:
+            int recurse
+            int nounmount
+            int forceunmount
 
-    extern int zfs_rename(zfs_handle_t *, const char *, const char *,
-        renameflags_t flags)
+        extern int zfs_rename(zfs_handle_t *, const char *, const char *, renameflags_t flags)
+
+    ELSE:
+
+        extern int zfs_rename(zfs_handle_t *, const char *, boolean_t, boolean_t)
 
     IF HAVE_SENDFLAGS_T_COMPRESS:
         ctypedef struct sendflags_t:
@@ -545,7 +597,9 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_in_use(libzfs_handle_t *, int, zfs.pool_state_t *, char **,
         int *)
 
-    extern int zpool_read_label(int, nvpair.nvlist_t **)
+    IF HAVE_ZPOOL_READ_LABEL_LIBZFS and HAVE_ZPOOL_READ_LABEL_PARAMS == 2:
+        extern int zpool_read_label(int, nvpair.nvlist_t **)
+
     extern int zpool_clear_label(int)
     extern int zvol_check_dump_config(char *)
 
@@ -567,4 +621,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
 
-    extern int zfs_ioctl(libzfs_handle_t *, int request, zfs.zfs_cmd_t *)
+    IF HAVE_ZFS_IOCTL_HEADER:
+        extern int zfs_ioctl(libzfs_handle_t *, int request, zfs.zfs_cmd_t *)
+    ELSE:
+        ctypedef struct zfs_cmd:
+            pass
+
+        extern int zfs_ioctl(libzfs_handle_t *, int, zfs_cmd *)

@@ -24,8 +24,6 @@
 # SUCH DAMAGE.
 #
 
-import os
-import subprocess
 from setuptools import setup
 
 try:
@@ -34,29 +32,11 @@ try:
 except ImportError:
     raise ImportError("This package requires Cython to build properly. Please install it first.")
 
-if "FREEBSD_SRC" not in os.environ:
-    os.environ["FREEBSD_SRC"] = "/usr/src"
+try:
+    import config
+except ImportError:
+    raise ImportError('Please execute configure script first')
 
-
-system_includes = [
-    "${FREEBSD_SRC}/cddl/lib/libumem",
-    "${FREEBSD_SRC}/sys/cddl/compat/opensolaris/",
-    "${FREEBSD_SRC}/sys/cddl/compat/opensolaris",
-    "${FREEBSD_SRC}/cddl/compat/opensolaris/include",
-    "${FREEBSD_SRC}/cddl/compat/opensolaris/lib/libumem",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/lib/libzpool/common",
-    "${FREEBSD_SRC}/sys/cddl/contrib/opensolaris/common/zfs",
-    "${FREEBSD_SRC}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs",
-    "${FREEBSD_SRC}/sys/cddl/contrib/opensolaris/uts/common/sys",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/head",
-    "${FREEBSD_SRC}/sys/cddl/contrib/opensolaris/uts/common",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/lib/libnvpair",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/lib/libuutil/common",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/lib/libzfs/common",
-    "${FREEBSD_SRC}/cddl/contrib/opensolaris/lib/libzfs_core/common"
-]
-
-system_includes = [os.path.expandvars(x) for x in system_includes]
 
 setup(
     name='libzfs',
@@ -73,9 +53,8 @@ setup(
             "libzfs",
             ["libzfs.pyx"],
             libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
-            extra_compile_args=["-DNEED_SOLARIS_BOOLEAN", "-D_XPG6", "-g"],
+            extra_compile_args=config.CFLAGS,
             cython_include_dirs=["./pxd"],
-            include_dirs=system_includes,
             extra_link_args=["-g"],
         )
     ]

@@ -169,7 +169,8 @@ class VDevAuxState(enum.IntEnum):
     BAD_LOG = zfs.VDEV_AUX_BAD_LOG
     EXTERNAL = zfs.VDEV_AUX_EXTERNAL
     SPLIT_POOL = zfs.VDEV_AUX_SPLIT_POOL
-    ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG
+    IF HAVE_VDEV_AUX_ASHIFT_TOO_BIG:
+        ASHIFT_TOO_BIG = zfs.VDEV_AUX_ASHIFT_TOO_BIG
 
 
 class PoolState(enum.IntEnum):
@@ -213,7 +214,8 @@ class PoolStatus(enum.IntEnum):
     RESILVERING = libzfs.ZPOOL_STATUS_RESILVERING
     OFFLINE_DEV = libzfs.ZPOOL_STATUS_OFFLINE_DEV
     REMOVED_DEV = libzfs.ZPOOL_STATUS_REMOVED_DEV
-    NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
+    IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+        NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
     OK = libzfs.ZPOOL_STATUS_OK
 
 
@@ -400,9 +402,16 @@ cdef class ZFS(object):
     @staticmethod
     cdef int __iterate_props(int proptype, void *arg) nogil:
         cdef prop_iter_state *iter
+        cdef boolean_t ret = False
 
         iter = <prop_iter_state *>arg
-        if not zfs.zfs_prop_valid_for_type(proptype, iter.type):
+
+        IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
+            ret = zfs.zfs_prop_valid_for_type(proptype, iter.type, ret)
+        ELSE:
+            ret = zfs.zfs_prop_valid_for_type(proptype, iter.type)
+
+        if not ret:
             return zfs.ZPROP_CONT
 
         with gil:
@@ -528,7 +537,10 @@ cdef class ZFS(object):
             iargs.cachefile = cachefile
 
         with nogil:
-            result = libzfs.zpool_search_import(self.handle, &iargs)
+            IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
+                result = libzfs.zpool_search_import(self.handle, &iargs, &libzfs.libzfs_config_ops)
+            ELSE:
+                result = libzfs.zpool_search_import(self.handle, &iargs)
 
         if result is NULL:
             return
@@ -1926,16 +1938,23 @@ cdef class ZFSPool(object):
         def __get__(self):
             cdef char* msg_id
             if self.handle != NULL:
-                return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
+                IF HAVE_ZPOOL_GET_STATUS == 3:
+                    return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id, NULL))
+                ELSE:
+                    return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     property healthy:
         def __get__(self):
-            return self.status_code in (
+            ok = [
                 PoolStatus.OK,
                 PoolStatus.VERSION_OLDER,
-                PoolStatus.NON_NATIVE_ASHIFT,
-                PoolStatus.FEAT_DISABLED,
-            )
+                PoolStatus.FEAT_DISABLED
+            ]
+
+            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+                ok.append(PoolStatus.NON_NATIVE_ASHIFT)
+
+            return self.status_code in ok
 
     def __unsup_features(self):
         try:
@@ -1990,10 +2009,13 @@ cdef class ZFSPool(object):
                                            'There are insufficient replicas for the pool to continue functioning.',
                 PoolStatus.IO_FAILURE_CONTINUE: 'One or more devices are faulted in response to IO failures.',
                 PoolStatus.BAD_LOG: 'An intent log record could not be read. Waiting for administrator intervention '
-                                    'to fix the faulted pool.',
-                PoolStatus.NON_NATIVE_ASHIFT: 'One or more devices are configured to use a non-native block size. '
-                                              'Expect reduced performance.'
+                                    'to fix the faulted pool.'
             }
+
+            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+                status_mapping[PoolStatus.NON_NATIVE_ASHIFT] = 'One or more devices are configured to use a ' \
+                                                               'non-native block size. Expect reduced performance.'
+
             return status_mapping.get(code.value)
 
     property error_count:
@@ -2412,22 +2434,36 @@ cdef class ZFSObject(object):
             return d
 
     def rename(self, new_name, nounmount=False, forceunmount=False, recursive=False):
-        cdef libzfs.renameflags_t flags
         cdef const char *c_new_name = new_name
-
-        flags.recurse = recursive
-        flags.nounmount = nounmount
-        flags.forceunmount = forceunmount
-
         cdef int ret
 
-        with nogil:
-            ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+        IF HAVE_RENAMEFLAGS_T:
+            cdef libzfs.renameflags_t flags
+            flags.recurse = recursive
+            flags.nounmount = nounmount
+            flags.forceunmount = forceunmount
+
+            with nogil:
+                ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+
+            history = ['zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name]
+
+        ELSE:
+            if nounmount:
+                raise RuntimeError('nounmount option is not supported on this system')
+
+            cdef boolean_t recursive_f = recursive
+            cdef boolean_t force_unmount_f = forceunmount
+
+            with nogil:
+                ret = libzfs.zfs_rename(self.handle, c_new_name, recursive_f, force_unmount_f)
+
+            history = ['zfs rename', '-f' if forceunmount else '', self.name]
 
         if ret != 0:
             raise self.root.get_error()
 
-        self.root.write_history('zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name)
+        self.root.write_history(*history)
 
     def delete(self, bint defer=False):
         cdef int ret
@@ -2706,21 +2742,24 @@ cdef class ZFSDataset(ZFSObject):
             raise self.root.get_error()
 
     def get_send_progress(self, fd):
-        cdef zfs.zfs_cmd_t cmd
-        cdef int ret
+        IF HAVE_ZFS_IOCTL_HEADER:
+            cdef zfs.zfs_cmd_t cmd
+            memset(&cmd, 0, cython.sizeof(zfs.zfs_cmd_t))
 
-        memset(&cmd, 0, cython.sizeof(zfs.zfs_cmd_t))
+            cdef int ret
 
-        cmd.zc_cookie = fd
-        strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)
+            cmd.zc_cookie = fd
+            strncpy(cmd.zc_name, self.name, zfs.MAXPATHLEN)
 
-        with nogil:
-            ret = libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd)
+            with nogil:
+                ret = libzfs.zfs_ioctl(self.root.handle, zfs.ZFS_IOC_SEND_PROGRESS, &cmd)
 
-        if ret != 0:
-            raise ZFSException(Error.FAULT, "Cannot obtain send progress")
+            if ret != 0:
+                raise ZFSException(Error.FAULT, "Cannot obtain send progress")
 
-        return cmd.zc_cookie
+            return cmd.zc_cookie
+        ELSE:
+            raise NotImplementedError()
 
     def promote(self):
         cdef int ret
@@ -3018,12 +3057,6 @@ def nicestrtonum(ZFS zfs, value):
     return result
 
 
-def vdev_label_offset(psize, l, offset):
-    return offset + l * sizeof(zfs.vdev_label_t) + 0 \
-        if l < zfs.VDEV_LABELS / 2 \
-        else psize - zfs.VDEV_LABELS * sizeof(zfs.vdev_label_t)
-
-
 def read_label(device):
     cdef nvpair.nvlist_t *handle
     cdef NVList nvlist
@@ -3040,7 +3073,11 @@ def read_label(device):
         os.close(fd)
         raise OSError(errno.EINVAL, 'Not a character device')
 
-    ret = libzfs.zpool_read_label(fd, &handle)
+    IF HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
+        ret = libzfs.zpool_read_label(fd, &handle, NULL)
+    ELSE:
+        ret = libzfs.zpool_read_label(fd, &handle)
+
     if ret != 0:
         os.close(fd)
         raise OSError(errno.EINVAL, 'Cannot read label')

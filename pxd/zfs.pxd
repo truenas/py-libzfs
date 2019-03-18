@@ -104,6 +104,10 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_LOAD_META_THRESH
     const char* ZPOOL_LOAD_DATA_THRESH
 
+    IF HAVE_ZPOOL_ERRATA_T_ENUM:
+        ctypedef enum zpool_errata_t:
+            pass
+
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS
@@ -257,8 +261,12 @@ cdef extern from "sys/fs/zfs.h" nogil:
     int zfs_prop_index_to_string(int, uint64_t, const char **)
     int zfs_prop_string_to_index(int, const char *, uint64_t *)
     uint64_t zfs_prop_random_value(int, uint64_t seed)
-    boolean_t zfs_prop_valid_for_type(int, zfs_type_t)
-    
+
+    IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
+        boolean_t zfs_prop_valid_for_type(int, zfs_type_t, boolean_t)
+    ELSE:
+        boolean_t zfs_prop_valid_for_type(int, zfs_type_t)
+
     int zpool_name_to_prop(const char *)
     const char *zpool_prop_to_name(int)
     const char *zpool_prop_default_string(int)
@@ -376,25 +384,44 @@ cdef extern from "sys/fs/zfs.h" nogil:
         VDEV_STATE_FAULTED
         VDEV_STATE_DEGRADED
         VDEV_STATE_HEALTHY
-    
-    ctypedef enum vdev_aux_t:
-        VDEV_AUX_NONE
-        VDEV_AUX_OPEN_FAILED
-        VDEV_AUX_CORRUPT_DATA
-        VDEV_AUX_NO_REPLICAS
-        VDEV_AUX_BAD_GUID_SUM
-        VDEV_AUX_TOO_SMALL
-        VDEV_AUX_BAD_LABEL
-        VDEV_AUX_VERSION_NEWER
-        VDEV_AUX_VERSION_OLDER
-        VDEV_AUX_UNSUP_FEAT
-        VDEV_AUX_SPARED
-        VDEV_AUX_ERR_EXCEEDED
-        VDEV_AUX_IO_FAILURE
-        VDEV_AUX_BAD_LOG
-        VDEV_AUX_EXTERNAL
-        VDEV_AUX_SPLIT_POOL
-        VDEV_AUX_ASHIFT_TOO_BIG
+
+    IF HAVE_VDEV_AUX_ASHIFT_TOO_BIG:
+        ctypedef enum vdev_aux_t:
+            VDEV_AUX_NONE
+            VDEV_AUX_OPEN_FAILED
+            VDEV_AUX_CORRUPT_DATA
+            VDEV_AUX_NO_REPLICAS
+            VDEV_AUX_BAD_GUID_SUM
+            VDEV_AUX_TOO_SMALL
+            VDEV_AUX_BAD_LABEL
+            VDEV_AUX_VERSION_NEWER
+            VDEV_AUX_VERSION_OLDER
+            VDEV_AUX_UNSUP_FEAT
+            VDEV_AUX_SPARED
+            VDEV_AUX_ERR_EXCEEDED
+            VDEV_AUX_IO_FAILURE
+            VDEV_AUX_BAD_LOG
+            VDEV_AUX_EXTERNAL
+            VDEV_AUX_SPLIT_POOL
+            VDEV_AUX_ASHIFT_TOO_BIG
+    ELSE:
+        ctypedef enum vdev_aux_t:
+            VDEV_AUX_NONE
+            VDEV_AUX_OPEN_FAILED
+            VDEV_AUX_CORRUPT_DATA
+            VDEV_AUX_NO_REPLICAS
+            VDEV_AUX_BAD_GUID_SUM
+            VDEV_AUX_TOO_SMALL
+            VDEV_AUX_BAD_LABEL
+            VDEV_AUX_VERSION_NEWER
+            VDEV_AUX_VERSION_OLDER
+            VDEV_AUX_UNSUP_FEAT
+            VDEV_AUX_SPARED
+            VDEV_AUX_ERR_EXCEEDED
+            VDEV_AUX_IO_FAILURE
+            VDEV_AUX_BAD_LOG
+            VDEV_AUX_EXTERNAL
+            VDEV_AUX_SPLIT_POOL
         
     ctypedef enum pool_state_t:
         POOL_STATE_ACTIVE = 0
@@ -477,10 +504,11 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ddt_stat_t	ddh_stat[64]
 
 
-cdef extern from "sys/zfs_ioctl.h":
-    ctypedef struct zfs_cmd_t:
-        char		zc_name[MAXPATHLEN]
-        uint64_t	zc_cookie
+IF HAVE_ZFS_IOCTL_HEADER:
+    cdef extern from "sys/zfs_ioctl.h":
+        ctypedef struct zfs_cmd_t:
+            char		zc_name[MAXPATHLEN]
+            uint64_t	zc_cookie
 
 
 cdef extern from "zfeature_common.h":
@@ -515,15 +543,3 @@ cdef extern from "zfeature_common.h":
         const spa_feature_t* fi_depends
 
     cdef zfeature_info_t* spa_feature_table
-
-
-cdef extern from "sys/vdev_impl.h":
-    enum:
-        VDEV_PHYS_SIZE
-        VDEV_LABELS
-
-    ctypedef struct vdev_phys_t:
-        char vp_nvlist[VDEV_PHYS_SIZE - 24]
-
-    ctypedef struct vdev_label_t:
-        vdev_phys_t vl_vdev_phys

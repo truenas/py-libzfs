@@ -620,26 +620,43 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HAVE_NVPAIR_IN_SYS
+HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
 HAVE_LZC_BOOKMARK
 HAVE_SENDFLAGS_T_COMPRESS
 HAVE_RECVFLAGS_T_RESUMABLE
 HAVE_ZPOOL_MAXNAMELEN
+HAVE_RENAMEFLAGS_T
 HAVE_ZFS_MAXNAMELEN
 HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
 HAVE_ZFS_SEND_RESUME
 HAVE_ZFS_RECEIVE
 HAVE_LZC_SEND_FLAG_EMBED_DATA
 HAVE_SENDFLAGS_T_TYPEDEF
+HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
 HAVE_ZPOOL_SCAN
+HAVE_ZPOOL_GET_STATUS
+HAVE_ZPOOL_READ_LABEL_LIBZFS
+HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
+HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL
+HAVE_ZPOOL_SEARCH_IMPORT_PARAMS
+HAVE_ZPOOL_READ_LABEL_LIBZUTIL
+HAVE_ZPOOL_READ_LABEL_PARAMS
+HAVE_LIBZUTIL_HEADER
 HAVE_POOL_SCRUB_CMD_T
+HAVE_ZPOOL_ERRATA_T_ENUM
 HAVE_POOL_SCAN_STAT_T_PAUSE
+HAVE_VDEV_AUX_ASHIFT_TOO_BIG
+HAVE_ZFS_PROP_VALID_FOR_TYPE
 HAVE_ZFS_MAX_DATASET_NAME_LEN
 EGREP
 GREP
 CPP
+freebsd_src
+zof
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -697,6 +714,8 @@ CFLAGS
 LDFLAGS
 LIBS
 CPPFLAGS
+zof
+freebsd_src
 CPP'
 
 
@@ -1311,6 +1330,8 @@ Some influential environment variables:
   LIBS        libraries to pass to the linker, e.g. -l<library>
   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
               you have headers in a nonstandard directory <include dir>
+  zof         Force configure to run ZoL(f) checks
+  freebsd_src Provide path for freebsd source tree. This defaults to /usr/src/
   CPP         C preprocessor
 
 Use these variables to override the choices made by `configure' or to help
@@ -2824,6 +2845,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
+
 # ===========================================================================
 #     https://www.gnu.org/software/autoconf-archive/ax_check_define.html
 # ===========================================================================
@@ -2896,10 +2919,34 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # AC_CHECK_FUNC
 
 
-freebsd_src=${FREEBSD_SRC:=/usr/src}
+LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
 
-CFLAGS="-nostdinc
+
+
+
+
+if [ "$prefix" = "NONE" ]; then
+	header_prefix=/usr/local
+else
+	header_prefix=$prefix
+fi
+
+if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
+	zof=true
+
+	CFLAGS="${CFLAGS}
+-I${header_prefix}/include/libzfs/
+-I${header_prefix}/include/libspl/
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
+"
+	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
+
+else
+	zof=false
+	freebsd_src=${freebsd_src:=/usr/src}
+
+        CFLAGS="${CFLAGS}
 -I${freebsd_src}/cddl/lib/libumem
 -I${freebsd_src}/sys/cddl/compat/opensolaris/
 -I${freebsd_src}/sys/cddl/compat/opensolaris
@@ -2915,15 +2962,11 @@ CFLAGS="-nostdinc
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
-${CFLAGS} -I/usr/include"
+-DNEED_SOLARIS_BOOLEAN -D_XPG6"
 
-LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
+fi
 
-
-$as_echo "#define NEED_SOLARIS_BOOLEAN 1" >>confdefs.h
-
-$as_echo "#define _XPG6 1" >>confdefs.h
-
+CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
 
 
 
@@ -2931,6 +2974,7 @@ $as_echo "#define _XPG6 1" >>confdefs.h
 	echo '   RUNNING TESTS ON zfs.h HEADER   ' | sed -e's/./-/g' >&6
 	echo '   RUNNING TESTS ON zfs.h HEADER' >& 6
 	echo '   RUNNING TESTS ON zfs.h HEADER   ' | sed -e's/./-/g' >&6
+
 
 
 
@@ -3364,6 +3408,7 @@ done
 
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ZFS_MAX_DATASET_NAME_LEN defined in sys/fs/zfs.h" >&5
 $as_echo_n "checking for ZFS_MAX_DATASET_NAME_LEN defined in sys/fs/zfs.h... " >&6; }
 if ${ac_cv_defined_ZFS_MAX_DATASET_NAME_LEN_sys_fs_zfs_h+:} false; then :
@@ -3406,6 +3451,68 @@ else
 fi
 
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking signature of zfs_prop_valid_for_type in zfs header" >&5
+$as_echo "$as_me: Checking signature of zfs_prop_valid_for_type in zfs header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			zfs_prop_valid_for_type(0, ZFS_TYPE_VOLUME, NULL)
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_ZFS_PROP_VALID_FOR_TYPE=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 3 PARAMS" >&5
+$as_echo "$as_me: 3 PARAMS" >&6;}
+else
+  HAVE_ZFS_PROP_VALID_FOR_TYPE=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 2 PARAMS" >&5
+$as_echo "$as_me: 2 PARAMS" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of VDEV_AUX_ASHIFT_TOO_BIG enum in zfs header" >&5
+$as_echo "$as_me: Checking existence of VDEV_AUX_ASHIFT_TOO_BIG enum in zfs header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			VDEV_AUX_ASHIFT_TOO_BIG == VDEV_AUX_ASHIFT_TOO_BIG /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_VDEV_AUX_ASHIFT_TOO_BIG=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_VDEV_AUX_ASHIFT_TOO_BIG=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
+$as_echo "$as_me: Not found" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member" >&5
 $as_echo "$as_me: Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member" >&6;}
 
@@ -3436,6 +3543,38 @@ $as_echo "$as_me: Not found" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_errata_t" >&5
+$as_echo "$as_me: Checking existence of zpool_errata_t" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			zpool_errata_t errata;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_ZPOOL_ERRATA_T_ENUM=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_ERRATA_T_ENUM=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
+$as_echo "$as_me: Not found" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking typedef pool_scrub_cmt_t in zfs header" >&5
@@ -3471,19 +3610,124 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 	echo >& 6
+	echo '   RUNNING TESTS ON libzutil.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON libzutil.h HEADER' >& 6
+	echo '   RUNNING TESTS ON libzutil.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+
+
+for ac_header in libzutil.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "libzutil.h" "ac_cv_header_libzutil_h" "
+
+"
+if test "x$ac_cv_header_libzutil_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBZUTIL_H 1
+_ACEOF
+ HAVE_LIBZUTIL_HEADER=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_LIBZUTIL_HEADER=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+fi
+
+done
+
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_read_label in libzutil.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_read_label in libzutil.h header" >&6;}
+
+
+HAVE_ZPOOL_READ_LABEL_PARAMS=0
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzutil.h>
+int
+main ()
+{
+
+                        zpool_read_label(0, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_READ_LABEL_LIBZUTIL=1
+ HAVE_ZPOOL_READ_LABEL_PARAMS=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_READ_LABEL_LIBZUTIL=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_search_import in libzutil.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_search_import in libzutil.h header" >&6;}
+
+HAVE_ZPOOL_SEARCH_IMPORT_PARAMS=0
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzutil.h>
+int
+main ()
+{
+
+			zpool_search_import(NULL, NULL, NULL);
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL=1
+ HAVE_ZPOOL_SEARCH_IMPORT_PARAMS=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+	echo >& 6
 	echo '   RUNNING TESTS ON libzfs.h HEADER   ' | sed -e's/./-/g' >&6
 	echo '   RUNNING TESTS ON libzfs.h HEADER' >& 6
 	echo '   RUNNING TESTS ON libzfs.h HEADER   ' | sed -e's/./-/g' >&6
 
 
 
-for ac_header in libzfs.h
+if [ "$zof" = false ]; then
+	for ac_header in libzfs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
-	#include <sys/types.h>
-	#include <sys/mnttab.h>
-	#include <sys/fs/zfs.h>
-	#include <sys/zfs_ioctl.h>
+		#include <sys/types.h>
+		#include <sys/mnttab.h>
+		#include <sys/fs/zfs.h>
+		#include <sys/zfs_ioctl.h>
 
 "
 if test "x$ac_cv_header_libzfs_h" = xyes; then :
@@ -3496,6 +3740,125 @@ else
 fi
 
 done
+
+else
+	for ac_header in libzfs.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
+		#include <sys/types.h>
+		#include <sys/mnttab.h>
+		#include <sys/fs/zfs.h>
+
+"
+if test "x$ac_cv_header_libzfs_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBZFS_H 1
+_ACEOF
+
+else
+  as_fn_error $? "A working libzfs header is required" "$LINENO" 5
+fi
+
+done
+
+fi
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_search_import in libzfs.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_search_import in libzfs.h header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zpool_search_import(NULL, NULL);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS=1
+ HAVE_ZPOOL_SEARCH_IMPORT_PARAMS=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_read_label in libzfs.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_read_label in libzfs.h header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zpool_read_label(0, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_READ_LABEL_LIBZFS=1
+ HAVE_ZPOOL_READ_LABEL_PARAMS=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_READ_LABEL_LIBZFS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zpool_get_status" >&5
+$as_echo "$as_me: Checking function signature of zpool_get_status" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zpool_get_status(NULL, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_GET_STATUS=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 3 PARAMS" >&5
+$as_echo "$as_me: 3 PARAMS" >&6;}
+else
+  HAVE_ZPOOL_GET_STATUS=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 2 PARAMS" >&5
+$as_echo "$as_me: 2 PARAMS" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 
@@ -3529,17 +3892,19 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_send_one" >&5
 $as_echo "$as_me: Checking function signature of zfs_send_one" >&6;}
 
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+if [ "$zof" = false ]; then
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
 int
 main ()
 {
 
-			zfs_send_one(NULL, NULL, 0, 0) /* ; */
+				zfs_send_one(NULL, NULL, 0, 0) /* ; */
 
 
   ;
@@ -3557,10 +3922,40 @@ $as_echo "$as_me: 3 params" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+else
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+				sendflags_t flag = { 0 };
+				zfs_send_one(NULL, NULL, 0, flag) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_ZFS_SEND_ONE=4
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+$as_echo "$as_me: 4 params" >&6;}
+else
+  HAVE_ZFS_SEND_ONE=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 3 params" >&5
+$as_echo "$as_me: 3 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking EZFS_SCRUB_PAUSED presence" >&5
 $as_echo "$as_me: Checking EZFS_SCRUB_PAUSED presence" >&6;}
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3586,6 +3981,38 @@ $as_echo "$as_me: NOT FOUND" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&5
+$as_echo "$as_me: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			ZPOOL_STATUS_NON_NATIVE_ASHIFT == ZPOOL_STATUS_NON_NATIVE_ASHIFT /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking typedef sendflags_t in libzfs header" >&5
@@ -3619,8 +4046,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&5
 $as_echo "$as_me: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&6;}
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3648,8 +4077,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking params for zfs_receive" >&5
 $as_echo "$as_me: Checking params for zfs_receive" >&6;}
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3697,6 +4128,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist" >&5
@@ -3776,6 +4208,37 @@ fi
 
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of renameflags_t in libzfs.h" >&5
+$as_echo "$as_me: Checking existence of renameflags_t in libzfs.h" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			renameflags_t flag;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_RENAMEFLAGS_T=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_RENAMEFLAGS_T=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ZPOOL_MAXNAMELEN defined in libzfs.h" >&5
 $as_echo_n "checking for ZPOOL_MAXNAMELEN defined in libzfs.h... " >&6; }
@@ -3818,8 +4281,10 @@ else
 fi
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking for resumable member in recvflags_t struct" >&5
 $as_echo "$as_me: Checking for resumable member in recvflags_t struct" >&6;}
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3848,8 +4313,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking for compress member in sendflags_t struct" >&5
 $as_echo "$as_me: Checking for compress member in sendflags_t struct" >&6;}
+
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -3903,6 +4370,7 @@ else
 fi
 
 done
+
 
 
 
@@ -4000,13 +4468,87 @@ fi
 
 
 	echo >& 6
+	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER' >& 6
+	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+
+for ac_header in zfs_ioctl.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "zfs_ioctl.h" "ac_cv_header_zfs_ioctl_h" "
+
+"
+if test "x$ac_cv_header_zfs_ioctl_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ZFS_IOCTL_H 1
+_ACEOF
+ HAVE_ZFS_IOCTL_HEADER=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZFS_IOCTL_HEADER=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+fi
+
+done
+
+
+
+
+	echo >& 6
+	echo '   RUNNING TESTS ON nvpair.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON nvpair.h HEADER' >& 6
+	echo '   RUNNING TESTS ON nvpair.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+
+for ac_header in sys/nvpair.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "sys/nvpair.h" "ac_cv_header_sys_nvpair_h" "
+
+"
+if test "x$ac_cv_header_sys_nvpair_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_NVPAIR_H 1
+_ACEOF
+ HAVE_NVPAIR_IN_SYS=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Nvpair.h header under sys" >&5
+$as_echo "$as_me: Nvpair.h header under sys" >&6;}
+else
+  HAVE_NVPAIR_IN_SYS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Nvpair.h header not under sys subdirectory" >&5
+$as_echo "$as_me: Nvpair.h header not under sys subdirectory" >&6;}
+fi
+
+done
+
+
+
+
+	echo >& 6
 	echo '   GENERATING CONFIG.H   ' | sed -e's/./-/g' >&6
 	echo '   GENERATING CONFIG.H' >& 6
 	echo '   GENERATING CONFIG.H   ' | sed -e's/./-/g' >&6
 
+
 ac_config_files="$ac_config_files pxd/config.pxi"
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: GENERATED pxd/config.pxi" >&5
+$as_echo "$as_me: GENERATED pxd/config.pxi" >&6;}
 
+
+	echo >& 6
+	echo '   GENERATING config.py   ' | sed -e's/./-/g' >&6
+	echo '   GENERATING config.py' >& 6
+	echo '   GENERATING config.py   ' | sed -e's/./-/g' >&6
+
+
+ac_config_files="$ac_config_files config.py"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: GENERATED config.py" >&5
+$as_echo "$as_me: GENERATED config.py" >&6;}
 
 ac_config_files="$ac_config_files Makefile"
 
@@ -4716,6 +5258,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "pxd/config.pxi") CONFIG_FILES="$CONFIG_FILES pxd/config.pxi" ;;
+    "config.py") CONFIG_FILES="$CONFIG_FILES config.py" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
