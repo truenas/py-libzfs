@@ -3,6 +3,7 @@ AC_INIT(py-libzfs, 1.0)
 AC_LANG(C)
 AC_PROG_CC
 
+
 define(SECTION_TITLE,
 [
 	echo >& AS_MESSAGE_FD
@@ -11,12 +12,19 @@ define(SECTION_TITLE,
 	echo '   $1   ' | sed -e's/./-/g' >&AS_MESSAGE_FD
 ])
 
+
 dnl works for checking define statements in c
 m4_include([m4/AX_CHECK_DEFINE.m4])
 
 LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
 
-if [[ -f "/usr/local/include/libzfs/libzfs.h" ]]; then
+
+dnl We allow setting a zof variable which the users can set to force autoconf to consider the system is zof based
+
+AC_ARG_VAR(zof, AS_HELP_STRING([Force configure to run ZoL(f) checks]))
+AC_ARG_VAR(freebsd_src, AS_HELP_STRING([Provide path for freebsd source tree. This defaults to /usr/src/]))
+
+if [[ -f "/usr/local/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	zof=true
 
 	CFLAGS="${CFLAGS} 
@@ -27,7 +35,7 @@ if [[ -f "/usr/local/include/libzfs/libzfs.h" ]]; then
 
 else
 	zof=false
-	freebsd_src=${FREEBSD_SRC:=/usr/src}
+	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="-nostdinc
 -I${freebsd_src}/cddl/lib/libumem
@@ -46,16 +54,16 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
 ${CFLAGS} -I/usr/include"
+	AC_DEFINE(NEED_SOLARIS_BOOLEAN)
+	AC_DEFINE(_XPG6)
 
 fi
 
 CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
 
-AC_DEFINE(NEED_SOLARIS_BOOLEAN)
-AC_DEFINE(_XPG6)
-
 
 SECTION_TITLE([RUNNING TESTS ON zfs.h HEADER])
+
 
 AC_CHECK_HEADERS([sys/types.h], [], [AC_ERROR([A working sys/types header is required])])
 AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_ERROR([A working zfs header is required])],[
@@ -69,6 +77,7 @@ AX_CHECK_DEFINE(
 	[AC_SUBST(HAVE_ZFS_MAX_DATASET_NAME_LEN, 1)],
 	[AC_SUBST(HAVE_ZFS_MAX_DATASET_NAME_LEN, 0)]
 )
+
 
 dnl Check zfs_prop_valid_for_type signature
 
@@ -84,9 +93,11 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZFS_PROP_VALID_FOR_TYPE, 2) AC_MSG_NOTICE(2 PARAMS)]
 )
 
+
 dnl Checking if VDEV_AUX_ASHIFT_TOO_BIG enum exists
 
 AC_MSG_NOTICE([Checking existence of VDEV_AUX_ASHIFT_TOO_BIG enum in zfs header])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <sys/fs/zfs.h>],
 		[
@@ -97,7 +108,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_VDEV_AUX_ASHIFT_TOO_BIG, 0) AC_MSG_NOTICE([Not found])]
 )
 
+
 dnl Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member
+
 AC_MSG_NOTICE([Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -111,6 +124,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_PAUSE, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_PAUSE, 0) AC_MSG_NOTICE([Not found])]
 )
+
 
 dnl Checking zpool_errata_t existence
 
@@ -126,7 +140,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_ERRATA_T_ENUM, 0) AC_MSG_NOTICE([Not found])]
 )
 
+
 dnl Checking typedef pool_scrub_cmd_t in zfs header
+
 AC_MSG_NOTICE([Checking typedef pool_scrub_cmt_t in zfs header])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -140,7 +156,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 0) AC_MSG_NOTICE([Not found])]
 )
 
+
 SECTION_TITLE([RUNNING TESTS ON libzutil.h HEADER])
+
 
 dnl Checking libzutil header existence
 
@@ -152,9 +170,11 @@ AC_CHECK_HEADERS([libzutil.h],
 
 
 dnl Checking function zpool_read_label existence
+
 AC_MSG_NOTICE([Checking existence of zpool_read_label in libzutil.h header])
 
 dnl Let's default HAVE_ZPOOL_READ_LABEL_PARAMS value to 0
+
 AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 0)
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
@@ -167,7 +187,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
         [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
+
 dnl Checking function zpool_search_import signature and existence
+
 AC_MSG_NOTICE([Checking existence of zpool_search_import in libzutil.h header])
 
 AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 0)
@@ -181,6 +203,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 3) AC_MSG_NOTICE(OK)],
 	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
+
 
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
@@ -200,6 +223,7 @@ else
 	])
 fi
 
+
 dnl Checking function zpool_search_import existence
 
 AC_MSG_NOTICE([Checking existence of zpool_search_import in libzfs.h header])
@@ -214,7 +238,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
 
+
 dnl Checking function zpool_read_label existence
+
 AC_MSG_NOTICE([Checking existence of zpool_read_label in libzfs.h header])
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
@@ -227,7 +253,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
+
 dnl Checking function signature of zpool_get_status
+
 AC_MSG_NOTICE([Checking function signature of zpool_get_status])
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
@@ -240,7 +268,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_GET_STATUS, 2) AC_MSG_NOTICE([2 PARAMS])]
 )
 
+
 dnl Checking function signature of zpool_scan
+
 AC_MSG_NOTICE([Checking function signature of zpool_scan])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -255,6 +285,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking function signature of zfs_send_one
+
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
 if [[ "$zof" = false ]]; then
@@ -280,8 +311,11 @@ else
 	)
 fi
 
+
 dnl Checking existence of an enum value
+
 AC_MSG_NOTICE([Checking EZFS_SCRUB_PAUSED presence])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
@@ -291,6 +325,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
+
 
 dnl Checking existence of an enum value
 
@@ -308,6 +343,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking typedef sendflags_t in zfs header
+
 AC_MSG_NOTICE([Checking typedef sendflags_t in libzfs header])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -323,7 +359,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking existence of an enum value
+
 AC_MSG_NOTICE([Checking LZC_SEND_FLAG_EMBED_DATA presence])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
@@ -336,7 +374,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking params for zfs_receive
+
 AC_MSG_NOTICE([Checking params for zfs_receive])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
@@ -357,6 +397,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking existence of zfs_send_resume - if found, it is safe to assume that zfs_send_resume_token_to_nvlist exists too
+
 AC_MSG_NOTICE([Checking existence of zfs_send_resume and zfs_send_resume_token_to_nvlist])
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
@@ -396,7 +437,9 @@ AX_CHECK_DEFINE([libzfs.h], [ZPOOL_MAXNAMELEN], [AC_SUBST(HAVE_ZPOOL_MAXNAMELEN,
 
 
 dnl Checking for resumable member in recvflags_t struct
+
 AC_MSG_NOTICE([Checking for resumable member in recvflags_t struct])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
@@ -410,7 +453,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 
 dnl Checking for compress member in sendflags_t struct
+
 AC_MSG_NOTICE([Checking for compress member in sendflags_t struct])
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
@@ -433,6 +478,7 @@ AC_CHECK_HEADERS([libzfs_core.h], [], [AC_ERROR([A working libzfs_core header is
 
 
 dnl Checking lzc_bookmark existence
+
 AC_MSG_NOTICE([Verifying lzc_bookmark existence])
 
 exists=0
@@ -489,13 +535,16 @@ fi
 
 SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
 
+
 AC_CHECK_HEADERS([zfs_ioctl.h],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 0) AC_MSG_NOTICE([NOT FOUND])],
 	[]
 )
 
+
 SECTION_TITLE([RUNNING TESTS ON nvpair.h HEADER])
+
 
 AC_CHECK_HEADERS([sys/nvpair.h],
         [AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
@@ -503,7 +552,9 @@ AC_CHECK_HEADERS([sys/nvpair.h],
         []
 )
 
+
 SECTION_TITLE([GENERATING CONFIG.H])
+
 AC_CONFIG_FILES([pxd/config.pxi])
 
 
