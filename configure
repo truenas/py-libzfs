@@ -639,6 +639,7 @@ HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
 HAVE_ZPOOL_SCAN
 HAVE_ZPOOL_GET_STATUS
+HAVE_ZFS_VDEV_STAT_ASHIFT
 HAVE_ZPOOL_READ_LABEL_LIBZFS
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL
@@ -646,8 +647,11 @@ HAVE_ZPOOL_SEARCH_IMPORT_PARAMS
 HAVE_ZPOOL_READ_LABEL_LIBZUTIL
 HAVE_ZPOOL_READ_LABEL_PARAMS
 HAVE_LIBZUTIL_HEADER
+HAVE_ZPOOL_LOAD_POLICY_T
+HAVE_ZPOOL_REWIND_POLICY_T
 HAVE_POOL_SCRUB_CMD_T
 HAVE_ZPOOL_ERRATA_T_ENUM
+HAVE_POOL_SCAN_STAT_T_ISSUED
 HAVE_POOL_SCAN_STAT_T_PAUSE
 HAVE_VDEV_AUX_ASHIFT_TOO_BIG
 HAVE_ZFS_PROP_VALID_FOR_TYPE
@@ -683,6 +687,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -755,6 +760,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1007,6 +1013,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1144,7 +1159,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1297,6 +1312,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -2919,7 +2935,31 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # AC_CHECK_FUNC
 
 
-LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
+
+build_linux=no
+build_freebsd=no
+
+
+host_os=$(uname -s)
+
+# Detect the target system
+case "${host_os}" in
+	Linux*)
+		build_linux=yes
+		;;
+	FreeBSD*)
+		build_freebsd=yes
+		;;
+	*)
+		as_fn_error $? "\"OS $host_os is not supported\"" "$LINENO" 5
+		;;
+esac
+
+LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil"
+
+if [ "${build_freebsd}" = "yes" ]; then
+	LDFLAGS="-lgeom ${LDFLAGS}"
+fi
 
 
 
@@ -3545,6 +3585,37 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of pss_pass_issued struct member" >&5
+$as_echo "$as_me: Checking existence of pss_pass_issued struct member" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			pool_scan_stat_t o;
+			o.pss_pass_issued = 1;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_POOL_SCAN_STAT_T_ISSUED=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_POOL_SCAN_STAT_T_ISSUED=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
+$as_echo "$as_me: Not found" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_errata_t" >&5
 $as_echo "$as_me: Checking existence of zpool_errata_t" >&6;}
@@ -3606,6 +3677,68 @@ $as_echo "$as_me: Not found" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of zpool_rewind_policy_t" >&5
+$as_echo "$as_me: Verifying existence of zpool_rewind_policy_t" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			zpool_rewind_policy_t policy;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_REWIND_POLICY_T=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_REWIND_POLICY_T=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of zpool_load_policy_t" >&5
+$as_echo "$as_me: Verifying existence of zpool_load_policy_t" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+			zpool_load_policy_t policy;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_LOAD_POLICY_T=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_LOAD_POLICY_T=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
 
 
 
@@ -3797,8 +3930,8 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_read_label in libzfs.h header" >&5
-$as_echo "$as_me: Checking existence of zpool_read_label in libzfs.h header" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_read_label with 2 params in libzfs.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_read_label with 2 params in libzfs.h header" >&6;}
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -3821,6 +3954,66 @@ if ac_fn_c_try_link "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_ZPOOL_READ_LABEL_LIBZFS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_read_label with 3 params in libzfs.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_read_label with 3 params in libzfs.h header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zpool_read_label(0, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_READ_LABEL_LIBZFS=1
+ HAVE_ZPOOL_READ_LABEL_PARAMS=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of vs_*_ashift in fs/zfs.h header" >&5
+$as_echo "$as_me: Checking existence of vs_*_ashift in fs/zfs.h header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+		 	vdev_stat_t vdev_stat;
+			vdev_stat.vs_configured_ashift = 1;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZFS_VDEV_STAT_ASHIFT=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZFS_VDEV_STAT_ASHIFT=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
 
@@ -4472,6 +4665,9 @@ fi
 	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER' >& 6
 	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER   ' | sed -e's/./-/g' >&6
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of zfs_ioctl.h" >&5
+$as_echo "$as_me: Verifying existence of zfs_ioctl.h" >&6;}
 
 
 for ac_header in zfs_ioctl.h
