@@ -33,15 +33,15 @@ cimport zfs
 from types cimport *
 
 
-IF HAVE_LZC_BOOKMARK:
-    cdef extern from "libzfs_core.h" nogil:
-        IF HAVE_LZC_SEND_SPACE == 4:
-            extern int lzc_send_space(const char *, const char *, enum, uint64_t *)
-        ELSE:
-            extern int lzc_send_space(const char *, const char *, uint64_t *)
+cdef extern from "libzfs_core.h" nogil:
+    IF HAVE_LZC_SEND_SPACE == 4:
+        extern int lzc_send_space(const char *, const char *, int, uint64_t *)
+    ELSE:
+        extern int lzc_send_space(const char *, const char *, uint64_t *)
 
-        enum lzc_send_flags:
-                LZC_SEND_FLAG_EMBED_DATA
+    enum lzc_send_flags:
+            LZC_SEND_FLAG_EMBED_DATA
+    IF HAVE_LZC_BOOKMARK:
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
 
 
@@ -597,8 +597,11 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_in_use(libzfs_handle_t *, int, zfs.pool_state_t *, char **,
         int *)
 
-    IF HAVE_ZPOOL_READ_LABEL_LIBZFS and HAVE_ZPOOL_READ_LABEL_PARAMS == 2:
-        extern int zpool_read_label(int, nvpair.nvlist_t **)
+    IF HAVE_ZPOOL_READ_LABEL_LIBZFS:
+        IF HAVE_ZPOOL_READ_LABEL_PARAMS == 2:
+            extern int zpool_read_label(int, nvpair.nvlist_t **)
+        ELIF HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
+            extern int zpool_read_label(int, nvpair.nvlist_t **, int*)
 
     extern int zpool_clear_label(int)
     extern int zvol_check_dump_config(char *)

@@ -1248,7 +1248,7 @@ cdef class ZFSVdevStats(object):
     cdef uint_t total
 
     def __getstate__(self):
-        return {
+        state = {
             'timestamp': self.timestamp,
             'read_errors': self.read_errors,
             'write_errors': self.write_errors,
@@ -1257,12 +1257,16 @@ cdef class ZFSVdevStats(object):
             'bytes': self.bytes,
             'size': self.size,
             'allocated': self.allocated,
-            'configured_ashift': self.configured_ashift,
-            'logical_ashift': self.logical_ashift,
-            'physical_ashift': self.physical_ashift,
             'fragmentation': self.fragmentation,
             'self_healed': self.self_healed
         }
+        IF HAVE_ZFS_VDEV_STAT_ASHIFT:
+            state.update({
+                'configured_ashift': self.configured_ashift,
+                'logical_ashift': self.logical_ashift,
+                'physical_ashift': self.physical_ashift,
+            })
+        return state
 
     property nvlist:
         def __get__(self):
@@ -1308,17 +1312,18 @@ cdef class ZFSVdevStats(object):
         def __get__(self):
             return self.vs.vs_bytes
 
-    property configured_ashift:
-        def __get__(self):
-            return self.vs.vs_configured_ashift
+    IF HAVE_ZFS_VDEV_STAT_ASHIFT:
+        property configured_ashift:
+            def __get__(self):
+                return self.vs.vs_configured_ashift
 
-    property logical_ashift:
-        def __get__(self):
-            return self.vs.vs_logical_ashift
+        property logical_ashift:
+            def __get__(self):
+                return self.vs.vs_logical_ashift
 
-    property physical_ashift:
-        def __get__(self):
-            return self.vs.vs_physical_ashift
+        property physical_ashift:
+            def __get__(self):
+                return self.vs.vs_physical_ashift
 
     property fragmentation:
         def __get__(self):
@@ -1682,7 +1687,7 @@ cdef class ZPoolScrub(object):
             rate = pass_exam / elapsed
             return int((total - examined) / rate)
 
-    IF HAVE_POOL_SCAN_STAT_T_PAUSE:
+    IF HAVE_POOL_SCAN_STAT_T_ISSUED:
         property bytes_issued:
             def __get__(self):
                 if not self.stat:
@@ -1690,6 +1695,7 @@ cdef class ZPoolScrub(object):
 
                 return self.stat[13]
 
+    IF HAVE_POOL_SCAN_STAT_T_PAUSE:
         property pause:
             def __get__(self):
                 if not self.stat:
@@ -1716,7 +1722,7 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            IF HAVE_POOL_SCAN_STAT_T_PAUSE:
+            IF HAVE_POOL_SCAN_STAT_T_ISSUED:
                 return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
             ELSE:
                 return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
@@ -2213,7 +2219,10 @@ cdef class ZFSPool(object):
     def clear(self):
         cdef NVList policy = NVList()
         cdef int ret
-        policy[zfs.ZPOOL_LOAD_REWIND_POLICY] = zfs.ZPOOL_NO_REWIND
+        IF HAVE_ZPOOL_LOAD_POLICY_T:
+            policy[zfs.ZPOOL_LOAD_REWIND_POLICY] = zfs.ZPOOL_NO_REWIND
+        ELIF HAVE_ZPOOL_REWIND_POLICY_T:
+            policy[zfs.ZPOOL_REWIND_REQUEST] = zfs.ZPOOL_NO_REWIND
 
         with nogil:
             ret = libzfs.zpool_clear(self.handle, NULL, policy.handle)
@@ -2477,16 +2486,10 @@ cdef class ZFSObject(object):
         self.root.write_history('zfs destroy', self.name)
 
     def get_send_space(self, fromname=None):
-        cdef const char *cfromname = NULL
-        cdef const char *c_name
+        cdef const char *cfromname = fromname
+        cdef const char *c_name = self.name
         cdef uint64_t space
         cdef int ret
-
-        name = self.name
-        c_name = name
-
-        if fromname:
-            cfromname = fromname
 
         with nogil:
             IF HAVE_LZC_SEND_SPACE == 4:
@@ -2860,20 +2863,21 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs rollback', '-f' if force else '', self.name)
 
-    def bookmark(self, name):
-        cdef NVList bookmarks
-        cdef nvpair.nvlist_t *c_bookmarks
-        cdef int ret
+    IF HAVE_LZC_BOOKMARK:
+        def bookmark(self, name):
+            cdef NVList bookmarks
+            cdef nvpair.nvlist_t *c_bookmarks
+            cdef int ret
 
-        bookmarks = NVList()
-        bookmarks['{0}#{1}'.format(self.parent.name, name)] = self.name
-        c_bookmarks = bookmarks.handle
+            bookmarks = NVList()
+            bookmarks['{0}#{1}'.format(self.parent.name, name)] = self.name
+            c_bookmarks = bookmarks.handle
 
-        with nogil:
-            ret = libzfs.lzc_bookmark(c_bookmarks, NULL)
+            with nogil:
+                ret = libzfs.lzc_bookmark(c_bookmarks, NULL)
 
-        if ret != 0:
-            raise OSError(ret, os.strerror(ret))
+            if ret != 0:
+                raise OSError(ret, os.strerror(ret))
 
     def clone(self, name, opts=None):
         cdef NVList copts = None

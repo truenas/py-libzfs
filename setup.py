@@ -23,7 +23,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-
+import platform
 from setuptools import setup
 
 try:
@@ -36,6 +36,11 @@ try:
     import config
 except ImportError:
     raise ImportError('Please execute configure script first')
+
+
+libraries=['nvpair', 'zfs', 'zfs_core', 'uutil']
+if platform.system().lower() == 'freebsd':
+    libraries.append('geom')
 
 
 setup(
@@ -52,7 +57,7 @@ setup(
         Extension(
             "libzfs",
             ["libzfs.pyx"],
-            libraries=["nvpair", "zfs", "zfs_core", "uutil", "geom"],
+            libraries=libraries,
             extra_compile_args=config.CFLAGS,
             cython_include_dirs=["./pxd"],
             extra_link_args=["-g"],

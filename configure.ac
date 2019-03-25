@@ -16,7 +16,31 @@ define(SECTION_TITLE,
 dnl works for checking define statements in c
 m4_include([m4/AX_CHECK_DEFINE.m4])
 
-LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil -lgeom -v"
+
+build_linux=no
+build_freebsd=no
+
+
+host_os=$(uname -s)
+
+# Detect the target system
+case "${host_os}" in
+	Linux*)
+		build_linux=yes
+		;;
+	FreeBSD*)
+		build_freebsd=yes
+		;;
+	*)
+		AC_MSG_ERROR(["OS $host_os is not supported"])
+		;;
+esac
+
+LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil"
+
+if [[ "${build_freebsd}" = "yes" ]]; then
+	LDFLAGS="-lgeom ${LDFLAGS}"
+fi
 
 
 dnl We allow setting a zof variable which the users can set to force autoconf to consider the system is zof based
@@ -131,6 +155,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+AC_MSG_NOTICE([Checking existence of pss_pass_issued struct member])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			pool_scan_stat_t o;
+			o.pss_pass_issued = 1;
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_ISSUED, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_T_ISSUED, 0) AC_MSG_NOTICE([Not found])]
+)
+
+
 dnl Checking zpool_errata_t existence
 
 AC_MSG_NOTICE([Checking existence of zpool_errata_t])
@@ -160,6 +198,32 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_POOL_SCRUB_CMD_T, 0) AC_MSG_NOTICE([Not found])]
 )
+
+
+AC_MSG_NOTICE([Verifying existence of zpool_rewind_policy_t])
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			zpool_rewind_policy_t policy;
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_REWIND_POLICY_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_REWIND_POLICY_T, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
+AC_MSG_NOTICE([Verifying existence of zpool_load_policy_t])
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			zpool_load_policy_t policy;
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_LOAD_POLICY_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_LOAD_POLICY_T, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
 
 
 SECTION_TITLE([RUNNING TESTS ON libzutil.h HEADER])
@@ -246,7 +310,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 
 dnl Checking function zpool_read_label existence
 
-AC_MSG_NOTICE([Checking existence of zpool_read_label in libzfs.h header])
+AC_MSG_NOTICE([Checking existence of zpool_read_label with 2 params in libzfs.h header])
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
@@ -256,6 +320,35 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 2) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+
+AC_MSG_NOTICE([Checking existence of zpool_read_label with 3 params in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_read_label(0, NULL, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZFS, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
+	[]
+)
+
+
+dnl Checking function presence of vs_*_ashift existence
+
+AC_MSG_NOTICE([Checking existence of vs_*_ashift in fs/zfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+		 	vdev_stat_t vdev_stat;
+			vdev_stat.vs_configured_ashift = 1;
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_VDEV_STAT_ASHIFT, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZFS_VDEV_STAT_ASHIFT, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
 
@@ -539,6 +632,8 @@ fi
 
 
 SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
+
+AC_MSG_NOTICE([Verifying existence of zfs_ioctl.h])
 
 
 AC_CHECK_HEADERS([zfs_ioctl.h],
