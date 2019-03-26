@@ -3,7 +3,7 @@ py-libzfs
 
 **Python bindings for libzfs**
 
-py-libzfs is a fairly straight-forward set of Python bindings for libzfs for FreeBSD.
+py-libzfs is a fairly straight-forward set of Python bindings for libzfs for ZFS on Linux and FreeBSD.
 
 
 **INSTALLATION**
