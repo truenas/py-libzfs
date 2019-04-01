@@ -26,6 +26,7 @@
 # SUCH DAMAGE.
 #
 
+import itertools
 import os
 import stat
 import enum
@@ -346,7 +347,7 @@ cdef class ZFS(object):
     cdef boolean_t mnttab_cache_enable
     cdef int history
     cdef char *history_prefix
-    cdef object proptypes
+    proptypes = {}
 
     def __cinit__(self, history=True, history_prefix='', mnttab_cache=True):
         cdef zfs.zfs_type_t c_type
@@ -366,9 +367,6 @@ cdef class ZFS(object):
                 self.history_prefix = history_prefix
             else:
                 raise ZFSException(Error.BADTYPE, 'history_prefix is a string parameter')
-
-        # Cache all the proptypes upfront
-        self.proptypes = {}
 
         for t in DatasetType.__members__.values():
             proptypes = self.proptypes.setdefault(t, [])
@@ -450,6 +448,137 @@ cdef class ZFS(object):
                 root.add_child_vdev(i)
 
         return root
+
+    @staticmethod
+    cdef int __dataset_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef int prop_id
+        cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
+        cdef char crawvalue[MAX_DATASET_NAME_LEN + 1]
+        cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
+        cdef zfs.zprop_source_t csource
+        cdef const char *name
+
+        cdef nvpair.nvlist_t *nvlist
+
+        name = libzfs.zfs_get_name(handle)
+        nvlist = libzfs.zfs_get_user_props(handle)
+
+        with gil:
+            data_list = <object> arg
+            configuration_data = data_list[0]
+            data = data_list[1]
+            children = []
+            child_data = [configuration_data, {}]
+            properties = {}
+
+            nvl = NVList(<uintptr_t>nvlist)
+
+            for key, value in nvl.items():
+                src = 'NONE'
+                if value.get('source'):
+                    src = value.pop('source')
+                    if src == name:
+                        src = PropertySource.LOCAL.name
+                    elif src == '$recvd':
+                        src = PropertySource.RECEIVED.name
+                    else:
+                        src = PropertySource.INHERITED.name
+
+                properties[key] = {
+                    'value': value.get('value'),
+                    'rawvalue': value.get('value'),
+                    'source': src,
+                    'parsed': value.get('value')
+                }
+
+            for prop_name, prop_id in configuration_data['props'].items():
+                with nogil:
+                    strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
+                    strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
+                    strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
+
+                    libzfs.zfs_prop_get(
+                        handle, prop_id, cvalue, libzfs.ZFS_MAXPROPLEN,
+                        &csource, csrcstr, MAX_DATASET_NAME_LEN, False
+                    )
+
+                    libzfs.zfs_prop_get(
+                        handle, prop_id, crawvalue, libzfs.ZFS_MAXPROPLEN,
+                        NULL, NULL, 0, True
+                    )
+
+                properties[prop_name] = {
+                    'parsed': parse_zfs_prop(prop_name, crawvalue),
+                    'rawvalue': crawvalue,
+                    'value': cvalue,
+                    'source': PropertySource(<int>csource).name
+                }
+
+        libzfs.zfs_iter_filesystems(handle, ZFS.__dataset_handles, <void*>child_data)
+
+        with gil:
+            data[name] = {}
+            child_data = child_data[1]
+
+            data[name].update({
+                'properties': properties,
+                'id': name,
+                'type': DatasetType.FILESYSTEM.name,
+                'children': list(child_data.values()),
+                'name': name,
+                'pool': configuration_data['pool']
+            })
+
+        libzfs.zfs_close(handle)
+
+    @staticmethod
+    def __get_children_recursively(search_dict, field):
+        fields_found = []
+        for key, value in search_dict.items():
+            if isinstance(value, dict):
+                fields_found.extend(ZFS.__get_children_recursively(value, field))
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        fields_found.extend(ZFS.__get_children_recursively(item, field))
+            if key == field:
+                fields_found.append(value)
+        return fields_found
+
+    def datasets_serialized(self, props=None):
+        cdef libzfs.zfs_handle_t* handle
+        cdef const char *c_name
+        cdef int prop_id
+
+        prop_mapping = {}
+        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM]:
+            with nogil:
+                prop_name = libzfs.zfs_prop_to_name(prop_id)
+
+            if not props or prop_name in props:
+                prop_mapping[prop_name] = prop_id
+
+        for p in self.pools:
+            c_name = handle = NULL
+            name = p.name
+            c_name = name
+
+            dataset = [
+                {
+                    'pool': name,
+                    'props': prop_mapping
+                },
+                {}
+            ]
+
+            with nogil:
+                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+                ZFS.__dataset_handles(handle, <void*>dataset)
+
+            yield dataset[1].get(name)
+
+            for child in itertools.chain(*self.__get_children_recursively(dataset[1], 'children')):
+                yield child
 
     property errno:
         def __get__(self):
