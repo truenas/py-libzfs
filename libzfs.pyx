@@ -332,13 +332,15 @@ class ZFSException(RuntimeError):
 
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
+    cdef boolean_t mnttab_cache_enable
     cdef int history
     cdef char *history_prefix
     cdef object proptypes
 
-    def __cinit__(self, history=True, history_prefix=''):
+    def __cinit__(self, history=True, history_prefix='', mnttab_cache=True):
         cdef zfs.zfs_type_t c_type
         cdef prop_iter_state iter
+        self.mnttab_cache_enable=mnttab_cache
 
         self.handle = libzfs.libzfs_init()
         if isinstance(history, bool):
@@ -437,6 +439,10 @@ cdef class ZFS(object):
 
     property pools:
         def __get__(self):
+            if self.mnttab_cache_enable:
+                with nogil:
+                    libzfs.libzfs_mnttab_cache(self.handle, self.mnttab_cache_enable)
+
             cdef ZFSPool pool
             pools = []
 
@@ -451,6 +457,10 @@ cdef class ZFS(object):
                     continue
 
                 yield pool
+
+            if self.mnttab_cache_enable:
+                with nogil:
+                    libzfs.libzfs_mnttab_cache(self.handle, False)
 
     property datasets:
         def __get__(self):
