@@ -580,6 +580,154 @@ cdef class ZFS(object):
             for child in itertools.chain(*self.__get_children_recursively(dataset[1], 'children')):
                 yield child
 
+    @staticmethod
+    cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
+        cdef int prop_id, ret, simple_handle, holds, mounted
+        cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
+        cdef char crawvalue[MAX_DATASET_NAME_LEN + 1]
+        cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
+        cdef zfs.zprop_source_t csource
+        cdef const char *name, *mntpt
+        cdef nvpair.nvlist_t *ptr, *nvlist
+
+        with gil:
+            snap_list = <object> arg
+            configuration_data = snap_list[0]
+            pool = configuration_data['pool']
+            props = configuration_data['props']
+            holds = configuration_data['holds']
+            mounted = configuration_data['mounted']
+            properties = {}
+            simple_handle = len(props) == 1 and 'name' in props
+            snap_data = {}
+
+        libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list)
+
+        if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_SNAPSHOT:
+            return 0
+
+        nvlist = libzfs.zfs_get_user_props(handle)
+        name = libzfs.zfs_get_name(handle)
+
+        with gil:
+
+            # Gathering user props
+            nvl = NVList(<uintptr_t>nvlist)
+
+            for key, value in nvl.items():
+                src = 'NONE'
+                if value.get('source'):
+                    src = value.pop('source')
+                    if src == name:
+                        src = PropertySource.LOCAL.name
+                    elif src == '$recvd':
+                        src = PropertySource.RECEIVED.name
+                    else:
+                        src = PropertySource.INHERITED.name
+
+                properties[key] = {
+                    'value': value.get('value'),
+                    'rawvalue': value.get('value'),
+                    'source': src,
+                    'parsed': value.get('value')
+                }
+
+            for prop_name, prop_id in (props if not simple_handle else {}).items():
+
+                with nogil:
+                    strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
+                    strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
+                    strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
+
+                    libzfs.zfs_prop_get(
+                        handle, prop_id, cvalue, libzfs.ZFS_MAXPROPLEN,
+                        &csource, csrcstr, MAX_DATASET_NAME_LEN, False
+                    )
+
+                    libzfs.zfs_prop_get(
+                        handle, prop_id, crawvalue, libzfs.ZFS_MAXPROPLEN,
+                        NULL, NULL, 0, True
+                    )
+
+                properties[prop_name] = {
+                    'parsed': parse_zfs_prop(prop_name, crawvalue),
+                    'rawvalue': crawvalue,
+                    'value': cvalue,
+                    'source': PropertySource(<int>csource).name
+                }
+
+        if holds:
+            ret = libzfs.zfs_get_holds(handle, &ptr)
+
+            with gil:
+                if ret != 0:
+                    snap_data['holds'] = {}
+                else:
+                    snap_data['holds'] = dict(NVList(<uintptr_t> ptr))
+
+        if mounted:
+            ret = libzfs.zfs_is_mounted(handle, &mntpt)
+
+            with gil:
+                snap_data['mountpoint'] = mntpt if ret !=0 else None
+
+        with gil:
+            if not simple_handle:
+                snap_data['properties'] = properties
+
+            snap_data.update({
+                'pool': pool,
+                'name': name,
+                'type': DatasetType.SNAPSHOT.name,
+                'snapshot_name': name.split('@')[-1],
+                'dataset': name.split('@')[0],
+                'id': name
+            })
+
+            snap_list.append(snap_data)
+
+        libzfs.zfs_close(handle)
+
+    @staticmethod
+    cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
+        ZFS.__snapshot_details(handle, arg)
+        libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
+        libzfs.zfs_close(handle)
+
+
+    def snapshots_serialized(self, props=None, holds=False, mounted=False):
+        cdef libzfs.zfs_handle_t* handle
+        cdef const char *c_name
+        cdef int prop_id
+
+        prop_mapping = {}
+        props = props or []
+
+        for prop_id in ZFS.proptypes[DatasetType.SNAPSHOT]:
+            with nogil:
+                prop_name = libzfs.zfs_prop_to_name(prop_id)
+
+            if not props or prop_name in props:
+                prop_mapping[prop_name] = prop_id
+
+        snap_list = [{
+            'props': prop_mapping,
+            'holds': holds,
+            'mounted': mounted
+        }]
+        for p in self.pools:
+            c_name = handle = NULL
+            name = p.name
+            c_name = name
+
+            snap_list[0]['pool'] = name
+
+            with nogil:
+                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+                ZFS.__datasets_snapshots(handle, <void*>snap_list)
+
+        return snap_list[1:]
+
     property errno:
         def __get__(self):
             return Error(libzfs.libzfs_errno(self.handle))
