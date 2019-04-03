@@ -464,12 +464,21 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_rollback(zfs_handle_t *, zfs_handle_t *, int)
 
     IF HAVE_RENAMEFLAGS_T:
-        ctypedef struct renameflags_t:
-            int recurse
-            int nounmount
-            int forceunmount
+        IF HAVE_RENAMEFLAGS_T_RECURSE:
+            ctypedef struct renameflags_t:
+                int recurse
+                int nounmount
+                int forceunmount
+        ELSE:
+            ctypedef struct renameflags_t:
+                int recursive
+                int nounmount
+                int forceunmount
 
-        extern int zfs_rename(zfs_handle_t *, const char *, const char *, renameflags_t flags)
+        IF HAVE_ZFS_RENAME == 4:
+            extern int zfs_rename(zfs_handle_t *, const char *, const char *, renameflags_t flags)
+        ELSE:
+            extern int zfs_rename(zfs_handle_t *, const char *, renameflags_t)
 
     ELSE:
 
