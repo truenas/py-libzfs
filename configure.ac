@@ -525,8 +525,42 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		]
 	)],
 	[AC_SUBST(HAVE_RENAMEFLAGS_T, 1) AC_MSG_NOTICE([OK])],
-	[AC_SUBST(HAVE_RENAMEFLAGS_T, 0) AC_MSG_NOTICE([NOT FOUND])]
+	[AC_SUBST(HAVE_RENAMEFLAGS_T, 0) AC_SUBST(HAVE_ZFS_RENAME, 4) AC_SUBST(HAVE_RENAMEFLAGS_T_RECURSE, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
+
+
+if test "$HAVE_RENAMEFLAGS_T" == 1
+then
+	dnl Checking renameflags_t member names
+
+	AC_MSG_NOTICE([Checking renameflags_t member names in libzfs.h])
+
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[#include <libzfs.h>],
+			[
+				renameflags_t flags = { 0 };
+				flags.recurse = 1;
+			]
+		)],
+		[AC_SUBST(HAVE_RENAMEFLAGS_T_RECURSE, 1) AC_MSG_NOTICE([RECURSE member found])],
+		[AC_SUBST(HAVE_RENAMEFLAGS_T_RECURSE, 0) AC_MSG_NOTICE([RECURSIVE member found])]
+	)
+
+	dnl Checking zfs_rename function signature
+
+	AC_MSG_NOTICE([Checking function signature of zfs_rename in libzfs.h])
+
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[#include <libzfs.h>],
+			[
+				renameflags_t flag;
+				zfs_rename(NULL, NULL, NULL, flag);
+			]
+		)],
+		[AC_SUBST(HAVE_ZFS_RENAME, 4) AC_MSG_NOTICE([4 PARAMS])],
+		[AC_SUBST(HAVE_ZFS_RENAME, 3) AC_MSG_NOTICE([3 PARAMS])]
+	)
+fi
 
 
 dnl Checking ZPOOL_MAXNAMELEN
