@@ -2735,12 +2735,18 @@ cdef class ZFSObject(object):
 
         IF HAVE_RENAMEFLAGS_T:
             cdef libzfs.renameflags_t flags
-            flags.recurse = recursive
+            IF HAVE_RENAMEFLAGS_T_RECURSE:
+                flags.recurse = recursive
+            ELSE:
+                flags.recursive = recursive
             flags.nounmount = nounmount
             flags.forceunmount = forceunmount
 
             with nogil:
-                ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+                IF HAVE_ZFS_RENAME == 4:
+                    ret = libzfs.zfs_rename(self.handle, NULL, c_new_name, flags)
+                ELSE:
+                    ret = libzfs.zfs_rename(self.handle, c_new_name, flags)
 
             history = ['zfs rename', '-f' if forceunmount else '', '-u' if nounmount else '', self.name]
 

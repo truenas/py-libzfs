@@ -627,6 +627,8 @@ HAVE_LZC_BOOKMARK
 HAVE_SENDFLAGS_T_COMPRESS
 HAVE_RECVFLAGS_T_RESUMABLE
 HAVE_ZPOOL_MAXNAMELEN
+HAVE_RENAMEFLAGS_T_RECURSE
+HAVE_ZFS_RENAME
 HAVE_RENAMEFLAGS_T
 HAVE_ZFS_MAXNAMELEN
 HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
@@ -687,7 +689,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -760,7 +761,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1013,15 +1013,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1159,7 +1150,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1312,7 +1303,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -4424,11 +4414,79 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_RENAMEFLAGS_T=0
+ HAVE_ZFS_RENAME=4
+ HAVE_RENAMEFLAGS_T_RECURSE=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+if test "$HAVE_RENAMEFLAGS_T" == 1
+then
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking renameflags_t member names in libzfs.h" >&5
+$as_echo "$as_me: Checking renameflags_t member names in libzfs.h" >&6;}
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+				renameflags_t flags = { 0 };
+				flags.recurse = 1;
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_RENAMEFLAGS_T_RECURSE=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: RECURSE member found" >&5
+$as_echo "$as_me: RECURSE member found" >&6;}
+else
+  HAVE_RENAMEFLAGS_T_RECURSE=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: RECURSIVE member found" >&5
+$as_echo "$as_me: RECURSIVE member found" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_rename in libzfs.h" >&5
+$as_echo "$as_me: Checking function signature of zfs_rename in libzfs.h" >&6;}
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+				renameflags_t flag;
+				zfs_rename(NULL, NULL, NULL, flag);
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_ZFS_RENAME=4
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 4 PARAMS" >&5
+$as_echo "$as_me: 4 PARAMS" >&6;}
+else
+  HAVE_ZFS_RENAME=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 3 PARAMS" >&5
+$as_echo "$as_me: 3 PARAMS" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
 
 
 
