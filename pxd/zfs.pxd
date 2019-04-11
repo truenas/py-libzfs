@@ -246,6 +246,9 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZPROP_SRC_INHERITED = 0x10
         ZPROP_SRC_RECEIVED = 0x20
         ZPROP_SRC_ALL = 0x3f
+
+    ctypedef enum zfs_prop_t:
+        pass
     
     ctypedef enum zprop_errflags_t:
         ZPROP_ERR_NOCLEAR = 0x1
