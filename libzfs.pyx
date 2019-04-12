@@ -1460,14 +1460,24 @@ cdef class ZFSProperty(object):
     def inherit(self, recursive=False, bint received=False):
         cdef ZFSObject dset
         cdef int ret
+        cdef int c_recursive = recursive
+        cdef zfs.zfs_prop_t prop
 
         dsets = [self.dataset]
         if recursive:
             dsets.extend(list(self.dataset.children_recursive))
+            prop = <zfs.zfs_prop_t>zfs.zfs_name_to_prop(self.cname)
 
         for d in dsets:
             dset = <ZFSObject>d
             with nogil:
+                if c_recursive:
+                    IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
+                        ret = <int>zfs.zfs_prop_valid_for_type(prop, libzfs.zfs_get_type(dset.handle), 0)
+                    ELSE:
+                        ret = <int>zfs.zfs_prop_valid_for_type(prop, libzfs.zfs_get_type(dset.handle))
+                    if ret != 1:
+                        continue
                 ret = libzfs.zfs_prop_inherit(dset.handle, self.cname, received)
 
             if ret != 0:
