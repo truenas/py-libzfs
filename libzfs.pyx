@@ -369,12 +369,16 @@ cdef class ZFS(object):
                 raise ZFSException(Error.BADTYPE, 'history_prefix is a string parameter')
 
         for t in DatasetType.__members__.values():
-            proptypes = self.proptypes.setdefault(t, [])
+            proptypes = []
             c_type = <zfs.zfs_type_t>t
             iter.type = c_type
             iter.props = <void *>proptypes
             with nogil:
                 libzfs.zprop_iter(self.__iterate_props, <void*>&iter, True, True, c_type)
+
+            props = self.proptypes.setdefault(t, [])
+            if set(proptypes) != set(props):
+                self.proptypes[t] = proptypes
 
     def __enter__(self):
         GLOBAL_CONTEXT_LOCK.acquire()
