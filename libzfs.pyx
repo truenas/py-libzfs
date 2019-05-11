@@ -1695,11 +1695,16 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        cdef const char *first_child_path = first_child.path
-        cdef const char *vdev_path = vdev.path
+        first_child_path = first_child.path
+        new_vdev_path = vdev.path
+
+        cdef const char* c_first_child_path = first_child_path
+        cdef const char* c_new_vdev_path = new_vdev_path
 
         with nogil:
-            rv = libzfs.zpool_vdev_attach(self.zpool.handle, first_child_path, vdev_path, root.nvlist.handle, 0)
+            rv = libzfs.zpool_vdev_attach(
+                self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0
+            )
 
         if rv != 0:
             raise self.root.get_error()
@@ -1724,11 +1729,14 @@ cdef class ZFSVdev(object):
             'data': [vdev]
         })
 
-        cdef const char *path = self.path
-        cdef const char *vdev_path = vdev.path
+        self_path = self.path
+        vdev_path = vdev.path
+
+        cdef const char *c_path = self_path
+        cdef const char *c_vdev_path = vdev_path
 
         with nogil:
-            rv = libzfs.zpool_vdev_attach(self.zpool.handle, path, vdev_path, root.nvlist.handle, 1)
+            rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1744,10 +1752,12 @@ cdef class ZFSVdev(object):
         if self.parent.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_SPARE):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors and spares only")
 
-        cdef const char *path = self.path
+        path = self.path
+
+        cdef const char *c_path = path
 
         with nogil:
-            rv = libzfs.zpool_vdev_detach(self.zpool.handle, path)
+            rv = libzfs.zpool_vdev_detach(self.zpool.handle, c_path)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1756,11 +1766,12 @@ cdef class ZFSVdev(object):
 
     def remove(self):
         cdef const char *command = 'zpool remove'
-        cdef const char *path = self.path
+        path = self.path
+        cdef const char *c_path = path
         cdef int rv
 
         with nogil:
-            rv = libzfs.zpool_vdev_remove(self.zpool.handle, path)
+            rv = libzfs.zpool_vdev_remove(self.zpool.handle, c_path)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1772,12 +1783,13 @@ cdef class ZFSVdev(object):
         if self.type not in (zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
             raise ZFSException(Error.NOTSUP, "Can make disks offline only")
 
-        cdef const char *path = self.path
+        path = self.path
+        cdef const char *c_path = path
         cdef int c_temporary = int(temporary)
         cdef int rv
 
         with nogil:
-            rv = libzfs.zpool_vdev_offline(self.zpool.handle, path, c_temporary)
+            rv = libzfs.zpool_vdev_offline(self.zpool.handle, c_path, c_temporary)
 
         if rv != 0:
             raise self.root.get_error()
@@ -1795,11 +1807,12 @@ cdef class ZFSVdev(object):
         if expand:
             flags |= zfs.ZFS_ONLINE_EXPAND
 
-        cdef const char *path = self.path
+        path = self.path
+        cdef const char *c_path = path
         cdef int rv
 
         with nogil:
-            rv = libzfs.zpool_vdev_online(self.zpool.handle, path, flags, &newstate)
+            rv = libzfs.zpool_vdev_online(self.zpool.handle, c_path, flags, &newstate)
 
         if rv != 0:
             raise self.root.get_error()
