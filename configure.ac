@@ -308,6 +308,20 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+dnl Checking zfs_iter_snapshots parameters
+
+AC_MSG_NOTICE([Checking zfs_iter_snapshots parameters])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zfs_iter_snapshots(NULL, NULL, NULL, NULL, 0, 0);
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSHOTS, 6) AC_MSG_NOTICE([6 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSHOTS, 4) AC_MSG_NOTICE([4 params])]
+)
+
 dnl Checking function zpool_read_label existence
 
 AC_MSG_NOTICE([Checking existence of zpool_read_label with 2 params in libzfs.h header])

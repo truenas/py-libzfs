@@ -435,10 +435,14 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_iter_children(zfs_handle_t *, zfs_iter_f, void *)
     extern int zfs_iter_dependents(zfs_handle_t *, int, zfs_iter_f, void *)
     extern int zfs_iter_filesystems(zfs_handle_t *, zfs_iter_f, void *)
-    extern int zfs_iter_snapshots(zfs_handle_t *, int, zfs_iter_f, void *)
     extern int zfs_iter_snapshots_sorted(zfs_handle_t *, zfs_iter_f, void *)
     extern int zfs_iter_snapspec(zfs_handle_t *, const char *, zfs_iter_f, void *)
     extern int zfs_iter_bookmarks(zfs_handle_t *, zfs_iter_f, void *)
+
+    IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
+        extern int zfs_iter_snapshots(zfs_handle_t *, int, zfs_iter_f, void *, uint64_t, uint64_t)
+    ELSE:
+        extern int zfs_iter_snapshots(zfs_handle_t *, int, zfs_iter_f, void *)
 
     ctypedef struct get_all_cb_t:
         zfs_handle_t	**cb_handles
