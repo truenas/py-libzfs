@@ -645,6 +645,8 @@ HAVE_ZFS_VDEV_STAT_ASHIFT
 HAVE_ZPOOL_READ_LABEL_LIBZFS
 HAVE_ZFS_ITER_SNAPSHOTS
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
+HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS
+HAVE_SENDFLAGS_T_VERBOSITY
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL
 HAVE_ZPOOL_SEARCH_IMPORT_PARAMS
 HAVE_ZPOOL_READ_LABEL_LIBZUTIL
@@ -3886,6 +3888,70 @@ fi
 done
 
 fi
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking attribute name for verbose in sendflags_t struct" >&5
+$as_echo "$as_me: Checking attribute name for verbose in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.verbosity = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_SENDFLAGS_T_VERBOSITY=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbosity in sendflags_t struct" >&5
+$as_echo "$as_me: Attribute named as verbosity in sendflags_t struct" >&6;}
+else
+  HAVE_SENDFLAGS_T_VERBOSITY=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbose in sendflags_t struct" >&5
+$as_echo "$as_me: Attribute named as verbose in sendflags_t struct" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature zvol_volsize_to_reservation" >&5
+$as_echo "$as_me: Checking function signature zvol_volsize_to_reservation" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zvol_volsize_to_reservation(NULL, 0, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS=3
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 3 PARAMS" >&5
+$as_echo "$as_me: 3 PARAMS" >&6;}
+else
+  HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 2 PARAMS" >&5
+$as_echo "$as_me: 2 PARAMS" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 
