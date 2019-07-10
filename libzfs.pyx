@@ -243,7 +243,10 @@ class FeatureState(enum.Enum):
 
 
 class SendFlag(enum.Enum):
-    VERBOSE = 0
+    IF HAVE_SENDFLAGS_T_VERBOSITY:
+        VERBOSITY = 0
+    ELSE:
+        VERBOSE = 0
     REPLICATE = 1
     DOALL = 2
     FROMORIGIN = 3
@@ -3340,8 +3343,12 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
     if not isinstance(flags, set):
         raise ValueError('flags must be passed as a set')
 
-    if SendFlag.VERBOSE in flags:
-        cflags.verbose = 1
+    IF HAVE_SENDFLAGS_T_VERBOSITY:
+         if SendFlag.VERBOSITY in flags:
+            cflags.verbosity = 1
+    ELSE:
+        if SendFlag.VERBOSE in flags:
+            cflags.verbose = 1
 
     if SendFlag.REPLICATE in flags:
         cflags.replicate = 1
