@@ -2433,10 +2433,10 @@ cdef class ZFSPool(object):
         if fstype == DatasetType.VOLUME and not sparse_vol:
             vol_size = cfsopts['volsize']
             with nogil:
-                vol_reservation = libzfs.zvol_volsize_to_reservation(
-                    vol_size,
-                    cfsopts.handle
-                )
+                IF HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS == 3:
+                    vol_reservation = libzfs.zvol_volsize_to_reservation(self.handle, vol_size, cfsopts.handle)
+                ELSE:
+                    vol_reservation = libzfs.zvol_volsize_to_reservation(vol_size, cfsopts.handle)
 
             cfsopts['refreservation'] = vol_reservation
 

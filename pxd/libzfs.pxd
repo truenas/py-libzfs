@@ -536,7 +536,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_hold_nvl(zfs_handle_t *, int, nvpair.nvlist_t *)
     extern int zfs_release(zfs_handle_t *, const char *, const char *, int)
     extern int zfs_get_holds(zfs_handle_t *, nvpair.nvlist_t **)
-    extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
+    IF HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS == 3:
+        extern uint64_t zvol_volsize_to_reservation(zpool_handle_t *, uint64_t, nvpair.nvlist_t *);
+    ELSE:
+        extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
     extern int zfs_get_fsacl(zfs_handle_t *, nvpair.nvlist_t **)
     extern int zfs_set_fsacl(zfs_handle_t *, int, nvpair.nvlist_t *)
