@@ -293,6 +293,37 @@ else
 fi
 
 
+dnl Checking attribute name for verbose in sendflags_t struct
+
+AC_MSG_NOTICE([Checking attribute name for verbose in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.verbosity = 1 /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 1) AC_MSG_NOTICE([Attribute named as verbosity in sendflags_t struct])],
+	[AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 0) AC_MSG_NOTICE([Attribute named as verbose in sendflags_t struct])]
+)
+
+
+dnl Checking parameters of zvol_volsize_to_reservation function
+
+AC_MSG_NOTICE([Checking function signature zvol_volsize_to_reservation])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zvol_volsize_to_reservation(NULL, 0, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS, 3) AC_MSG_NOTICE([3 PARAMS])],
+	[AC_SUBST(HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS, 2) AC_MSG_NOTICE([2 PARAMS])]
+)
+
+
 dnl Checking function zpool_search_import existence
 
 AC_MSG_NOTICE([Checking existence of zpool_search_import in libzfs.h header])

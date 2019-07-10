@@ -489,32 +489,63 @@ cdef extern from "libzfs.h" nogil:
         extern int zfs_rename(zfs_handle_t *, const char *, boolean_t, boolean_t)
 
     IF HAVE_SENDFLAGS_T_COMPRESS:
-        ctypedef struct sendflags_t:
-            int verbose
-            int replicate
-            int doall
-            int fromorigin
-            int dedup
-            int props
-            int dryrun
-            int parsable
-            int progress
-            int largeblock
-            int embed_data
-            int compress
+        # FIXME: Please find a better way to do this
+        IF HAVE_SENDFLAGS_T_VERBOSITY:
+            ctypedef struct sendflags_t:
+                int verbosity
+                int replicate
+                int doall
+                int fromorigin
+                int dedup
+                int props
+                int dryrun
+                int parsable
+                int progress
+                int largeblock
+                int embed_data
+                int compress
+        ELSE:
+            ctypedef struct sendflags_t:
+                int verbose
+                int replicate
+                int doall
+                int fromorigin
+                int dedup
+                int props
+                int dryrun
+                int parsable
+                int progress
+                int largeblock
+                int embed_data
+                int compress
     ELSE:
-        ctypedef struct sendflags_t:
-            int verbose
-            int replicate
-            int doall
-            int fromorigin
-            int dedup
-            int props
-            int dryrun
-            int parsable
-            int progress
-            int largeblock
-            int embed_data
+        IF HAVE_SENDFLAGS_T_VERBOSITY:
+            ctypedef struct sendflags_t:
+                int verbosity
+                int replicate
+                int doall
+                int fromorigin
+                int dedup
+                int props
+                int dryrun
+                int parsable
+                int progress
+                int largeblock
+                int embed_data
+                int compress
+        ELSE:
+            ctypedef struct sendflags_t:
+                int verbose
+                int replicate
+                int doall
+                int fromorigin
+                int dedup
+                int props
+                int dryrun
+                int parsable
+                int progress
+                int largeblock
+                int embed_data
 
     ctypedef int (*snapfilter_cb_t)(zfs_handle_t *, void *)
 
@@ -536,7 +567,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_hold_nvl(zfs_handle_t *, int, nvpair.nvlist_t *)
     extern int zfs_release(zfs_handle_t *, const char *, const char *, int)
     extern int zfs_get_holds(zfs_handle_t *, nvpair.nvlist_t **)
-    extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
+    IF HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS == 3:
+        extern uint64_t zvol_volsize_to_reservation(zpool_handle_t *, uint64_t, nvpair.nvlist_t *);
+    ELSE:
+        extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
     extern int zfs_get_fsacl(zfs_handle_t *, nvpair.nvlist_t **)
     extern int zfs_set_fsacl(zfs_handle_t *, int, nvpair.nvlist_t *)
