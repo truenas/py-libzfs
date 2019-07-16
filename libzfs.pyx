@@ -513,20 +513,6 @@ cdef class ZFS(object):
 
         libzfs.zfs_close(handle)
 
-    @staticmethod
-    def __get_children_recursively(search_dict, field):
-        fields_found = []
-        for key, value in search_dict.items():
-            if isinstance(value, dict):
-                fields_found.extend(ZFS.__get_children_recursively(value, field))
-            elif isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        fields_found.extend(ZFS.__get_children_recursively(item, field))
-            if key == field:
-                fields_found.append(value)
-        return fields_found
-
     def datasets_serialized(self, props=None):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
@@ -557,10 +543,7 @@ cdef class ZFS(object):
                 handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
                 ZFS.__dataset_handles(handle, <void*>dataset)
 
-            yield dataset[1].get(name)
-
-            for child in itertools.chain(*self.__get_children_recursively(dataset[1], 'children')):
-                yield child
+            yield dataset[1][name]
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
