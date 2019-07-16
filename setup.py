@@ -24,6 +24,8 @@
 # SUCH DAMAGE.
 #
 import platform
+import sys
+from collections import namedtuple
 from setuptools import setup
 
 try:
@@ -35,7 +37,10 @@ except ImportError:
 try:
     import config
 except ImportError:
-    raise ImportError('Please execute configure script first')
+    if 'build' in sys.argv or 'install' in sys.argv:
+        raise ImportError('Please execute configure script first')
+    else:
+        config = namedtuple('config', ['CFLAGS', 'CPPFLAGS', 'LDFLAGS'])([], [], [])
 
 
 libraries=['nvpair', 'zfs', 'zfs_core', 'uutil']
