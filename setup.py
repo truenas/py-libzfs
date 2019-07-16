@@ -46,8 +46,6 @@ if platform.system().lower() == 'freebsd':
 setup(
     name='libzfs',
     version='1.0',
-    packages=[''],
-    package_data={'': ['*.html', '*.c']},
     setup_requires=[
         'setuptools>=18.0',
         'Cython',
