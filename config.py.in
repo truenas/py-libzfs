@@ -1,1 +1,3 @@
 CFLAGS="""@CFLAGS@""".split()
+CPPFLAGS="""@CPPFLAGS@""".split()
+LDFLAGS="""@LDFLAGS@""".split()
