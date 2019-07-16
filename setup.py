@@ -58,9 +58,9 @@ setup(
             "libzfs",
             ["libzfs.pyx"],
             libraries=libraries,
-            extra_compile_args=config.CFLAGS,
+            extra_compile_args=config.CFLAGS + config.CPPFLAGS,
             cython_include_dirs=["./pxd"],
-            extra_link_args=["-g"],
+            extra_link_args=config.LDFLAGS,
         )
     ]
 )
