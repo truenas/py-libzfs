@@ -115,7 +115,7 @@ AC_MSG_NOTICE([Checking signature of zfs_prop_valid_for_type in zfs header])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <sys/fs/zfs.h>],
 		[
-			zfs_prop_valid_for_type(0, ZFS_TYPE_VOLUME, NULL)
+			zfs_prop_valid_for_type(0, ZFS_TYPE_VOLUME, 0)
 		],
 	)],
 	[AC_SUBST(HAVE_ZFS_PROP_VALID_FOR_TYPE, 3) AC_MSG_NOTICE(3 PARAMS)],
