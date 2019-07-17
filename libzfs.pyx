@@ -535,10 +535,15 @@ cdef class ZFS(object):
                 'name': name,
                 'pool': configuration_data['pool']
             })
+            if configuration_data['mountpoint']:
+                if properties['mountpoint']['value'] == 'none':
+                    data[name]['mountpoint'] = None
+                else:
+                    data[name]['mountpoint'] = properties['mountpoint']['value']
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None):
+    def datasets_serialized(self, props=None, mountpoint=True):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
@@ -548,7 +553,7 @@ cdef class ZFS(object):
             with nogil:
                 prop_name = libzfs.zfs_prop_to_name(prop_id)
 
-            if not props or prop_name in props:
+            if not props or prop_name in props or (prop_name == 'mountpoint' and mountpoint):
                 prop_mapping[prop_name] = prop_id
 
         for p in self.pools:
@@ -559,7 +564,8 @@ cdef class ZFS(object):
             dataset = [
                 {
                     'pool': name,
-                    'props': prop_mapping
+                    'props': prop_mapping,
+                    'mountpoint': mountpoint
                 },
                 {}
             ]
