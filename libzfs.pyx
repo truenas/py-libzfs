@@ -26,7 +26,6 @@
 # SUCH DAMAGE.
 #
 
-import itertools
 import os
 import stat
 import enum
@@ -478,7 +477,7 @@ cdef class ZFS(object):
             child_data = [configuration_data, {}]
             properties = {}
 
-            for key, value in NVList(<uintptr_t>nvlist).items() if configuration_data['custom_props'] else []:
+            for key, value in NVList(<uintptr_t>nvlist).items() if configuration_data['user_props'] else []:
                 src = 'NONE'
                 if value.get('source'):
                     src = value.pop('source')
@@ -533,28 +532,38 @@ cdef class ZFS(object):
                 'name': name,
                 'pool': configuration_data['pool']
             })
-            if configuration_data['mountpoint']:
-                if properties['mountpoint']['value'] == 'none':
+            for top_level_prop in configuration_data['top_level_props']:
+                data[name][top_level_prop] = properties[top_level_prop]['value']
+
+                if top_level_prop == 'mountpoint' and data[name][top_level_prop] == 'none':
                     data[name]['mountpoint'] = None
-                else:
-                    data[name]['mountpoint'] = properties['mountpoint']['value']
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None, mountpoint=True, custom_props=True):
+    def datasets_serialized(self, props=None, top_level_props=None, user_props=True):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
 
         prop_mapping = {}
+        if top_level_props is None:
+            if props is None or 'mountpoint' in props:
+                # We want to add default mountpoint key here to keep existing behavior.
+                top_level_props = ['mountpoint']
+            else:
+                top_level_props = []
+
         # If props is None, we include all properties, if it's an empty list, no property is retrieved
-        # except for mountpoint which is separate
-        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM] if props is None or len(props) or mountpoint else []:
+        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM] if props is None or len(props) else []:
             with nogil:
                 prop_name = libzfs.zfs_prop_to_name(prop_id)
 
-            if props is None or prop_name in props or (prop_name == 'mountpoint' and mountpoint):
+            if props is None or prop_name in props:
                 prop_mapping[prop_name] = prop_id
+
+        for top_level_prop in top_level_props:
+            if top_level_prop not in prop_mapping:
+                raise ValueError(f'{top_level_prop} should be present in props.')
 
         for p in self.pools:
             c_name = handle = NULL
@@ -565,8 +574,8 @@ cdef class ZFS(object):
                 {
                     'pool': name,
                     'props': prop_mapping,
-                    'mountpoint': mountpoint,
-                    'custom_props': custom_props,
+                    'top_level_props': top_level_props,
+                    'user_props': user_props,
                 },
                 {}
             ]
