@@ -54,7 +54,6 @@ setup(
         'setuptools>=18.0',
         'Cython',
     ],
-    cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension(
             "libzfs",
