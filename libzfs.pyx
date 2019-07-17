@@ -524,11 +524,13 @@ cdef class ZFS(object):
         cdef int prop_id
 
         prop_mapping = {}
-        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM]:
+        # If props is None, we include all properties, if it's an empty list, no property is retrieved
+        # except for mountpoint which is separate
+        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM] if props is None or len(props) or mountpoint else []:
             with nogil:
                 prop_name = libzfs.zfs_prop_to_name(prop_id)
 
-            if not props or prop_name in props or (prop_name == 'mountpoint' and mountpoint):
+            if props is None or prop_name in props or (prop_name == 'mountpoint' and mountpoint):
                 prop_mapping[prop_name] = prop_id
 
         for p in self.pools:
