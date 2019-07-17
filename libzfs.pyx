@@ -453,9 +453,7 @@ cdef class ZFS(object):
             child_data = [configuration_data, {}]
             properties = {}
 
-            nvl = NVList(<uintptr_t>nvlist)
-
-            for key, value in nvl.items():
+            for key, value in NVList(<uintptr_t>nvlist).items() if configuration_data['custom_props'] else []:
                 src = 'NONE'
                 if value.get('source'):
                     src = value.pop('source')
@@ -518,7 +516,7 @@ cdef class ZFS(object):
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None, mountpoint=True):
+    def datasets_serialized(self, props=None, mountpoint=True, custom_props=True):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
@@ -542,7 +540,8 @@ cdef class ZFS(object):
                 {
                     'pool': name,
                     'props': prop_mapping,
-                    'mountpoint': mountpoint
+                    'mountpoint': mountpoint,
+                    'custom_props': custom_props,
                 },
                 {}
             ]
