@@ -5,17 +5,16 @@ import os
 import stat
 import enum
 import errno
+import itertools
 import time
 import threading
-import cython
 cimport libzfs
 cimport zfs
 cimport nvpair
 from datetime import datetime
 from libc.errno cimport errno
-from libc.stdint cimport uintptr_t
 from libc.string cimport memset, strncpy
-from libc.stdlib cimport free, realloc
+from libc.stdlib cimport realloc
 
 GLOBAL_CONTEXT_LOCK = threading.Lock()
 
@@ -438,13 +437,16 @@ cdef class ZFS(object):
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef zfs.zprop_source_t csource
         cdef const char *name
+        cdef zfs.zfs_type_t typ
 
         cdef nvpair.nvlist_t *nvlist
 
         name = libzfs.zfs_get_name(handle)
+        typ = libzfs.zfs_get_type(handle)
         nvlist = libzfs.zfs_get_user_props(handle)
 
         with gil:
+            dataset_type = DatasetType(typ)
             data_list = <object> arg
             configuration_data = data_list[0]
             data = data_list[1]
@@ -470,7 +472,7 @@ cdef class ZFS(object):
                     'parsed': value.get('value')
                 }
 
-            for prop_name, prop_id in configuration_data['props'].items():
+            for prop_name, prop_id in configuration_data['props'][dataset_type].items():
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
@@ -502,13 +504,13 @@ cdef class ZFS(object):
             data[name].update({
                 'properties': properties,
                 'id': name,
-                'type': DatasetType.FILESYSTEM.name,
+                'type': dataset_type.name,
                 'children': list(child_data.values()),
                 'name': name,
                 'pool': configuration_data['pool']
             })
             for top_level_prop in configuration_data['top_level_props']:
-                data[name][top_level_prop] = properties[top_level_prop]['value']
+                data[name][top_level_prop] = properties.get(top_level_prop, {}).get('value')
 
                 if top_level_prop == 'mountpoint' and data[name][top_level_prop] == 'none':
                     data[name]['mountpoint'] = None
@@ -529,15 +531,18 @@ cdef class ZFS(object):
                 top_level_props = []
 
         # If props is None, we include all properties, if it's an empty list, no property is retrieved
-        for prop_id in ZFS.proptypes[DatasetType.FILESYSTEM] if props is None or len(props) else []:
-            with nogil:
-                prop_name = libzfs.zfs_prop_to_name(prop_id)
+        for dataset_type in [DatasetType.FILESYSTEM, DatasetType.VOLUME] if props is None or len(props) else []:
+            prop_mapping[dataset_type] = {}
+            for prop_id in ZFS.proptypes[dataset_type]:
+                with nogil:
+                    prop_name = libzfs.zfs_prop_to_name(prop_id)
 
-            if props is None or prop_name in props:
-                prop_mapping[prop_name] = prop_id
+                if props is None or prop_name in props:
+                    prop_mapping[dataset_type][prop_name] = prop_id
 
+        all_props = set(itertools.chain(*[prop_mapping[t] for t in prop_mapping]))
         for top_level_prop in top_level_props:
-            if top_level_prop not in prop_mapping:
+            if top_level_prop not in all_props:
                 raise ValueError(f'{top_level_prop} should be present in props.')
 
         for p in self.pools:
