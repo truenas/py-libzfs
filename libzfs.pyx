@@ -472,7 +472,7 @@ cdef class ZFS(object):
                     'parsed': value.get('value')
                 }
 
-            for prop_name, prop_id in configuration_data['props'][dataset_type].items():
+            for prop_name, prop_id in configuration_data['props'].get(dataset_type, {}).items():
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
