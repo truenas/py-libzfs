@@ -346,7 +346,7 @@ AC_MSG_NOTICE([Checking zfs_iter_snapshots parameters])
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
-			zfs_iter_snapshots(NULL, NULL, NULL, NULL, 0, 0);
+			zfs_iter_snapshots(NULL, 0, NULL, NULL, 0, 0);
 		]
 	)],
 	[AC_SUBST(HAVE_ZFS_ITER_SNAPSHOTS, 6) AC_MSG_NOTICE([6 params])],
