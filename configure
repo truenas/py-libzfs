@@ -4009,7 +4009,7 @@ int
 main ()
 {
 
-			zfs_iter_snapshots(NULL, NULL, NULL, NULL, 0, 0);
+			zfs_iter_snapshots(NULL, 0, NULL, NULL, 0, 0);
 
 
   ;
