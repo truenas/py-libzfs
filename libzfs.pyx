@@ -2808,7 +2808,52 @@ cdef class ZFSObject(object):
         return space
 
 
-cdef class ZFSDataset(ZFSObject):
+cdef class ZFSResource(ZFSObject):
+
+    @staticmethod
+    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef iter_state *iter
+
+        iter = <iter_state *>arg
+        if iter.length == iter.alloc:
+            iter.alloc += 128
+            iter.array = <uintptr_t *>realloc(iter.array, iter.alloc * sizeof(uintptr_t))
+
+        iter.array[iter.length] = <uintptr_t>handle
+        iter.length += 1
+
+    def get_dependents(self, allow_recursion=False):
+        cdef ZFSDataset dataset
+        cdef ZFSSnapshot snapshot
+        cdef zfs.zfs_type_t type
+        cdef iter_state iter
+        cdef int recursion = allow_recursion
+
+        with nogil:
+            libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
+
+        try:
+            for h in range(0, iter.length):
+                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
+
+                if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
+                    dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.root = self.root
+                    dataset.pool = self.pool
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    yield dataset
+
+                if type == zfs.ZFS_TYPE_SNAPSHOT:
+                    snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.root = self.root
+                    snapshot.pool = self.pool
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    yield snapshot
+        finally:
+            free(iter.array)
+
+
+cdef class ZFSDataset(ZFSResource):
     def __getstate__(self, recursive=True, snapshots=False, snapshots_recursive=False):
         ret = super(ZFSDataset, self).__getstate__()
         ret['mountpoint'] = self.mountpoint
@@ -2823,18 +2868,6 @@ cdef class ZFSDataset(ZFSObject):
             ret['snapshots_recursive'] = [s.__getstate__() for s in self.snapshots_recursive]
 
         return ret
-
-    @staticmethod
-    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        cdef iter_state *iter
-
-        iter = <iter_state *>arg
-        if iter.length == iter.alloc:
-            iter.alloc += 128
-            iter.array = <uintptr_t *>realloc(iter.array, iter.alloc * sizeof(uintptr_t))
-
-        iter.array[iter.length] = <uintptr_t>handle
-        iter.length += 1
 
     property children:
         def __get__(self):
@@ -2919,33 +2952,7 @@ cdef class ZFSDataset(ZFSObject):
 
     property dependents:
         def __get__(self):
-            cdef ZFSDataset dataset
-            cdef ZFSSnapshot snapshot
-            cdef zfs.zfs_type_t type
-            cdef iter_state iter
-
-            with nogil:
-                libzfs.zfs_iter_dependents(self.handle, False, self.__iterate, <void*>&iter)
-
-            try:
-                for h in range(0, iter.length):
-                    type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
-
-                    if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
-                        dataset = ZFSDataset.__new__(ZFSDataset)
-                        dataset.root = self.root
-                        dataset.pool = self.pool
-                        dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
-                        yield dataset
-
-                    if type == zfs.ZFS_TYPE_SNAPSHOT:
-                        snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
-                        snapshot.root = self.root
-                        snapshot.pool = self.pool
-                        snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
-                        yield snapshot
-            finally:
-                free(iter.array)
+            return iter(self.get_dependents(False))
 
     property mountpoint:
         def __get__(self):
@@ -2962,12 +2969,13 @@ cdef class ZFSDataset(ZFSObject):
             free(mntpt)
             return result
 
-    def destroy_snapshot(self, name):
+    def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
         cdef int ret
+        cdef int defer_deletion = defer
 
         with nogil:
-            ret = libzfs.zfs_destroy_snaps(self.handle, c_name, True)
+            ret = libzfs.zfs_destroy_snaps(self.handle, c_name, defer_deletion)
 
         if ret != 0:
             raise self.root.get_error()
@@ -3145,7 +3153,7 @@ cdef class ZFSDataset(ZFSObject):
             raise self.root.get_error()
 
 
-cdef class ZFSSnapshot(ZFSObject):
+cdef class ZFSSnapshot(ZFSResource):
     def __getstate__(self):
         ret = super(ZFSSnapshot, self).__getstate__()
         ret.update({
@@ -3155,6 +3163,10 @@ cdef class ZFSSnapshot(ZFSObject):
             'mountpoint': self.mountpoint
         })
         return ret
+
+    property dependents:
+        def __get__(self):
+            return iter(self.get_dependents(True))
 
     def rollback(self, force=False):
         cdef ZFSDataset parent
@@ -3249,13 +3261,28 @@ cdef class ZFSSnapshot(ZFSObject):
 
         self.root.write_history('zfs release', '-r' if recursive else '', tag, self.name)
 
-    def delete(self, recursive=False, defer=False):
-        if not recursive:
+    def delete(self, recursive=False, defer=False, recursive_children=False):
+        dependents = list(self.dependents)
+        if not recursive and not recursive_children:
+            if dependents and not defer:
+                raise ZFSException(1, f'Cannot destroy {self.name}: snapshot has dependent clones')
             super(ZFSSnapshot, self).delete(defer=defer)
+        elif recursive_children:
+            for dep in dependents:
+                if isinstance(dep, ZFSDataset) and dep.mountpoint:
+                    dep.umount(True)
+                dep.delete()
+            self.delete()
         else:
-            self.parent.destroy_snapshot(self.snapshot_name)
+            self.parent.destroy_snapshot(self.snapshot_name, defer)
 
-        self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
+        cmd = 'zfs destroy'
+        if recursive_children:
+            cmd += ' -R'
+        elif recursive:
+            cmd += ' -r'
+
+        self.root.write_history(cmd, '-d' if defer and not recursive_children else '', self.name)
 
     def send(self, fd, fromname=None, flags=None):
         if isinstance(flags, set) is False:
