@@ -2808,6 +2808,51 @@ cdef class ZFSObject(object):
         return space
 
 
+cdef class ZFSResource(ZFSObject):
+
+    @staticmethod
+    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef iter_state *iter
+
+        iter = <iter_state *>arg
+        if iter.length == iter.alloc:
+            iter.alloc += 128
+            iter.array = <uintptr_t *>realloc(iter.array, iter.alloc * sizeof(uintptr_t))
+
+        iter.array[iter.length] = <uintptr_t>handle
+        iter.length += 1
+
+    def get_dependents(self, allow_recursion=False):
+        cdef ZFSDataset dataset
+        cdef ZFSSnapshot snapshot
+        cdef zfs.zfs_type_t type
+        cdef iter_state iter
+        cdef int recursion = allow_recursion
+
+        with nogil:
+            libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
+
+        try:
+            for h in range(0, iter.length):
+                type = libzfs.zfs_get_type(<libzfs.zfs_handle_t*>iter.array[h])
+
+                if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
+                    dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.root = self.root
+                    dataset.pool = self.pool
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    yield dataset
+
+                if type == zfs.ZFS_TYPE_SNAPSHOT:
+                    snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.root = self.root
+                    snapshot.pool = self.pool
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    yield snapshot
+        finally:
+            free(iter.array)
+
+
 cdef class ZFSDataset(ZFSObject):
     def __getstate__(self, recursive=True, snapshots=False, snapshots_recursive=False):
         ret = super(ZFSDataset, self).__getstate__()
