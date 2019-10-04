@@ -3261,16 +3261,28 @@ cdef class ZFSSnapshot(ZFSResource):
 
         self.root.write_history('zfs release', '-r' if recursive else '', tag, self.name)
 
-    def delete(self, recursive=False, defer=False):
+    def delete(self, recursive=False, defer=False, recursive_children=False):
         dependents = list(self.dependents)
-        if not recursive:
-            if dependents:
+        if not recursive and not recursive_children:
+            if dependents and not defer:
                 raise ZFSException(1, f'Cannot destroy {self.name}: snapshot has dependent clones')
             super(ZFSSnapshot, self).delete(defer=defer)
+        elif recursive_children:
+            for dep in dependents:
+                if isinstance(dep, ZFSDataset) and dep.mountpoint:
+                    dep.umount(True)
+                dep.delete()
+            self.delete()
         else:
             self.parent.destroy_snapshot(self.snapshot_name, defer)
 
-        self.root.write_history('zfs destroy', '-r' if recursive else '', self.name)
+        cmd = 'zfs destroy'
+        if recursive_children:
+            cmd += ' -R'
+        elif recursive:
+            cmd += ' -r'
+
+        self.root.write_history(cmd, '-d' if defer and not recursive_children else '', self.name)
 
     def send(self, fd, fromname=None, flags=None):
         if isinstance(flags, set) is False:
