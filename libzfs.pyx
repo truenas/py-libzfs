@@ -3152,7 +3152,7 @@ cdef class ZFSDataset(ZFSResource):
             raise self.root.get_error()
 
 
-cdef class ZFSSnapshot(ZFSObject):
+cdef class ZFSSnapshot(ZFSResource):
     def __getstate__(self):
         ret = super(ZFSSnapshot, self).__getstate__()
         ret.update({
@@ -3162,6 +3162,10 @@ cdef class ZFSSnapshot(ZFSObject):
             'mountpoint': self.mountpoint
         })
         return ret
+
+    property dependents:
+        def __get__(self):
+            return iter(self.get_dependents(True))
 
     def rollback(self, force=False):
         cdef ZFSDataset parent
