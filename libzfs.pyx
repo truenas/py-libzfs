@@ -2969,12 +2969,13 @@ cdef class ZFSDataset(ZFSResource):
             free(mntpt)
             return result
 
-    def destroy_snapshot(self, name):
+    def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
         cdef int ret
+        cdef int defer_deletion = defer
 
         with nogil:
-            ret = libzfs.zfs_destroy_snaps(self.handle, c_name, True)
+            ret = libzfs.zfs_destroy_snaps(self.handle, c_name, defer_deletion)
 
         if ret != 0:
             raise self.root.get_error()
