@@ -1526,6 +1526,22 @@ cdef class ZFSUserProperty(ZFSProperty):
 
             return PropertySource.INHERITED
 
+    def refresh(self):
+        cdef ZFSUserProperty userprop
+        cdef nvpair.nvlist_t *nvlist
+
+        with nogil:
+            nvlist = libzfs.zfs_get_user_props(self.dataset.handle)
+
+        nvl = NVList(<uintptr_t>nvlist)
+
+        for k, v in nvl.items():
+            if k == self.name:
+                self.values['value'] = v
+                break
+        else:
+            self.values['value'] = None
+
 
 cdef class ZFSVdevStats(object):
     cdef readonly ZFSVdev vdev
