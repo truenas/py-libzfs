@@ -1508,6 +1508,8 @@ cdef class ZFSUserProperty(ZFSProperty):
                 if ret != 0:
                     raise self.dataset.root.get_error()
 
+                self.values['value'] = value
+
     property rawvalue:
         def __get__(self):
             return self.value
@@ -1537,7 +1539,7 @@ cdef class ZFSUserProperty(ZFSProperty):
 
         for k, v in nvl.items():
             if k == self.name:
-                self.values['value'] = v
+                self.values.update(v)
                 break
         else:
             self.values['value'] = None
