@@ -209,10 +209,6 @@ cdef extern from "sys/fs/zfs.h" nogil:
     
     extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS]
 
-    enum:
-        ZPROP_CONT = -2
-        ZPROP_INVAL	= -1
-    
     ctypedef enum zprop_source_t:
         ZPROP_SRC_NONE = 0x1
         ZPROP_SRC_DEFAULT = 0x2
@@ -223,7 +219,8 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZPROP_SRC_ALL = 0x3f
 
     ctypedef enum zfs_prop_t:
-        pass
+        ZPROP_CONT = -2
+        ZPROP_INVAL	= -1
     
     ctypedef enum zprop_errflags_t:
         ZPROP_ERR_NOCLEAR = 0x1

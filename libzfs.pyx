@@ -1452,6 +1452,8 @@ cdef class ZFSProperty(object):
         cdef int c_recursive = recursive
         cdef zfs.zfs_prop_t prop
 
+        self.refresh()
+
         dsets = [self.dataset]
         if recursive:
             dsets.extend(list(self.dataset.children_recursive))
@@ -1460,7 +1462,7 @@ cdef class ZFSProperty(object):
         for d in dsets:
             dset = <ZFSObject>d
             with nogil:
-                if c_recursive:
+                if c_recursive and prop != zfs.ZPROP_INVAL:
                     IF HAVE_ZFS_PROP_VALID_FOR_TYPE == 3:
                         ret = <int>zfs.zfs_prop_valid_for_type(prop, libzfs.zfs_get_type(dset.handle), 0)
                     ELSE:
@@ -1531,6 +1533,8 @@ cdef class ZFSUserProperty(ZFSProperty):
     def refresh(self):
         cdef ZFSUserProperty userprop
         cdef nvpair.nvlist_t *nvlist
+
+        self.cname = self.name
 
         with nogil:
             nvlist = libzfs.zfs_get_user_props(self.dataset.handle)
