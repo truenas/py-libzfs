@@ -104,6 +104,8 @@ class Error(enum.IntEnum):
     DIFFDATA = libzfs.EZFS_DIFFDATA
     POOLREADONLY = libzfs.EZFS_POOLREADONLY
     UNKNOWN = libzfs.EZFS_UNKNOWN
+    IF HAVE_ZFS_ENCRYPTION:
+        CRYPTO_FAILED = libzfs.EZFS_CRYPTOFAILED
 
 
 class PropertySource(enum.IntEnum):
