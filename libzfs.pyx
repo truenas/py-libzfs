@@ -840,7 +840,16 @@ cdef class ZFS(object):
 
             yield pool
 
-    def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False):
+    IF HAVE_ZFS_ENCRYPTION:
+        def import_pool(
+            self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False
+        ):
+            return self.__import_pool(pool, newname, opts, missing_log, any_host, load_keys)
+    ELSE:
+        def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False):
+            return self.__import_pool(pool, newname, opts, missing_log, any_host)
+
+    def __import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False):
         cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
         cdef int ret
@@ -867,13 +876,31 @@ cdef class ZFS(object):
 
         newpool = self.get(newname)
 
+        IF HAVE_ZFS_ENCRYPTION:
+            failed_loading_keys = []
+            if load_keys:
+                root_ds = newpool.root_dataset
+                for ds in itertools.chain([root_ds], root_ds.children_recursive):
+                    if ds.encryption_root and not ds.key_loaded:
+                        try:
+                            ds.load_key()
+                        except ZFSException:
+                            failed_loading_keys.append(ds.name)
+
         with nogil:
             ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
+
+        self.write_history(
+            'zpool import', str(pool.guid), '-l' if load_keys else '', newpool.name
+        )
 
         if ret != 0:
             raise self.get_error()
 
-        self.write_history('zpool import', str(pool.guid), newname if newname else pool.name)
+        IF HAVE_ZFS_ENCRYPTION:
+            if failed_loading_keys:
+                raise ZFSException(1, f'Failed loading keys for {",".join(failed_loading_keys)}')
+
         return newpool
 
     def export_pool(self, ZFSPool pool):
