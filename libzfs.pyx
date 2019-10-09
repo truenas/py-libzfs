@@ -3078,6 +3078,14 @@ cdef class ZFSDataset(ZFSResource):
         def load_key(self, recursive=False, key=None, key_location=None):
             self.load_key_common(recursive, key_location, key, no_op=False)
 
+        def check_key(self, key=None, key_location=None):
+            try:
+                self.load_key_common(False, key_location, key, no_op=True)
+            except ZFSException:
+                return False
+            else:
+                return True
+
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
         cdef int ret
