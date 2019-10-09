@@ -3096,6 +3096,7 @@ cdef class ZFSDataset(ZFSResource):
                         ret = libzfs.zfs_crypto_unload_key(dataset.handle)
                     if ret != 0:
                         failed.append(self.root.get_error())
+                    tried += 1
 
             self.root.write_history('zfs unload-key', '-r' if recursive else '', self.name)
 
@@ -3105,11 +3106,17 @@ cdef class ZFSDataset(ZFSResource):
                     message += f'\n{tried - len(failed)}/{tried} key(s) successfully unloaded'
                 raise ZFSException(Error.CRYPTO_FAILED, message)
 
-        def change_key(self, props=None, load_key=False):
+        def change_key(self, props=None, load_key=False, inherit=False):
             if not self.encrypted:
                 raise ZFSException(py_errno.EINVAL, f'{self.name} is not encrypted')
 
             props = props or {}
+            if props and inherit:
+                raise ZFSException(py_errno.EINVAL, 'Properties not allowed for inheriting')
+            elif inherit:
+                if self.encryption_root != self:
+                    raise ZFSException(py_errno.EINVAL, f'{self.name} must be an encryption root to inherit')
+
             for k in props:
                 if k not in ('keyformat', 'keylocation', 'pbkdf2iters'):
                     raise ZFSException(py_errno.EINVAL, f'{k} property not valid when changing key')
@@ -3122,12 +3129,18 @@ cdef class ZFSDataset(ZFSResource):
                     libzfs.zfs_refresh_properties(self.handle)
 
             cdef NVList c_props = NVList(otherdict=props)
+            cdef boolean_t inherit_root = inherit
 
             with nogil:
-                ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, 0)
+                ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, inherit_root)
+
+            self.root.write_history(
+                'zfs change-key', '-i' if inherit else '', ' '.join(f'-o {k}={v}' for k, v in props.items()),
+                '-l' if load_key else '', self.name
+            )
 
             if ret != 0:
-                raise ZFSException(ret, f'Change key operation failed')
+                raise self.root.get_error()
 
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
