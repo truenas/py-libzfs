@@ -3105,6 +3105,30 @@ cdef class ZFSDataset(ZFSResource):
                     message += f'\n{tried - len(failed)}/{tried} key(s) successfully unloaded'
                 raise ZFSException(Error.CRYPTO_FAILED, message)
 
+        def change_key(self, props=None, load_key=False):
+            if not self.encrypted:
+                raise ZFSException(py_errno.EINVAL, f'{self.name} is not encrypted')
+
+            props = props or {}
+            for k in props:
+                if k not in ('keyformat', 'keylocation', 'pbkdf2iters'):
+                    raise ZFSException(py_errno.EINVAL, f'{k} property not valid when changing key')
+                elif k == 'keylocation' and not urllib.parse.urlparse(props[k]).scheme and os.path.exists(props[k]):
+                    props[k] = f'file://{props[k]}'
+
+            if load_key and not self.key_loaded:
+                self.load_key()
+                with nogil:
+                    libzfs.zfs_refresh_properties(self.handle)
+
+            cdef NVList c_props = NVList(otherdict=props)
+
+            with nogil:
+                ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, 0)
+
+            if ret != 0:
+                raise ZFSException(ret, f'Change key operation failed')
+
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
         cdef int ret
