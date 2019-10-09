@@ -3070,10 +3070,9 @@ cdef class ZFSDataset(ZFSResource):
 
             if failed:
                 message = '\n'.join(f'{e.code}{f": {e.args[0]}" if e.args else ""}' for e in failed)
-                message += f'\n{tried - len(failed)}/{tried} key(s) successfully loaded'
-                raise ZFSException(
-                    Error.CRYPTO_FAILED, message
-                )
+                if recursive:
+                    message += f'\n{tried - len(failed)}/{tried} key(s) successfully loaded'
+                raise ZFSException(Error.CRYPTO_FAILED, message)
 
         def load_key(self, recursive=False, key=None, key_location=None):
             self.load_key_common(recursive, key_location, key, no_op=False)
@@ -3085,6 +3084,26 @@ cdef class ZFSDataset(ZFSResource):
                 return False
             else:
                 return True
+
+        def unload_key(self, recursive=False):
+            cdef ZFSDataset dataset
+            failed = []
+            tried = 0
+            for child in itertools.chain([self], self.children_recursive if recursive else []):
+                if (child.encryption_root == child and child.key_loaded) or (child == self and not recursive):
+                    dataset = child
+                    with nogil:
+                        ret = libzfs.zfs_crypto_unload_key(dataset.handle)
+                    if ret != 0:
+                        failed.append(self.root.get_error())
+
+            self.root.write_history('zfs unload-key', '-r' if recursive else '', self.name)
+
+            if failed:
+                message = '\n'.join(f'{e.code}{f": {e.args[0]}" if e.args else ""}' for e in failed)
+                if recursive:
+                    message += f'\n{tried - len(failed)}/{tried} key(s) successfully unloaded'
+                raise ZFSException(Error.CRYPTO_FAILED, message)
 
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
