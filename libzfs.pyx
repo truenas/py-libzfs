@@ -2993,6 +2993,19 @@ cdef class ZFSDataset(ZFSResource):
             free(mntpt)
             return result
 
+    IF HAVE_ZFS_ENCRYPTION:
+        property encrypted:
+            def __get__(self):
+                return self.properties['encryption'].value != 'off'
+
+        property encryption_root:
+            def __get__(self):
+                root = self.properties['encryptionroot'].value
+                if root == self.name:
+                    return self
+                else:
+                    return self.root.get_dataset(root) if root else None
+
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
         cdef int ret
