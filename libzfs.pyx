@@ -6,6 +6,7 @@ import stat
 import enum
 import errno
 import itertools
+import tempfile
 import time
 import threading
 cimport libzfs
@@ -15,6 +16,9 @@ from datetime import datetime
 from libc.errno cimport errno
 from libc.string cimport memset, strncpy
 from libc.stdlib cimport realloc
+
+import errno as py_errno
+import urllib.parse
 
 GLOBAL_CONTEXT_LOCK = threading.Lock()
 
@@ -2998,6 +3002,10 @@ cdef class ZFSDataset(ZFSResource):
             def __get__(self):
                 return self.properties['encryption'].value != 'off'
 
+        property key_location:
+            def __get__(self):
+                return self.properties['keylocation'].value
+
         property encryption_root:
             def __get__(self):
                 root = self.properties['encryptionroot'].value
@@ -3005,6 +3013,70 @@ cdef class ZFSDataset(ZFSResource):
                     return self
                 else:
                     return self.root.get_dataset(root) if root else None
+
+        property key_loaded:
+            def __get__(self):
+                return self.properties['keystatus'].value == 'available'
+
+        cdef load_key_common(self, recursive=False, key_location=None, key=None, no_op=False):
+            if recursive and (key_location or key):
+                raise ZFSException(py_errno.EINVAL, 'Key location or key cannot be provided with recursive option')
+
+            if key and key_location:
+                raise ZFSException(py_errno.EINVAL, 'Key cannot be provided with key location')
+
+            if not recursive and not key and not key_location and self.key_location == 'prompt':
+                raise ZFSException(
+                    py_errno.EINVAL, 'Key or key location must be provided as default key location is prompt'
+                )
+
+            cdef ZFSDataset dataset
+            temp_file = None
+            if key:
+                temp_file = tempfile.NamedTemporaryFile(mode='w+b', delete=False)
+                temp_file.write(key.encode() if isinstance(key, str) else key)
+                temp_file.close()
+                key_location = temp_file.name
+
+            cdef boolean_t noop = no_op
+            cdef char *alt_keylocation = NULL
+            try:
+                if key_location:
+                    if not urllib.parse.urlparse(key_location).scheme and os.path.exists(key_location):
+                        key_location = f'file://{key_location}'
+                    alt_keylocation = key_location
+
+                failed = []
+                tried = 0
+                for child in itertools.chain([self], self.children_recursive if recursive else []):
+                    if (
+                        (child.encryption_root == child and not child.key_loaded) or (child == self and not recursive)
+                        and child.key_location != 'prompt'
+                    ):
+                        dataset = child
+                        with nogil:
+                            ret = libzfs.zfs_crypto_load_key(dataset.handle, noop, alt_keylocation)
+                        if ret != 0:
+                            failed.append(self.root.get_error())
+                        tried += 1
+            finally:
+                if temp_file and os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
+
+            self.root.write_history(
+                'zfs load-key', '-r' if recursive else '', f'-L {key_location}' if key_location else '',
+                '-n' if noop else '', self.name
+            )
+
+            if failed:
+                message = '\n'.join(f'{e.code}{f": {e.args[0]}" if e.args else ""}' for e in failed)
+                message += f'\n{tried - len(failed)}/{tried} key(s) successfully loaded'
+                raise ZFSException(
+                    Error.CRYPTO_FAILED, message
+                )
+
+        def load_key(self, recursive=False, key=None, key_location=None):
+            self.load_key_common(recursive, key_location, key, no_op=False)
 
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
