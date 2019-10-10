@@ -2922,6 +2922,14 @@ cdef class ZFSDataset(ZFSResource):
         if snapshots_recursive:
             ret['snapshots_recursive'] = [s.__getstate__() for s in self.snapshots_recursive]
 
+        IF HAVE_ZFS_ENCRYPTION:
+            root = self.encryption_root
+            ret.update({
+                'encrypted': self.encrypted,
+                'encryption_root': root.name if root else None,
+                'key_loaded': self.key_loaded
+            })
+
         return ret
 
     property children:
