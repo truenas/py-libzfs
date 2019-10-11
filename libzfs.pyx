@@ -2443,11 +2443,26 @@ cdef class ZFSPool(object):
         cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
         return NVList(nvl)
 
+    IF HAVE_ZFS_ENCRYPTION:
+        @staticmethod
+        def _encryption_common(fsopts):
+            temp_file = None
+            if fsopts.get('encryption', 'off') != 'off' and fsopts.get('keylocation', 'prompt') == 'prompt':
+                if 'key' not in fsopts:
+                    raise ZFSException(py_errno.EINVAL, 'Key must be supplied when key location is "prompt"')
+                key = fsopts.pop('key')
+                temp_file = tempfile.NamedTemporaryFile(mode='w+b', delete=False)
+                temp_file.write(key.encode() if isinstance(key, str) else key)
+                temp_file.close()
+                fsopts['keylocation'] = f'file://{temp_file.name}'
+            return temp_file, fsopts
+
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
         cdef NVList cfsopts
         cdef uint64_t vol_reservation, vol_size
         cdef const char *c_name = name
         cdef zfs.zfs_type_t c_fstype = <zfs.zfs_type_t>fstype
+        cdef int ret
         #cdef char[1024] msg
         #cdef nvpair.nvlist_t *nvlist
 
@@ -2465,39 +2480,50 @@ cdef class ZFSPool(object):
             if isinstance(value, str):
                 fsopts[i] = nicestrtonum(self.root, value)
 
-        cfsopts = NVList(otherdict=fsopts)
+        temp_file = None
+        IF HAVE_ZFS_ENCRYPTION:
+            temp_file, fsopts = self._encryption_common(fsopts)
 
-        if fstype == DatasetType.VOLUME and not sparse_vol:
-            vol_size = cfsopts['volsize']
+        try:
+            cfsopts = NVList(otherdict=fsopts)
+
+            if fstype == DatasetType.VOLUME and not sparse_vol:
+                vol_size = cfsopts['volsize']
+                with nogil:
+                    IF HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS == 3:
+                        vol_reservation = libzfs.zvol_volsize_to_reservation(self.handle, vol_size, cfsopts.handle)
+                    ELSE:
+                        vol_reservation = libzfs.zvol_volsize_to_reservation(vol_size, cfsopts.handle)
+
+                cfsopts['refreservation'] = vol_reservation
+
+            if create_ancestors:
+                with nogil:
+                    ret = libzfs.zfs_create_ancestors(
+                        self.root.handle,
+                        c_name
+                    )
+                if ret != 0:
+                    raise self.root.get_error()
+
             with nogil:
-                IF HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS == 3:
-                    vol_reservation = libzfs.zvol_volsize_to_reservation(self.handle, vol_size, cfsopts.handle)
-                ELSE:
-                    vol_reservation = libzfs.zvol_volsize_to_reservation(vol_size, cfsopts.handle)
-
-            cfsopts['refreservation'] = vol_reservation
-
-        cdef int ret
-
-        if create_ancestors:
-            with nogil:
-                ret = libzfs.zfs_create_ancestors(
+                ret = libzfs.zfs_create(
                     self.root.handle,
-                    c_name
+                    c_name,
+                    c_fstype,
+                    cfsopts.handle
                 )
-            if ret != 0:
-                raise self.root.get_error()
-
-        with nogil:
-            ret = libzfs.zfs_create(
-                self.root.handle,
-                c_name,
-                c_fstype,
-                cfsopts.handle
-            )
+        finally:
+            if temp_file and os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
 
         if ret != 0:
             raise self.root.get_error()
+
+        IF HAVE_ZFS_ENCRYPTION:
+            if temp_file:
+                ds = self.root.get_dataset(name)
+                ds.properties['keylocation'].value = 'prompt'
 
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
