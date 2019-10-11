@@ -1007,8 +1007,8 @@ cdef class ZFS(object):
 
     def create(self, name, topology, opts, fsopts, enable_all_feat=True):
         cdef NVList root = self.make_vdev_tree(topology).nvlist
+        cdef NVList cfsopts
         cdef NVList copts
-        cdef NVList cfsopts = NVList(otherdict=fsopts)
         cdef const char *c_name = name
         cdef int ret
 
@@ -1020,17 +1020,32 @@ cdef class ZFS(object):
 
         copts = NVList(otherdict=opts)
 
-        with nogil:
-            ret = libzfs.zpool_create(
-                self.handle,
-                c_name,
-                root.handle,
-                copts.handle,
-                cfsopts.handle
-            )
+        temp_file = None
+        IF HAVE_ZFS_ENCRYPTION:
+            temp_file, fsopts = ZFSPool._encryption_common(fsopts)
+
+        try:
+            cfsopts = NVList(otherdict=fsopts)
+
+            with nogil:
+                ret = libzfs.zpool_create(
+                    self.handle,
+                    c_name,
+                    root.handle,
+                    copts.handle,
+                    cfsopts.handle
+                )
+        finally:
+            if temp_file and os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
 
         if ret != 0:
             raise ZFSException(self.errno, self.errstr)
+
+        IF HAVE_ZFS_ENCRYPTION:
+            if temp_file:
+                ds = self.get_dataset(name)
+                ds.properties['keylocation'].value = 'prompt'
 
         if self.history:
             hopts = self.generate_history_opts(opts, '-o')
