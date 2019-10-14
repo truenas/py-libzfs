@@ -3182,7 +3182,7 @@ cdef class ZFSDataset(ZFSResource):
                     message += f'\n{tried - len(failed)}/{tried} key(s) successfully unloaded'
                 raise ZFSException(Error.CRYPTO_FAILED, message)
 
-        def change_key(self, props=None, load_key=False, inherit=False):
+        def change_key(self, props=None, load_key=False, inherit=False, key=None):
             if not self.encrypted:
                 raise ZFSException(py_errno.EINVAL, f'{self.name} is not encrypted')
 
@@ -3199,16 +3199,32 @@ cdef class ZFSDataset(ZFSResource):
                 elif k == 'keylocation' and not urllib.parse.urlparse(props[k]).scheme and os.path.exists(props[k]):
                     props[k] = f'file://{props[k]}'
 
+            if key and props.get('keylocation') != 'prompt':
+                raise ZFSException(py_errno.EINVAL, 'Key should not be provided if key location is not prompt.')
+            elif props.get('keylocation') == 'prompt' and not key:
+                raise ZFSException(py_errno.EINVAL, 'Key is required when keylocation is set to prompt')
+
             if load_key and not self.key_loaded:
                 self.load_key()
                 with nogil:
                     libzfs.zfs_refresh_properties(self.handle)
 
-            cdef NVList c_props = NVList(otherdict=props)
-            cdef boolean_t inherit_root = inherit
+            key_file = None
+            if key:
+                key_file, props = ZFSPool._encryption_common({'encryption': 'on', 'key': key, **props})
+                props.pop('encryption')
 
-            with nogil:
-                ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, inherit_root)
+            cdef NVList c_props
+            cdef boolean_t inherit_root
+            try:
+                c_props = NVList(otherdict=props)
+                inherit_root = inherit
+
+                with nogil:
+                    ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, inherit_root)
+            finally:
+                if os.path.exists(key_file.name or ''):
+                    os.unlink(key_file.name)
 
             self.root.write_history(
                 'zfs change-key', '-i' if inherit else '', ' '.join(f'-o {k}={v}' for k, v in props.items()),
@@ -3217,6 +3233,8 @@ cdef class ZFSDataset(ZFSResource):
 
             if ret != 0:
                 raise self.root.get_error()
+            elif key_file:
+                self.properties['keylocation'].value = 'prompt'
 
     def destroy_snapshot(self, name, defer=True):
         cdef const char *c_name = name
