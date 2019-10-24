@@ -506,6 +506,15 @@ cdef class ZFS(object):
         with gil:
             data[name] = {}
             child_data = child_data[1]
+            encryption_dict = {}
+
+            IF HAVE_ZFS_ENCRYPTION:
+                encryptionroot = properties.get('encryptionroot', {}).get('value')
+                encryption_dict = {
+                    'encrypted': properties.get('encryption', {}).get('value') != 'off',
+                    'encryption_root': encryptionroot if encryptionroot else None,
+                    'key_loaded': properties.get('keystatus', {}).get('value') == 'available'
+                }
 
             data[name].update({
                 'properties': properties,
@@ -513,7 +522,8 @@ cdef class ZFS(object):
                 'type': dataset_type.name,
                 'children': list(child_data.values()),
                 'name': name,
-                'pool': configuration_data['pool']
+                'pool': configuration_data['pool'],
+                **encryption_dict
             })
             for top_level_prop in configuration_data['top_level_props']:
                 data[name][top_level_prop] = properties.get(top_level_prop, {}).get('value')
