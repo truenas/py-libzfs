@@ -3136,8 +3136,12 @@ cdef class ZFSDataset(ZFSResource):
                 tried = 0
                 for child in itertools.chain([self], self.children_recursive if recursive else []):
                     if (
-                        (child.encryption_root == child and not child.key_loaded) or (child == self and not recursive)
-                        and child.key_location != 'prompt'
+                        (
+                            (child.encryption_root == child and not child.key_loaded) or (
+                                child == self and not recursive
+                            ) or no_op
+                        )
+                        and (child.key_location != 'prompt' or key_location)
                     ):
                         dataset = child
                         with nogil:
