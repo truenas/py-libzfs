@@ -1046,8 +1046,8 @@ cdef class ZFS(object):
                     cfsopts.handle
                 )
         finally:
-            if temp_file and os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            if os.path.exists(temp_file or ''):
+                os.unlink(temp_file)
 
         if ret != 0:
             raise ZFSException(self.errno, self.errstr)
@@ -2480,7 +2480,7 @@ cdef class ZFSPool(object):
                 temp_file.write(key.encode() if isinstance(key, str) else key)
                 temp_file.close()
                 fsopts['keylocation'] = f'file://{temp_file.name}'
-            return temp_file, fsopts
+            return temp_file.name if temp_file else '', fsopts
 
     def create(self, name, fsopts, fstype=DatasetType.FILESYSTEM, sparse_vol=False, create_ancestors=False):
         cdef NVList cfsopts
@@ -2539,8 +2539,8 @@ cdef class ZFSPool(object):
                     cfsopts.handle
                 )
         finally:
-            if temp_file and os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            if os.path.exists(temp_file or ''):
+                os.unlink(temp_file)
 
         if ret != 0:
             raise self.root.get_error()
@@ -3237,8 +3237,8 @@ cdef class ZFSDataset(ZFSResource):
                 with nogil:
                     ret = libzfs.zfs_crypto_rewrap(self.handle, c_props.handle, inherit_root)
             finally:
-                if os.path.exists(key_file.name or ''):
-                    os.unlink(key_file.name)
+                if os.path.exists(key_file or ''):
+                    os.unlink(key_file)
 
             self.root.write_history(
                 'zfs change-key', '-i' if inherit else '', ' '.join(f'-o {k}={v}' for k, v in props.items()),
@@ -3286,7 +3286,7 @@ cdef class ZFSDataset(ZFSResource):
             return
 
         IF HAVE_ZFS_ENCRYPTION:
-            if not self.key_loaded and skip_unloaded_keys:
+            if self.encrypted and not self.key_loaded and skip_unloaded_keys:
                 return
 
         if self.properties['canmount'].value == 'on':
