@@ -1784,12 +1784,6 @@ cdef class ZFSVdev(object):
         if self.type == zfs.VDEV_TYPE_FILE:
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
 
-        if not self.parent:
-            raise ZFSException(Error.NOTSUP, "Cannot replace a top-level vdev")
-
-        if self.parent.type not in (zfs.VDEV_TYPE_MIRROR, 'raidz1', 'raidz2', 'raidz3'):
-            raise ZFSException(Error.NOTSUP, "Can replace disks in mirror and raidz* vdevs only")
-
         root = self.root.make_vdev_tree({
             'data': [vdev]
         })
