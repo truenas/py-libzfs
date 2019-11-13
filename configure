@@ -2960,10 +2960,10 @@ case "${host_os}" in
 		;;
 esac
 
-LDFLAGS="-lzfs -lnvpair -lzfs_core -luutil ${LDFLAGS}"
+LIBS="-lzfs -lnvpair -lzfs_core -luutil"
 
 if [ "${build_freebsd}" = "yes" ]; then
-	LDFLAGS="-lgeom ${LDFLAGS}"
+	LIBS="-lgeom ${LIBS}"
 fi
 
 
