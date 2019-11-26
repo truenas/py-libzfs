@@ -664,6 +664,7 @@ HAVE_ZFS_MAX_DATASET_NAME_LEN
 EGREP
 GREP
 CPP
+HAVE_O3X
 freebsd_src
 zof
 OBJEXT
@@ -692,7 +693,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -715,6 +715,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_o3x
 '
       ac_precious_vars='build_alias
 host_alias
@@ -765,7 +766,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1018,15 +1018,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1164,7 +1155,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1317,7 +1308,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1342,6 +1332,11 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of py-libzfs 1.0:";;
    esac
   cat <<\_ACEOF
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-o3x=PATH         path to ZOF on OSX source tree. Defaults to ../zfs/
 
 Some influential environment variables:
   CC          C compiler command
@@ -2943,6 +2938,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 build_linux=no
 build_freebsd=no
+build_macos=no
 
 
 host_os=$(uname -s)
@@ -2955,6 +2951,9 @@ case "${host_os}" in
 	FreeBSD*)
 		build_freebsd=yes
 		;;
+	Darwin*)
+		build_macos=yes
+		;;
 	*)
 		as_fn_error $? "\"OS $host_os is not supported\"" "$LINENO" 5
 		;;
@@ -2966,15 +2965,29 @@ if [ "${build_freebsd}" = "yes" ]; then
 	LIBS="-lgeom ${LIBS}"
 fi
 
+if [ "${build_macos}" = "yes" ]; then
+	LIBS="-lzpool ${LIBS}"
+fi
 
 
 
+
+
+
+# Check whether --with-o3x was given.
+if test "${with_o3x+set}" = set; then :
+  withval=$with_o3x;
+fi
 
 
 if [ "$prefix" = "NONE" ]; then
 	header_prefix=/usr/local
 else
 	header_prefix=$prefix
+fi
+
+if [ "$build_macos" = "yes" ] && [ "x$with_o3x" = "x" ]; then
+	with_o3x="../zfs/"
 fi
 
 if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
@@ -2986,6 +2999,19 @@ if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 -D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
+
+elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
+	zof=true
+
+	CFLAGS="${CFLAGS}
+-I${with_o3x}/include/
+-I${with_o3x}/lib/libspl/include/
+-I./include/
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
+-include ${with_o3x}/include/sys/zfs_mount.h
+"
+	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
+	HAVE_O3X=1
 
 else
 	zof=false

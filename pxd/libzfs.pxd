@@ -653,3 +653,8 @@ cdef extern from "libzfs.h" nogil:
             pass
 
         extern int zfs_ioctl(libzfs_handle_t *, int, zfs_cmd *)
+
+    IF HAVE_O3X:
+        cdef extern from 'sys/zfs_context_userland.h' nogil:
+            extern void thread_init()
+            extern void thread_fini()
