@@ -1336,7 +1336,7 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-o3x=PATH         path to ZOF on OSX source tree. Defaults to ../zfs/
+  --with-o3x=PATH         path to ZFS on OSX source tree. Defaults to ../zfs/
 
 Some influential environment variables:
   CC          C compiler command
@@ -3884,7 +3884,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
 
-if [ "$zof" = false ]; then
+if [ "$zof" = false ] || [ "x$with_o3x" != "x" ]; then
 	for ac_header in libzfs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
@@ -4864,14 +4864,14 @@ fi
 $as_echo "$as_me: Verifying existence of zfs_ioctl.h" >&6;}
 
 
-for ac_header in zfs_ioctl.h
+for ac_header in sys/zfs_ioctl.h
 do :
-  ac_fn_c_check_header_compile "$LINENO" "zfs_ioctl.h" "ac_cv_header_zfs_ioctl_h" "
+  ac_fn_c_check_header_compile "$LINENO" "sys/zfs_ioctl.h" "ac_cv_header_sys_zfs_ioctl_h" "
 
 "
-if test "x$ac_cv_header_zfs_ioctl_h" = xyes; then :
+if test "x$ac_cv_header_sys_zfs_ioctl_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_ZFS_IOCTL_H 1
+#define HAVE_SYS_ZFS_IOCTL_H 1
 _ACEOF
  HAVE_ZFS_IOCTL_HEADER=1
  { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5

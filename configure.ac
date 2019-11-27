@@ -302,7 +302,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
-if [[ "$zof" = false ]]; then
+if [[ "$zof" = false ]] || [[ "x$with_o3x" != "x" ]]; then
 	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
@@ -740,7 +740,7 @@ SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
 AC_MSG_NOTICE([Verifying existence of zfs_ioctl.h])
 
 
-AC_CHECK_HEADERS([zfs_ioctl.h],
+AC_CHECK_HEADERS([sys/zfs_ioctl.h],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 0) AC_MSG_NOTICE([NOT FOUND])],
 	[]
