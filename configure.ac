@@ -88,7 +88,6 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 -include ${with_o3x}/include/sys/zfs_mount.h
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
-	AC_SUBST(HAVE_O3X, 1)
 else
 	zof=false
 	freebsd_src=${freebsd_src:=/usr/src}
@@ -756,6 +755,31 @@ AC_CHECK_HEADERS([sys/nvpair.h],
         []
 )
 
+
+SECTION_TITLE([RUNNING TESTS ON sys/zfs_context_userland.h HEADER])
+
+exists=0
+AC_CHECK_HEADERS([sys/zfs_context_userland.h],
+    [exists=1],
+    [AC_SUBST(HAVE_THREAD_INIT_FINI, 0)],
+    []
+)
+if test "$exists" == 1
+then
+	dnl Verifying existence of thread_init and thread_fini
+	AC_MSG_NOTICE([Verifying existence of thread_init and thread_fini])
+
+    AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/zfs_context_userland.h>],
+		[
+			thread_init();
+			thread_fini();
+		]
+	)],
+	    [AC_SUBST(HAVE_THREAD_INIT_FINI, 1) AC_MSG_NOTICE([OK])],
+	    [AC_SUBST(HAVE_THREAD_INIT_FINI, 0) AC_MSG_NOTICE([NOT FOUND])]
+    )
+fi
 
 SECTION_TITLE([GENERATING CONFIG.H])
 

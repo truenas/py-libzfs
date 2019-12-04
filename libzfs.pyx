@@ -813,13 +813,13 @@ cdef class ZFS(object):
             iargs.cachefile = cachefile
 
         with nogil:
-            IF HAVE_O3X:
+            IF HAVE_THREAD_INIT_FINI:
                 thread_init()
             IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
                 result = libzfs.zpool_search_import(self.handle, &iargs, &libzfs.libzfs_config_ops)
             ELSE:
                 result = libzfs.zpool_search_import(self.handle, &iargs)
-            IF HAVE_O3X:
+            IF HAVE_THREAD_INIT_FINI:
                 thread_fini()
 
         if result is NULL:

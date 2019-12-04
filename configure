@@ -620,6 +620,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HAVE_THREAD_INIT_FINI
 HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
@@ -664,7 +665,6 @@ HAVE_ZFS_MAX_DATASET_NAME_LEN
 EGREP
 GREP
 CPP
-HAVE_O3X
 freebsd_src
 zof
 OBJEXT
@@ -3011,8 +3011,6 @@ elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
 -include ${with_o3x}/include/sys/zfs_mount.h
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
-	HAVE_O3X=1
-
 else
 	zof=false
 	freebsd_src=${freebsd_src:=/usr/src}
@@ -4915,6 +4913,65 @@ fi
 done
 
 
+
+
+	echo >& 6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER' >& 6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+exists=0
+for ac_header in sys/zfs_context_userland.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "sys/zfs_context_userland.h" "ac_cv_header_sys_zfs_context_userland_h" "
+
+"
+if test "x$ac_cv_header_sys_zfs_context_userland_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_ZFS_CONTEXT_USERLAND_H 1
+_ACEOF
+ exists=1
+else
+  HAVE_THREAD_INIT_FINI=0
+
+fi
+
+done
+
+if test "$exists" == 1
+then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of thread_init and thread_fini" >&5
+$as_echo "$as_me: Verifying existence of thread_init and thread_fini" >&6;}
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/zfs_context_userland.h>
+int
+main ()
+{
+
+			thread_init();
+			thread_fini();
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_THREAD_INIT_FINI=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_THREAD_INIT_FINI=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
 
 
 	echo >& 6
