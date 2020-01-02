@@ -1,0 +1,22 @@
+Source: py-libzfs
+Section: contrib/python
+Priority: optional
+Maintainer: William Grzybowski <william@grzy.org>
+Build-Depends: debhelper-compat (= 12),
+               dh-python,
+               cython3,
+               libzfslinux-dev,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.4.1
+Homepage: https://github.com/freenas/py-libzfs
+Testsuite: autopkgtest-pkg-python
+
+Package: python3-libzfs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
+Description: Python libzfs bindings
+ py-libzfs is a fairly straight-forward set of Python
+ bindings for libzfs for ZFS on Linux and FreeBSD.
+ .
+ This package installs the library for Python 3.

@@ -1,0 +1,5 @@
+py-libzfs (0.1-1~truenas+2) bullseye-truenas-unstable; urgency=medium
+
+  * Initial release (Closes: #932237)
+
+ -- William Grzybowski <william@grzy.org>  Tue, 16 Jul 2019 17:26:21 -0300

@@ -1,0 +1,5 @@
+config.log
+config.py
+config.status
+pxd/config.pxi
+libzfs.c
