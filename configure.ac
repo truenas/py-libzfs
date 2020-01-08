@@ -271,13 +271,13 @@ dnl Let's default HAVE_ZPOOL_READ_LABEL_PARAMS value to 0
 AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 0)
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
-                [#include <libzutil.h>],
-                [
-                        zpool_read_label(0, NULL, NULL) /* ; */
-                ]
-        )],
-        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
-        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
+		[#include <libzutil.h>],
+		[
+			zpool_read_label(0, NULL, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
 
@@ -601,9 +601,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 if test "$HAVE_RENAMEFLAGS_T" == 1
 then
 	dnl Checking renameflags_t member names
-
+	
 	AC_MSG_NOTICE([Checking renameflags_t member names in libzfs.h])
-
+	
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
@@ -616,9 +616,9 @@ then
 	)
 
 	dnl Checking zfs_rename function signature
-
+	
 	AC_MSG_NOTICE([Checking function signature of zfs_rename in libzfs.h])
-
+	
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
@@ -646,7 +646,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[
 			recvflags_t t;
 			t.resumable = 1 /* ; */
- 		]
+		]
 	)],
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 0) AC_MSG_NOTICE([NOT FOUND])]
@@ -698,10 +698,10 @@ if test "$exists" == 1
 then
 	AC_MSG_NOTICE([OK])
 	AC_SUBST(HAVE_LZC_BOOKMARK, 1)
-
+	
 	dnl Verifying existence and params of lzc_send_space
 	AC_MSG_NOTICE([Verifying existence and params of lzc_send_space])
-
+	
 	exists=0
 	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs_core.h>],
@@ -750,9 +750,9 @@ SECTION_TITLE([RUNNING TESTS ON nvpair.h HEADER])
 
 
 AC_CHECK_HEADERS([sys/nvpair.h],
-        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
-        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 0) AC_MSG_NOTICE([Nvpair.h header not under sys subdirectory])],
-        []
+	[AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
+	[AC_SUBST(HAVE_NVPAIR_IN_SYS, 0) AC_MSG_NOTICE([Nvpair.h header not under sys subdirectory])],
+	[]
 )
 
 
@@ -760,25 +760,24 @@ SECTION_TITLE([RUNNING TESTS ON sys/zfs_context_userland.h HEADER])
 
 exists=0
 AC_CHECK_HEADERS([sys/zfs_context_userland.h],
-    [exists=1],
-    [AC_SUBST(HAVE_THREAD_INIT_FINI, 0)],
-    []
+	[exists=1],
+	[AC_SUBST(HAVE_THREAD_INIT_FINI, 0)],
+	[]
 )
 if test "$exists" == 1
 then
 	dnl Verifying existence of thread_init and thread_fini
 	AC_MSG_NOTICE([Verifying existence of thread_init and thread_fini])
-
-    AC_LINK_IFELSE([AC_LANG_PROGRAM(
-		[#include <sys/zfs_context_userland.h>],
-		[
-			thread_init();
-			thread_fini();
-		]
-	)],
-	    [AC_SUBST(HAVE_THREAD_INIT_FINI, 1) AC_MSG_NOTICE([OK])],
-	    [AC_SUBST(HAVE_THREAD_INIT_FINI, 0) AC_MSG_NOTICE([NOT FOUND])]
-    )
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			[#include <sys/zfs_context_userland.h>],
+			[
+				thread_init();
+				thread_fini();
+			]
+		)],
+		[AC_SUBST(HAVE_THREAD_INIT_FINI, 1) AC_MSG_NOTICE([OK])],
+		[AC_SUBST(HAVE_THREAD_INIT_FINI, 0) AC_MSG_NOTICE([NOT FOUND])]
+	)
 fi
 
 SECTION_TITLE([GENERATING CONFIG.H])
