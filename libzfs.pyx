@@ -7,6 +7,7 @@ import enum
 import errno
 import itertools
 import tempfile
+import logging
 import time
 import threading
 cimport libzfs
@@ -21,6 +22,7 @@ import errno as py_errno
 import urllib.parse
 
 GLOBAL_CONTEXT_LOCK = threading.Lock()
+logger = logging.getLogger(__name__)
 
 
 include "config.pxi"
@@ -578,7 +580,15 @@ cdef class ZFS(object):
 
             with nogil:
                 handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
-                ZFS.__dataset_handles(handle, <void*>dataset)
+                if handle == NULL:
+                    with gil:
+                        e_args = self.get_error().args
+                        logger.error(
+                            'Failed to retrieve root dataset handle for %s: %s', c_name, e_args[0] if e_args else ''
+                        )
+                        continue
+                else:
+                    ZFS.__dataset_handles(handle, <void*>dataset)
 
             yield dataset[1][name]
 
