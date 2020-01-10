@@ -601,9 +601,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 if test "$HAVE_RENAMEFLAGS_T" == 1
 then
 	dnl Checking renameflags_t member names
-	
+
 	AC_MSG_NOTICE([Checking renameflags_t member names in libzfs.h])
-	
+
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
@@ -616,9 +616,9 @@ then
 	)
 
 	dnl Checking zfs_rename function signature
-	
+
 	AC_MSG_NOTICE([Checking function signature of zfs_rename in libzfs.h])
-	
+
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
@@ -698,10 +698,10 @@ if test "$exists" == 1
 then
 	AC_MSG_NOTICE([OK])
 	AC_SUBST(HAVE_LZC_BOOKMARK, 1)
-	
+
 	dnl Verifying existence and params of lzc_send_space
 	AC_MSG_NOTICE([Verifying existence and params of lzc_send_space])
-	
+
 	exists=0
 	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs_core.h>],
