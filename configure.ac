@@ -47,11 +47,18 @@ dnl We allow setting a zof variable which the users can set to force autoconf to
 
 AC_ARG_VAR(zof, AS_HELP_STRING([Force configure to run ZoL(f) checks]))
 AC_ARG_VAR(freebsd_src, AS_HELP_STRING([Provide path for freebsd source tree. This defaults to /usr/src/]))
+AC_ARG_VAR(mnttab_exists, AS_HELP_STRING([tseting]))
 
 if [[ "$prefix" = "NONE" ]]; then
 	header_prefix=/usr/local
 else
 	header_prefix=$prefix
+fi
+
+if [[ -f "/usr/local/include/libspl/sys/mnttab.h" ]]; then
+	mnttab_exists=true
+else
+	mnttab_exists=false
 fi
 
 if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
