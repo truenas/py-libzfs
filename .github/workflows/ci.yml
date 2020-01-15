@@ -18,6 +18,10 @@ jobs:
           --no-sign
           -jauto
 
+      - name: Create artifacts dir
+        run: mkdir artifacts
+        if: success()
+
       - name: Move artifacts
         run: mv ../*.deb artifacts
         if: success()
