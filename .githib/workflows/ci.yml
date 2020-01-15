@@ -1,0 +1,29 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    container:
+      image: lukaszkostka/py-libzfs:buster
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Build deb package
+        run: >
+          dpkg-buildpackage
+          -B
+          --no-sign
+          -jauto
+
+      - name: Move artifacts
+        run: mv ../*.deb artifacts
+        if: success()
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: py-libzfs
+          path: artifacts
+        if: success()
