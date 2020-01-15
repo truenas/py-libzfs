@@ -405,6 +405,19 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+AC_MSG_NOTICE([Checking existence of ZFS Native encryption support  in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zfs_crypto_load_key(NULL, B_FALSE, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_ENCRYPTION, 1) AC_MSG_NOTICE([SUPPORTED])],
+	[AC_SUBST(HAVE_ZFS_ENCRYPTION, 0) AC_MSG_NOTICE([NOT SUPPORTED])]
+)
+
+
 dnl Checking function presence of vs_*_ashift existence
 
 AC_MSG_NOTICE([Checking existence of vs_*_ashift in fs/zfs.h header])
