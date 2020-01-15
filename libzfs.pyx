@@ -441,7 +441,7 @@ cdef class ZFS(object):
     cdef int __dataset_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
         cdef int prop_id
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
-        cdef char crawvalue[MAX_DATASET_NAME_LEN + 1]
+        cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef zfs.zprop_source_t csource
         cdef const char *name
@@ -483,7 +483,7 @@ cdef class ZFS(object):
             for prop_name, prop_id in configuration_data['props'].get(dataset_type, {}).items():
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
-                    strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
+                    strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
 
                     libzfs.zfs_prop_get(
@@ -596,7 +596,7 @@ cdef class ZFS(object):
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
         cdef int prop_id, ret, simple_handle, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
-        cdef char crawvalue[MAX_DATASET_NAME_LEN + 1]
+        cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef zfs.zprop_source_t csource
         cdef const char *name, *mntpt
@@ -651,7 +651,7 @@ cdef class ZFS(object):
 
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
-                    strncpy(crawvalue, '', MAX_DATASET_NAME_LEN + 1)
+                    strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
 
                     libzfs.zfs_prop_get(
