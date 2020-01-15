@@ -2,7 +2,7 @@ Source: py-libzfs
 Section: contrib/python
 Priority: optional
 Maintainer: William Grzybowski <william@grzy.org>
-Build-Depends: debhelper (= 12),
+Build-Depends: debhelper,
                dh-python,
                cython3,
                libzfslinux-dev,
