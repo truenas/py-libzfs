@@ -78,7 +78,7 @@ if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; the
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
 elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
-	zof=true
+	o3x=true
 
 	CFLAGS="${CFLAGS} 
 -I${with_o3x}/include/
@@ -90,6 +90,7 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	zof=false
+	o3x=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS} 
@@ -301,7 +302,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
-if [[ "$zof" = false ]] || [[ "x$with_o3x" != "x" ]]; then
+if [[ "$zof" = false ]] || [[ "$o3x" = true ]]; then
 	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
@@ -468,7 +469,7 @@ dnl Checking function signature of zfs_send_one
 
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
-if [[ "$zof" = false ]]; then
+if [[ "$zof" = false ]] && [[ "$o3x" = false ]]; then
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
