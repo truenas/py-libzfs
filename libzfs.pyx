@@ -2173,10 +2173,10 @@ cdef class ZFSPool(object):
             'scan': self.scrub.__getstate__(),
             'root_vdev': self.root_vdev.__getstate__(False),
             'groups': {
-                'data': [i.__getstate__() for i in self.data_vdevs],
-                'log': [i.__getstate__() for i in self.log_vdevs],
-                'cache': [i.__getstate__() for i in self.cache_vdevs],
-                'spare': [i.__getstate__() for i in self.spare_vdevs]
+                'data': [i.__getstate__() for i in self.data_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'log': [i.__getstate__() for i in self.log_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'cache': [i.__getstate__() for i in self.cache_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type != zfs.VDEV_TYPE_HOLE]
             },
         }
 
