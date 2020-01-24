@@ -1540,7 +1540,10 @@ cdef class ZFSProperty(object):
                 ret = libzfs.zfs_prop_inherit(dset.handle, self.cname, received)
 
             if ret != 0:
-                raise self.dataset.root.get_error()
+                error =  self.dataset.root.get_error()
+                if error.args:
+                    error.args = (f'Failed to inherit {self.name} for {d.name}: {error.args[0]}',)
+                raise error
 
         self.dataset.root.write_history('zfs inherit', '-r' if recursive else '', self.dataset.name)
 
