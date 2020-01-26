@@ -646,6 +646,7 @@ HAVE_ZFS_VDEV_STAT_ASHIFT
 HAVE_ZFS_ENCRYPTION
 HAVE_ZPOOL_READ_LABEL_LIBZFS
 HAVE_ZFS_ITER_SNAPSHOTS
+HAVE_ZPOOL_EVENTS_NEXT
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
 HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS
 HAVE_SENDFLAGS_T_VERBOSITY
@@ -2991,6 +2992,8 @@ if [ "$build_macos" = "yes" ] && [ "x$with_o3x" = "x" ]; then
 	with_o3x="../zfs/"
 fi
 
+zof=false
+o3x=false
 if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 	zof=true
 
@@ -3002,7 +3005,7 @@ if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
 elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
-	zof=true
+	o3x=true
 
 	CFLAGS="${CFLAGS}
 -I${with_o3x}/include/
@@ -3013,7 +3016,6 @@ elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
-	zof=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS}
@@ -3817,7 +3819,7 @@ int
 main ()
 {
 
-                        zpool_read_label(0, NULL, NULL) /* ; */
+			zpool_read_label(0, NULL, NULL) /* ; */
 
 
   ;
@@ -3883,7 +3885,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
 
-if [ "$zof" = false ] || [ "x$with_o3x" != "x" ]; then
+if [ "$zof" = false ] || [ "$o3x" = true ]; then
 	for ac_header in libzfs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
@@ -4015,6 +4017,37 @@ if ac_fn_c_try_link "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_events_next in libzfs.h header" >&5
+$as_echo "$as_me: Checking existence of zpool_events_next in libzfs.h header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zpool_events_next(NULL, NULL, NULL, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZPOOL_EVENTS_NEXT=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZPOOL_EVENTS_NEXT=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
 
@@ -4245,7 +4278,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_send_one" >&5
 $as_echo "$as_me: Checking function signature of zfs_send_one" >&6;}
 
-if [ "$zof" = false ]; then
+if [ "$zof" = false ] && [ "$o3x" = false ]; then
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
@@ -4975,16 +5008,15 @@ if test "$exists" == 1
 then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of thread_init and thread_fini" >&5
 $as_echo "$as_me: Verifying existence of thread_init and thread_fini" >&6;}
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/zfs_context_userland.h>
 int
 main ()
 {
 
-			thread_init();
-			thread_fini();
+				thread_init();
+				thread_fini();
 
 
   ;
