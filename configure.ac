@@ -67,6 +67,8 @@ if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
 	with_o3x="../zfs/"
 fi
 
+zof=false
+o3x=false
 if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	zof=true
 
@@ -89,8 +91,6 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
-	zof=false
-	o3x=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS} 
