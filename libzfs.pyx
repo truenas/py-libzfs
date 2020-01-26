@@ -387,6 +387,27 @@ cdef class ZFS(object):
     def __getstate__(self):
         return [p.__getstate__() for p in self.pools]
 
+    IF HAVE_ZPOOL_EVENTS_NEXT:
+        def zpool_events_next(self):
+            zevent_fd = os.open(zfs.ZFS_DEV, os.O_RDWR)
+            try:
+                while True:
+                    yield self.zpool_events_single(zevent_fd)
+            finally:
+                os.close(zevent_fd)
+
+        def zpool_events_single(self, zfs_dev_fd):
+            cdef nvpair.nvlist_t *nvl
+            cdef NVList py_nvl
+            cdef int zevent_fd, ret, dropped
+            zevent_fd = zfs_dev_fd
+            with nogil:
+                ret = libzfs.zpool_events_next(self.handle, &nvl, &dropped, 0, zevent_fd)
+                if ret != 0 or nvl == NULL:
+                    raise self.get_error()
+            py_nvl = NVList(<uintptr_t>nvl)
+            return dict(py_nvl)
+
     @staticmethod
     cdef int __iterate_props(int proptype, void *arg) nogil:
         cdef prop_iter_state *iter

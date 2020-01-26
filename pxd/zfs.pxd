@@ -72,6 +72,8 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* VDEV_TYPE_LOG
     const char* VDEV_TYPE_L2CACHE
 
+    const char* ZFS_DEV
+
     IF HAVE_ZPOOL_LOAD_POLICY_T:
         # Pool load policy parameter
         const char* ZPOOL_LOAD_POLICY
