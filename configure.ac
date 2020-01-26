@@ -19,6 +19,7 @@ m4_include([m4/AX_CHECK_DEFINE.m4])
 
 build_linux=no
 build_freebsd=no
+build_macos=no
 
 
 host_os=$(uname -s)
@@ -31,6 +32,9 @@ case "${host_os}" in
 	FreeBSD*)
 		build_freebsd=yes
 		;;
+	Darwin*)
+		build_macos=yes
+		;;
 	*)
 		AC_MSG_ERROR(["OS $host_os is not supported"])
 		;;
@@ -42,16 +46,25 @@ if [[ "${build_freebsd}" = "yes" ]]; then
 	LIBS="-lgeom ${LIBS}"
 fi
 
+if [[ "${build_macos}" = "yes" ]]; then
+	LIBS="-lzpool ${LIBS}"
+fi
+
 
 dnl We allow setting a zof variable which the users can set to force autoconf to consider the system is zof based
 
 AC_ARG_VAR(zof, AS_HELP_STRING([Force configure to run ZoL(f) checks]))
 AC_ARG_VAR(freebsd_src, AS_HELP_STRING([Provide path for freebsd source tree. This defaults to /usr/src/]))
+AC_ARG_WITH([o3x], AS_HELP_STRING([--with-o3x=PATH], [path to ZFS on OSX source tree. Defaults to ../zfs/]))
 
 if [[ "$prefix" = "NONE" ]]; then
 	header_prefix=/usr/local
 else
 	header_prefix=$prefix
+fi
+
+if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
+	with_o3x="../zfs/"
 fi
 
 if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
@@ -64,8 +77,20 @@ if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; the
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
+elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
+	o3x=true
+
+	CFLAGS="${CFLAGS} 
+-I${with_o3x}/include/
+-I${with_o3x}/lib/libspl/include/
+-I./include/
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
+-include ${with_o3x}/include/sys/zfs_mount.h
+"
+	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	zof=false
+	o3x=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS} 
@@ -247,13 +272,13 @@ dnl Let's default HAVE_ZPOOL_READ_LABEL_PARAMS value to 0
 AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 0)
 
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
-                [#include <libzutil.h>],
-                [
-                        zpool_read_label(0, NULL, NULL) /* ; */
-                ]
-        )],
-        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
-        [AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
+		[#include <libzutil.h>],
+		[
+			zpool_read_label(0, NULL, NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 1) AC_SUBST(HAVE_ZPOOL_READ_LABEL_PARAMS, 3) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZPOOL_READ_LABEL_LIBZUTIL, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
 
@@ -277,7 +302,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
-if [[ "$zof" = false ]]; then
+if [[ "$zof" = false ]] || [[ "$o3x" = true ]]; then
 	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
@@ -444,7 +469,7 @@ dnl Checking function signature of zfs_send_one
 
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
-if [[ "$zof" = false ]]; then
+if [[ "$zof" = false ]] && [[ "$o3x" = false ]]; then
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[
@@ -635,7 +660,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[
 			recvflags_t t;
 			t.resumable = 1 /* ; */
- 		]
+		]
 	)],
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 0) AC_MSG_NOTICE([NOT FOUND])]
@@ -728,7 +753,7 @@ SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
 AC_MSG_NOTICE([Verifying existence of zfs_ioctl.h])
 
 
-AC_CHECK_HEADERS([zfs_ioctl.h],
+AC_CHECK_HEADERS([sys/zfs_ioctl.h],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_ZFS_IOCTL_HEADER, 0) AC_MSG_NOTICE([NOT FOUND])],
 	[]
@@ -739,11 +764,35 @@ SECTION_TITLE([RUNNING TESTS ON nvpair.h HEADER])
 
 
 AC_CHECK_HEADERS([sys/nvpair.h],
-        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
-        [AC_SUBST(HAVE_NVPAIR_IN_SYS, 0) AC_MSG_NOTICE([Nvpair.h header not under sys subdirectory])],
-        []
+	[AC_SUBST(HAVE_NVPAIR_IN_SYS, 1) AC_MSG_NOTICE([Nvpair.h header under sys])],
+	[AC_SUBST(HAVE_NVPAIR_IN_SYS, 0) AC_MSG_NOTICE([Nvpair.h header not under sys subdirectory])],
+	[]
 )
 
+
+SECTION_TITLE([RUNNING TESTS ON sys/zfs_context_userland.h HEADER])
+
+exists=0
+AC_CHECK_HEADERS([sys/zfs_context_userland.h],
+	[exists=1],
+	[AC_SUBST(HAVE_THREAD_INIT_FINI, 0)],
+	[]
+)
+if test "$exists" == 1
+then
+	dnl Verifying existence of thread_init and thread_fini
+	AC_MSG_NOTICE([Verifying existence of thread_init and thread_fini])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			[#include <sys/zfs_context_userland.h>],
+			[
+				thread_init();
+				thread_fini();
+			]
+		)],
+		[AC_SUBST(HAVE_THREAD_INIT_FINI, 1) AC_MSG_NOTICE([OK])],
+		[AC_SUBST(HAVE_THREAD_INIT_FINI, 0) AC_MSG_NOTICE([NOT FOUND])]
+	)
+fi
 
 SECTION_TITLE([GENERATING CONFIG.H])
 

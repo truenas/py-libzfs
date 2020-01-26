@@ -620,6 +620,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HAVE_THREAD_INIT_FINI
 HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
@@ -693,7 +694,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -716,6 +716,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_o3x
 '
       ac_precious_vars='build_alias
 host_alias
@@ -766,7 +767,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1019,15 +1019,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1165,7 +1156,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1318,7 +1309,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1343,6 +1333,11 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of py-libzfs 1.0:";;
    esac
   cat <<\_ACEOF
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-o3x=PATH         path to ZFS on OSX source tree. Defaults to ../zfs/
 
 Some influential environment variables:
   CC          C compiler command
@@ -2944,6 +2939,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 build_linux=no
 build_freebsd=no
+build_macos=no
 
 
 host_os=$(uname -s)
@@ -2956,6 +2952,9 @@ case "${host_os}" in
 	FreeBSD*)
 		build_freebsd=yes
 		;;
+	Darwin*)
+		build_macos=yes
+		;;
 	*)
 		as_fn_error $? "\"OS $host_os is not supported\"" "$LINENO" 5
 		;;
@@ -2967,15 +2966,29 @@ if [ "${build_freebsd}" = "yes" ]; then
 	LIBS="-lgeom ${LIBS}"
 fi
 
+if [ "${build_macos}" = "yes" ]; then
+	LIBS="-lzpool ${LIBS}"
+fi
 
 
 
+
+
+
+# Check whether --with-o3x was given.
+if test "${with_o3x+set}" = set; then :
+  withval=$with_o3x;
+fi
 
 
 if [ "$prefix" = "NONE" ]; then
 	header_prefix=/usr/local
 else
 	header_prefix=$prefix
+fi
+
+if [ "$build_macos" = "yes" ] && [ "x$with_o3x" = "x" ]; then
+	with_o3x="../zfs/"
 fi
 
 if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
@@ -2988,6 +3001,17 @@ if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
+elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
+	zof=true
+
+	CFLAGS="${CFLAGS}
+-I${with_o3x}/include/
+-I${with_o3x}/lib/libspl/include/
+-I./include/
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
+-include ${with_o3x}/include/sys/zfs_mount.h
+"
+	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	zof=false
 	freebsd_src=${freebsd_src:=/usr/src}
@@ -3859,7 +3883,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
 
-if [ "$zof" = false ]; then
+if [ "$zof" = false ] || [ "x$with_o3x" != "x" ]; then
 	for ac_header in libzfs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
@@ -4870,14 +4894,14 @@ fi
 $as_echo "$as_me: Verifying existence of zfs_ioctl.h" >&6;}
 
 
-for ac_header in zfs_ioctl.h
+for ac_header in sys/zfs_ioctl.h
 do :
-  ac_fn_c_check_header_compile "$LINENO" "zfs_ioctl.h" "ac_cv_header_zfs_ioctl_h" "
+  ac_fn_c_check_header_compile "$LINENO" "sys/zfs_ioctl.h" "ac_cv_header_sys_zfs_ioctl_h" "
 
 "
-if test "x$ac_cv_header_zfs_ioctl_h" = xyes; then :
+if test "x$ac_cv_header_sys_zfs_ioctl_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_ZFS_IOCTL_H 1
+#define HAVE_SYS_ZFS_IOCTL_H 1
 _ACEOF
  HAVE_ZFS_IOCTL_HEADER=1
  { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
@@ -4921,6 +4945,65 @@ fi
 done
 
 
+
+
+	echo >& 6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER' >& 6
+	echo '   RUNNING TESTS ON sys/zfs_context_userland.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+exists=0
+for ac_header in sys/zfs_context_userland.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "sys/zfs_context_userland.h" "ac_cv_header_sys_zfs_context_userland_h" "
+
+"
+if test "x$ac_cv_header_sys_zfs_context_userland_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_ZFS_CONTEXT_USERLAND_H 1
+_ACEOF
+ exists=1
+else
+  HAVE_THREAD_INIT_FINI=0
+
+fi
+
+done
+
+if test "$exists" == 1
+then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence of thread_init and thread_fini" >&5
+$as_echo "$as_me: Verifying existence of thread_init and thread_fini" >&6;}
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/zfs_context_userland.h>
+int
+main ()
+{
+
+			thread_init();
+			thread_fini();
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_THREAD_INIT_FINI=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_THREAD_INIT_FINI=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
 
 
 	echo >& 6

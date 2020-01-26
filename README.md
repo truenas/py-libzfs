@@ -10,6 +10,12 @@ py-libzfs is a fairly straight-forward set of Python bindings for libzfs for ZFS
 
 `./configure && make install`
 
+***MacOS and O3X***
+
+Before runnig configure script, clone O3X repository:
+
+`git clone https://github.com/openzfsonosx/zfs.git ../zfs`
+
 **FEATURES:**
 - Access to pools, datasets, snapshots, properties, pool disks
 - Many others!

@@ -669,3 +669,8 @@ cdef extern from "libzfs.h" nogil:
         extern int zfs_crypto_load_key(zfs_handle_t *, boolean_t, char *)
         extern int zfs_crypto_unload_key(zfs_handle_t *)
         extern int zfs_crypto_rewrap(zfs_handle_t *, nvpair.nvlist_t *, boolean_t)
+
+    IF HAVE_THREAD_INIT_FINI:
+        cdef extern from 'sys/zfs_context_userland.h' nogil:
+            extern void thread_init()
+            extern void thread_fini()
