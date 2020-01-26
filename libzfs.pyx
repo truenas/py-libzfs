@@ -406,7 +406,7 @@ cdef class ZFS(object):
                 if ret != 0 or nvl == NULL:
                     raise self.get_error()
             py_nvl = NVList(<uintptr_t>nvl)
-            return dict(py_nvl)
+            return {'dropped': dropped, **dict(py_nvl)}
 
     @staticmethod
     cdef int __iterate_props(int proptype, void *arg) nogil:
