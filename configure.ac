@@ -364,6 +364,21 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+dnl Checking function zpool_events_next existence
+
+AC_MSG_NOTICE([Checking existence of zpool_events_next in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_events_next(NULL, NULL, NULL, 0, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_EVENTS_NEXT, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_EVENTS_NEXT, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
+
+
 dnl Checking zfs_iter_snapshots parameters
 
 AC_MSG_NOTICE([Checking zfs_iter_snapshots parameters])
