@@ -67,6 +67,8 @@ if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
 	with_o3x="../zfs/"
 fi
 
+zof=false
+o3x=false
 if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	zof=true
 
@@ -89,8 +91,6 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
-	zof=false
-	o3x=false
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS} 
@@ -361,6 +361,21 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS, 1) AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_PARAMS, 2) AC_MSG_NOTICE(OK)],
 	[AC_SUBST(HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
+
+
+dnl Checking function zpool_events_next existence
+
+AC_MSG_NOTICE([Checking existence of zpool_events_next in libzfs.h header])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_events_next(NULL, NULL, NULL, 0, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_EVENTS_NEXT, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_EVENTS_NEXT, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
 
 

@@ -212,6 +212,9 @@ cdef extern from "libzfs.h" nogil:
     extern const char *zpool_prop_to_name(int prop)
     extern const char *zpool_prop_values(int prop)
 
+    IF HAVE_ZPOOL_EVENTS_NEXT:
+        extern int zpool_events_next(libzfs_handle_t *, nvpair.nvlist_t **, int *, unsigned, int);
+
     IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
         ctypedef enum zpool_status_t:
             ZPOOL_STATUS_CORRUPT_CACHE
