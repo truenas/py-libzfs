@@ -388,12 +388,19 @@ cdef class ZFS(object):
         return [p.__getstate__() for p in self.pools]
 
     IF HAVE_ZPOOL_EVENTS_NEXT:
-        def zpool_events(self, blocking=True):
+        def zpool_events(self, blocking=True, skip_existing_events=False):
+            if skip_existing_events:
+                existing_events = len(list(self.zpool_events(blocking=False, skip_existing_events=False)))
+
+            event_count = -1
             zevent_fd = os.open(zfs.ZFS_DEV, os.O_RDWR)
             try:
                 event = True
                 while event:
                     event = self.zpool_events_single(zevent_fd, blocking)
+                    event_count += 1
+                    if skip_existing_events and event_count < existing_events:
+                        continue
                     if event:
                         yield event
             finally:
