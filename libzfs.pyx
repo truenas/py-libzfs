@@ -388,25 +388,32 @@ cdef class ZFS(object):
         return [p.__getstate__() for p in self.pools]
 
     IF HAVE_ZPOOL_EVENTS_NEXT:
-        def zpool_events_next(self):
+        def zpool_events(self, blocking=True):
             zevent_fd = os.open(zfs.ZFS_DEV, os.O_RDWR)
             try:
-                while True:
-                    yield self.zpool_events_single(zevent_fd)
+                event = True
+                while event:
+                    event = self.zpool_events_single(zevent_fd, blocking)
+                    if event:
+                        yield event
             finally:
                 os.close(zevent_fd)
 
-        def zpool_events_single(self, zfs_dev_fd):
+        def zpool_events_single(self, zfs_dev_fd, blocking=True):
             cdef nvpair.nvlist_t *nvl
             cdef NVList py_nvl
             cdef int zevent_fd, ret, dropped
+            cdef int block_flag = 0 if blocking else 1
             zevent_fd = zfs_dev_fd
             with nogil:
-                ret = libzfs.zpool_events_next(self.handle, &nvl, &dropped, 0, zevent_fd)
-                if ret != 0 or nvl == NULL:
+                ret = libzfs.zpool_events_next(self.handle, &nvl, &dropped, block_flag, zevent_fd)
+                if ret != 0 or (nvl == NULL and block_flag == 0):
                     raise self.get_error()
-            py_nvl = NVList(<uintptr_t>nvl)
-            return {'dropped': dropped, **dict(py_nvl)}
+            if nvl == NULL:
+                # This is okay when non blocking behavior is desired
+                return None
+            else:
+                return {'dropped': dropped, **dict(NVList(<uintptr_t>nvl))}
 
     @staticmethod
     cdef int __iterate_props(int proptype, void *arg) nogil:
