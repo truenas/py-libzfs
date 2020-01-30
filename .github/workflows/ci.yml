@@ -6,7 +6,7 @@ jobs:
   build-deb:
     runs-on: ubuntu-latest
     container:
-      image: lukaszkostka/py-libzfs:buster
+      image: sonicaj/py-libzfs:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
