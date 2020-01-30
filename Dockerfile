@@ -11,6 +11,5 @@ RUN apt-get install -y \
       dh-python \
       cython3 \
       libzfslinux-dev \
-      python3-all \
-      python3-dev \
-      python3-setuptools \
+      python3-all-dev \
+      python3-setuptools
