@@ -849,12 +849,11 @@ cdef class ZFS(object):
     def find_import(self, cachefile=None, name=None, destroyed=False, search_paths=None):
         cdef ZFSImportablePool pool
         cdef libzfs.importargs_t iargs
-        cdef char* paths = "/dev"
         cdef char* c_name
         cdef nvpair.nvlist_t* result
 
-        iargs.path = &paths
-        iargs.paths = 1
+        iargs.path = NULL
+        iargs.paths = 0
         iargs.poolname = NULL
         iargs.guid = 0
         iargs.cachefile = NULL
