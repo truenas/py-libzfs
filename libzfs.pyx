@@ -468,7 +468,8 @@ cdef class ZFS(object):
         if 'log' in topology:
             for i in topology['log']:
                 (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
-                (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
+                IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
                 root.add_child_vdev(i)
 
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
