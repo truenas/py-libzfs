@@ -2281,6 +2281,42 @@ cdef class ZFSPool(object):
             vdev.nvlist = <NVList>vdev_tree
             return vdev
 
+    def retrieve_vdevs(self, vdev_type):
+        assert vdev_type in ('data', 'special', 'dedup', 'log', 'spare', 'cache')
+        cdef ZFSVdev vdev
+        cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+
+        if zfs.ZPOOL_CONFIG_CHILDREN not in vdev_tree:
+            return
+
+        if vdev_type == 'data':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            valid_f = lambda c: zfs.ZPOOL_CONFIG_ALLOCATION_BIAS not in c
+        elif vdev_type == 'log':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG
+        elif vdev_type == 'special':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_SPECIAL
+        elif vdev_type == 'dedup':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_DEDUP
+        elif vdev_type == 'spare':
+            raw_value = zfs.ZPOOL_CONFIG_SPARES
+            valid_f = lambda c: c
+        else:
+            raw_value = zfs.ZPOOL_CONFIG_L2CACHE
+            valid_f = lambda c: c
+
+        for child in vdev_tree.get_raw(raw_value):
+            if valid_f(child):
+                vdev = ZFSVdev.__new__(ZFSVdev)
+                vdev.root = self.root
+                vdev.zpool = self
+                vdev.nvlist = <NVList>child
+                vdev.group = vdev_type
+                yield vdev
+
     property data_vdevs:
         def __get__(self):
             cdef ZFSVdev vdev
