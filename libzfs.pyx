@@ -2232,10 +2232,13 @@ cdef class ZFSPool(object):
                 'log': [i.__getstate__() for i in self.log_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
                 'cache': [i.__getstate__() for i in self.cache_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
                 'spare': [i.__getstate__() for i in self.spare_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'special': [i.__getstate__() for i in self.special_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
             },
         }
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            state['groups'].update({
+                'special': [i.__getstate__() for i in self.special_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+            })
 
         if self.handle != NULL:
             state.update({
@@ -2294,7 +2297,10 @@ cdef class ZFSPool(object):
             valid_f = lambda c: zfs.ZPOOL_CONFIG_ALLOCATION_BIAS not in c
         elif vdev_type == 'log':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
-            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG
+            ELSE:
+                valid_f = lambda c: c[zfs.ZPOOL_CONFIG_IS_LOG]
         elif vdev_type == 'special':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
             valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_SPECIAL
@@ -2336,24 +2342,29 @@ cdef class ZFSPool(object):
         def __get__(self):
             return self.retrieve_vdevs('spare')
 
-    property special_vdevs:
-        def __get__(self):
-            return self.retrieve_vdevs('special')
+    IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+        property special_vdevs:
+            def __get__(self):
+                return self.retrieve_vdevs('special')
 
-    property dedup_vdevs:
-        def __get__(self):
-            return self.retrieve_vdevs('dedup')
+        property dedup_vdevs:
+            def __get__(self):
+                return self.retrieve_vdevs('dedup')
 
     property groups:
         def __get__(self):
-            return {
+            groups = {
                 'data': list(self.data_vdevs),
                 'log': list(self.log_vdevs),
                 'cache': list(self.cache_vdevs),
                 'spare': list(self.spare_vdevs),
-                'special': list(self.special_vdevs),
-                'dedup': list(self.dedup_vdevs),
             }
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                groups.update({
+                    'special': list(self.special_vdevs),
+                    'dedup': list(self.dedup_vdevs),
+                })
+            return groups
 
     property name:
         def __get__(self):
