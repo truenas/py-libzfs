@@ -476,9 +476,13 @@ cdef class ZFS(object):
                 for i in topology['special']:
                     (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
                     (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
+                    root.add_child_vdev(i)
 
-
-
+            if 'dedup' in topology:
+                for i in topology['dedup']:
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_DEDUP
+                    root.add_child_vdev(i)
         return root
 
     @staticmethod
