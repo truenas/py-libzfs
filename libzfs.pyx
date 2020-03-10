@@ -2287,10 +2287,24 @@ cdef class ZFSPool(object):
             vdev.nvlist = <NVList>vdev_tree
             return vdev
 
-    def retrieve_vdevs(self, vdev_type):
-        assert vdev_type in ('data', 'special', 'dedup', 'log', 'spare', 'cache')
+    def __retrieve_vdevs(self, vdev_type):
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            valid_vdev_types = ('data', 'log', 'spare', 'cache', 'special', 'dedup')
+        ELSE:
+            valid_vdev_types = ('data', 'log', 'spare', 'cache')
+        assert vdev_type in valid_vdev_types
+
         cdef ZFSVdev vdev
         cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+        raw_value = None
+
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            if vdev_type == 'special':
+                raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_SPECIAL
+            elif vdev_type == 'dedup':
+                raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_DEDUP
 
         if vdev_type == 'data':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
@@ -2304,16 +2318,10 @@ cdef class ZFSPool(object):
                 valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG
             ELSE:
                 valid_f = lambda c: c[zfs.ZPOOL_CONFIG_IS_LOG]
-        elif vdev_type == 'special':
-            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
-            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_SPECIAL
-        elif vdev_type == 'dedup':
-            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
-            valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_DEDUP
         elif vdev_type == 'spare':
             raw_value = zfs.ZPOOL_CONFIG_SPARES
             valid_f = lambda c: c
-        else:
+        elif vdev_type == 'cache':
             raw_value = zfs.ZPOOL_CONFIG_L2CACHE
             valid_f = lambda c: c
 
@@ -2331,28 +2339,28 @@ cdef class ZFSPool(object):
 
     property data_vdevs:
         def __get__(self):
-            return self.retrieve_vdevs('data')
+            return self.__retrieve_vdevs('data')
 
     property log_vdevs:
         def __get__(self):
-            return self.retrieve_vdevs('log')
+            return self.__retrieve_vdevs('log')
 
     property cache_vdevs:
         def __get__(self):
-            return self.retrieve_vdevs('cache')
+            return self.__retrieve_vdevs('cache')
 
     property spare_vdevs:
         def __get__(self):
-            return self.retrieve_vdevs('spare')
+            return self.__retrieve_vdevs('spare')
 
     IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
         property special_vdevs:
             def __get__(self):
-                return self.retrieve_vdevs('special')
+                return self.__retrieve_vdevs('special')
 
         property dedup_vdevs:
             def __get__(self):
-                return self.retrieve_vdevs('dedup')
+                return self.__retrieve_vdevs('dedup')
 
     property groups:
         def __get__(self):
