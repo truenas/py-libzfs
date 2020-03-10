@@ -2315,7 +2315,9 @@ cdef class ZFSPool(object):
         elif vdev_type == 'log':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
             IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
-                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG
+                valid_f = lambda c: (
+                    c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG or c[zfs.ZPOOL_CONFIG_IS_LOG]
+                )
             ELSE:
                 valid_f = lambda c: c[zfs.ZPOOL_CONFIG_IS_LOG]
         elif vdev_type == 'spare':
