@@ -663,6 +663,7 @@ HAVE_POOL_SCAN_STAT_T_ISSUED
 HAVE_POOL_SCAN_STAT_T_PAUSE
 HAVE_VDEV_AUX_ASHIFT_TOO_BIG
 HAVE_ZFS_PROP_VALID_FOR_TYPE
+HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS
 HAVE_ZFS_MAX_DATASET_NAME_LEN
 EGREP
 GREP
@@ -3518,6 +3519,53 @@ if test $ac_cv_defined_ZFS_MAX_DATASET_NAME_LEN_sys_fs_zfs_h != "no"; then :
 
 else
   HAVE_ZFS_MAX_DATASET_NAME_LEN=0
+
+
+fi
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of special classes in zfs header by verifying ZPOOL_CONFIG_ALLOCATION_BIAS existence" >&5
+$as_echo "$as_me: Checking existence of special classes in zfs header by verifying ZPOOL_CONFIG_ALLOCATION_BIAS existence" >&6;}
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ZPOOL_CONFIG_ALLOCATION_BIAS defined in sys/fs/zfs.h" >&5
+$as_echo_n "checking for ZPOOL_CONFIG_ALLOCATION_BIAS defined in sys/fs/zfs.h... " >&6; }
+if ${ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/fs/zfs.h>
+int
+main ()
+{
+
+  #ifdef ZPOOL_CONFIG_ALLOCATION_BIAS
+  int ok;
+  (void)ok;
+  #else
+  choke me
+  #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h=yes
+else
+  ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h" >&5
+$as_echo "$ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h" >&6; }
+if test $ac_cv_defined_ZPOOL_CONFIG_ALLOCATION_BIAS_sys_fs_zfs_h != "no"; then :
+  HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS=1
+
+else
+  HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS=0
 
 
 fi

@@ -60,6 +60,12 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_LOAD_INFO
     const char* ZPOOL_CONFIG_UNSUP_FEAT
 
+    IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+        const char* ZPOOL_CONFIG_ALLOCATION_BIAS
+        const char* VDEV_ALLOC_BIAS_LOG
+        const char* VDEV_ALLOC_BIAS_SPECIAL
+        const char* VDEV_ALLOC_BIAS_DEDUP
+
     const char* VDEV_TYPE_ROOT
     const char* VDEV_TYPE_MIRROR
     const char* VDEV_TYPE_REPLACING

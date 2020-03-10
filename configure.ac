@@ -133,6 +133,17 @@ AX_CHECK_DEFINE(
 )
 
 
+dnl Check if special classes are supported
+
+AC_MSG_NOTICE([Checking existence of special classes in zfs header by verifying ZPOOL_CONFIG_ALLOCATION_BIAS existence])
+
+AX_CHECK_DEFINE(
+	[sys/fs/zfs.h], [ZPOOL_CONFIG_ALLOCATION_BIAS],
+	[AC_SUBST(HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS, 1)],
+	[AC_SUBST(HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS, 0)]
+)
+
+
 dnl Check zfs_prop_valid_for_type signature
 
 AC_MSG_NOTICE([Checking signature of zfs_prop_valid_for_type in zfs header])

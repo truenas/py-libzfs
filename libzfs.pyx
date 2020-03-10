@@ -468,8 +468,22 @@ cdef class ZFS(object):
         if 'log' in topology:
             for i in topology['log']:
                 (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
+                IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
                 root.add_child_vdev(i)
 
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            if 'special' in topology:
+                for i in topology['special']:
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
+                    root.add_child_vdev(i)
+
+            if 'dedup' in topology:
+                for i in topology['dedup']:
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_DEDUP
+                    root.add_child_vdev(i)
         return root
 
     @staticmethod
@@ -2217,9 +2231,14 @@ cdef class ZFSPool(object):
                 'data': [i.__getstate__() for i in self.data_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
                 'log': [i.__getstate__() for i in self.log_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
                 'cache': [i.__getstate__() for i in self.cache_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type != zfs.VDEV_TYPE_HOLE]
+                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
             },
         }
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            state['groups'].update({
+                'special': [i.__getstate__() for i in self.special_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+            })
 
         if self.handle != NULL:
             state.update({
@@ -2268,80 +2287,97 @@ cdef class ZFSPool(object):
             vdev.nvlist = <NVList>vdev_tree
             return vdev
 
+    def __retrieve_vdevs(self, vdev_type):
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            valid_vdev_types = ('data', 'log', 'spare', 'cache', 'special', 'dedup')
+        ELSE:
+            valid_vdev_types = ('data', 'log', 'spare', 'cache')
+        assert vdev_type in valid_vdev_types
+
+        cdef ZFSVdev vdev
+        cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+        raw_value = None
+
+        IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+            if vdev_type == 'special':
+                raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_SPECIAL
+            elif vdev_type == 'dedup':
+                raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+                valid_f = lambda c: c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_DEDUP
+
+        if vdev_type == 'data':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                valid_f = lambda c: zfs.ZPOOL_CONFIG_ALLOCATION_BIAS not in c
+            ELSE:
+                valid_f = lambda c: not c[zfs.ZPOOL_CONFIG_IS_LOG]
+        elif vdev_type == 'log':
+            raw_value = zfs.ZPOOL_CONFIG_CHILDREN
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                valid_f = lambda c: (
+                    c.get(zfs.ZPOOL_CONFIG_ALLOCATION_BIAS) == zfs.VDEV_ALLOC_BIAS_LOG or c[zfs.ZPOOL_CONFIG_IS_LOG]
+                )
+            ELSE:
+                valid_f = lambda c: c[zfs.ZPOOL_CONFIG_IS_LOG]
+        elif vdev_type == 'spare':
+            raw_value = zfs.ZPOOL_CONFIG_SPARES
+            valid_f = lambda c: c
+        elif vdev_type == 'cache':
+            raw_value = zfs.ZPOOL_CONFIG_L2CACHE
+            valid_f = lambda c: c
+
+        if raw_value not in vdev_tree:
+            return
+
+        for child in vdev_tree.get_raw(raw_value):
+            if valid_f(child):
+                vdev = ZFSVdev.__new__(ZFSVdev)
+                vdev.root = self.root
+                vdev.zpool = self
+                vdev.nvlist = <NVList>child
+                vdev.group = vdev_type
+                yield vdev
+
     property data_vdevs:
         def __get__(self):
-            cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
-
-            if zfs.ZPOOL_CONFIG_CHILDREN not in vdev_tree:
-                return
-
-            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_CHILDREN):
-                if not child[zfs.ZPOOL_CONFIG_IS_LOG]:
-                    vdev = ZFSVdev.__new__(ZFSVdev)
-                    vdev.root = self.root
-                    vdev.zpool = self
-                    vdev.nvlist = <NVList>child
-                    vdev.group = 'data'
-                    yield vdev
+            return self.__retrieve_vdevs('data')
 
     property log_vdevs:
         def __get__(self):
-            cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
-
-            if zfs.ZPOOL_CONFIG_CHILDREN not in vdev_tree:
-                return
-
-            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_CHILDREN):
-                if child[zfs.ZPOOL_CONFIG_IS_LOG]:
-                    vdev = ZFSVdev.__new__(ZFSVdev)
-                    vdev.root = self.root
-                    vdev.zpool = self
-                    vdev.nvlist = <NVList>child
-                    vdev.group = 'log'
-                    yield vdev
+            return self.__retrieve_vdevs('log')
 
     property cache_vdevs:
         def __get__(self):
-            cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
-
-            if zfs.ZPOOL_CONFIG_L2CACHE not in vdev_tree:
-                return
-
-            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_L2CACHE):
-                    vdev = ZFSVdev.__new__(ZFSVdev)
-                    vdev.root = self.root
-                    vdev.zpool = self
-                    vdev.nvlist = <NVList>child
-                    vdev.group = 'cache'
-                    yield vdev
+            return self.__retrieve_vdevs('cache')
 
     property spare_vdevs:
         def __get__(self):
-            cdef ZFSVdev vdev
-            cdef NVList vdev_tree = self.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+            return self.__retrieve_vdevs('spare')
 
-            if zfs.ZPOOL_CONFIG_SPARES not in vdev_tree:
-                return
+    IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+        property special_vdevs:
+            def __get__(self):
+                return self.__retrieve_vdevs('special')
 
-            for child in vdev_tree.get_raw(zfs.ZPOOL_CONFIG_SPARES):
-                    vdev = ZFSVdev.__new__(ZFSVdev)
-                    vdev.root = self.root
-                    vdev.zpool = self
-                    vdev.nvlist = <NVList>child
-                    vdev.group = 'spare'
-                    yield vdev
+        property dedup_vdevs:
+            def __get__(self):
+                return self.__retrieve_vdevs('dedup')
 
     property groups:
         def __get__(self):
-            return {
+            groups = {
                 'data': list(self.data_vdevs),
                 'log': list(self.log_vdevs),
                 'cache': list(self.cache_vdevs),
-                'spare': list(self.spare_vdevs)
+                'spare': list(self.spare_vdevs),
             }
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                groups.update({
+                    'special': list(self.special_vdevs),
+                    'dedup': list(self.dedup_vdevs),
+                })
+            return groups
 
     property name:
         def __get__(self):
