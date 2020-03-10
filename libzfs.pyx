@@ -2294,7 +2294,10 @@ cdef class ZFSPool(object):
 
         if vdev_type == 'data':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
-            valid_f = lambda c: zfs.ZPOOL_CONFIG_ALLOCATION_BIAS not in c
+            IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                valid_f = lambda c: zfs.ZPOOL_CONFIG_ALLOCATION_BIAS not in c
+            ELSE:
+                valid_f = lambda c: not c[zfs.ZPOOL_CONFIG_IS_LOG]
         elif vdev_type == 'log':
             raw_value = zfs.ZPOOL_CONFIG_CHILDREN
             IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
