@@ -683,6 +683,12 @@ cdef class ZFS(object):
                 mount_results['failed'].append(libzfs.zfs_get_name(zhp))
         return ret
 
+    @staticmethod
+    cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+        cdef int ret
+        ret = libzfs.zfs_share(zhp)
+        return ret
+
     cdef int zpool_enable_datasets(self, str name) nogil:
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
@@ -705,6 +711,11 @@ cdef class ZFS(object):
         # Mount all datasets
         libzfs.zfs_foreach_mountpoint(
             self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_results, False
+        )
+
+        # Share all datasets
+        libzfs.zfs_foreach_mountpoint(
+            self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, NULL, False
         )
 
         # Free all handles
