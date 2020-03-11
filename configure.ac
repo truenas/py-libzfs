@@ -329,6 +329,20 @@ else
 fi
 
 
+dnl Checking for existence of zfs_foreach_mountpoint function
+
+AC_MSG_NOTICE([Checking for existence of zfs_foreach_mountpoint])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zfs_foreach_mountpoint(NULL, NULL, 0, NULL, NULL, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZFS_FOREACH_MOUNTPOINT, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZFS_FOREACH_MOUNTPOINT, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
+
 dnl Checking attribute name for verbose in sendflags_t struct
 
 AC_MSG_NOTICE([Checking attribute name for verbose in sendflags_t struct])
