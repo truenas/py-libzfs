@@ -1291,21 +1291,23 @@ cdef class ZFS(object):
     def history_vdevs_list(self, topology):
         out = []
         if self.history:
-            data_vdevs = topology.get('data', None)
-            if data_vdevs:
-                if data_vdevs[0].type == 'disk':
-                    data_vdevs = data_vdevs[0].disks[0]
-
-                out.append(data_vdevs)
-
-            if topology.get('cache', False):
-                out.append('cache')
-                out.append(topology.get('cache'))
-
-            if topology.get('log', False):
-                out.append('log')
-                out.append(topology.get('log'))
-
+            for vdev_type in filter(lambda v: v in topology, ('data', 'cache', 'log', 'dedup', 'special')):
+                vdevs = topology[vdev_type]
+                if vdev_type != 'data':
+                    out.append(vdev_type)
+                striped = []
+                other = []
+                for vdev in vdevs:
+                    if vdev.type == 'disk':
+                        # this is stripe
+                        striped.append(vdev)
+                        continue
+                    other.append(vdev.type)
+                    for child in vdev.children:
+                        other.append(child.path)
+                for vdev in striped:
+                    out.append(vdev.path)
+                out.extend(other)
         return out
 
     IF HAVE_SENDFLAGS_T_TYPEDEF and HAVE_ZFS_SEND_RESUME:
