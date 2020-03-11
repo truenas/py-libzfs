@@ -643,10 +643,32 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __retrieve_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef libzfs.get_all_cb_t *cb = <libzfs.get_all_cb_t*>arg
+        libzfs.libzfs_add_handle(cb, handle)
+        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_datasets_handles, cb)
+
+    cdef int zpool_enable_datasets(self, str name) nogil:
+        cdef libzfs.zfs_handle_t* handle
+        cdef const char *c_name
+        cdef libzfs.get_all_cb_t cb
+
         with gil:
-            handle_list = <object> arg
-            handle_list.append(handle)
-        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_datasets_handles, <void*>handle_list)
+            c_name = name
+            cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
+
+        with nogil:
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+        if handle == NULL:
+            free(cb.cb_handles)
+            raise self.get_error()
+
+        # Gathering all handles first
+        ZFS.__retrieve_datasets_handles(handle, &cb)
+
+        # Free all handles
+        for i in range(cb.cb_used):
+            libzfs.zfs_close(cb.cb_handles[i])
+        free(cb.cb_handles)
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
