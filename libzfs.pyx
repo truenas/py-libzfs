@@ -642,6 +642,108 @@ cdef class ZFS(object):
             yield dataset[1][name]
 
     @staticmethod
+    cdef int __retrieve_mountable_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        cdef libzfs.get_all_cb_t *cb = <libzfs.get_all_cb_t*>arg
+        if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_FILESYSTEM:
+            libzfs.zfs_close(handle)
+            return 0
+
+        if libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CANMOUNT) == zfs.ZFS_CANMOUNT_NOAUTO:
+            libzfs.zfs_close(handle)
+            return 0
+
+        IF HAVE_ZFS_ENCRYPTION:
+            if libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_KEYSTATUS) == zfs.ZFS_KEYSTATUS_UNAVAILABLE:
+                libzfs.zfs_close(handle)
+                return 0
+
+        IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
+            if (
+                libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_INCONSISTENT) and libzfs.zfs_prop_get(
+                    handle, zfs.ZFS_PROP_RECEIVE_RESUME_TOKEN, NULL, 0, NULL, NULL, 0, True
+                ) == 0
+            ):
+                libzfs.zfs_close(handle)
+                return 0
+
+        libzfs.libzfs_add_handle(cb, handle)
+        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_mountable_datasets_handles, cb)
+
+    @staticmethod
+    cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+        cdef int ret
+        cdef nvpair.nvlist_t* mount_data = <nvpair.nvlist_t*>arg
+        IF HAVE_ZFS_ENCRYPTION:
+            if libzfs.zfs_prop_get_int(zhp, zfs.ZFS_PROP_KEYSTATUS) == zfs.ZFS_KEYSTATUS_UNAVAILABLE:
+                return 0
+
+        ret = libzfs.zfs_mount(zhp, NULL, 0)
+        if ret != 0:
+            nvpair.nvlist_add_boolean(mount_data, libzfs.zfs_get_name(zhp))
+        return ret
+
+    @staticmethod
+    cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+        cdef int ret
+        ret = libzfs.zfs_share(zhp)
+        if ret != 0:
+            with gil:
+                mount_results = <object> arg
+                mount_results['failed_share'].append(libzfs.zfs_get_name(zhp))
+        return ret
+
+    def run(self):
+        self.zpool_enable_datasets('pool')
+
+
+    IF HAVE_ZFS_FOREACH_MOUNTPOINT:
+        cdef int zpool_enable_datasets(self, str name) nogil:
+            cdef libzfs.zfs_handle_t* handle
+            cdef const char *c_name
+            cdef libzfs.get_all_cb_t cb
+
+            with gil:
+                mount_data = NVList(otherdict={})
+                mount_results = {'failed_mount': [], 'failed_share': []}
+                c_name = name
+                cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
+
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+            if handle == NULL:
+                free(cb.cb_handles)
+                raise self.get_error()
+
+            # Gathering all handles first
+            ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
+
+            # Mount all datasets
+            libzfs.zfs_foreach_mountpoint(
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_data.handle, True
+            )
+
+            # Share all datasets
+            libzfs.zfs_foreach_mountpoint(
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, <void*>mount_results, False
+            )
+
+            # Free all handles
+            for i in range(cb.cb_used):
+                libzfs.zfs_close(cb.cb_handles[i])
+            free(cb.cb_handles)
+
+            with gil:
+                mount_results['failed_mount'] = mount_data.keys()
+                if mount_results['failed_mount'] or mount_results['failed_share']:
+                    error_str = ''
+                    if mount_results['failed_mount']:
+                        error_str += f'Failed to mount "{",".join(mount_results["failed_mount"])}" dataset(s)'
+                    if mount_results['failed_share']:
+                        error_str += (
+                            '\n' if error_str else ''
+                        ) + f'Failed to share "{",".join(mount_results["failed_share"])}" dataset(s)'
+                    raise ZFSException(Error.MOUNTFAILED, error_str)
+
+    @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
         cdef int prop_id, ret, simple_handle, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
@@ -959,15 +1061,18 @@ cdef class ZFS(object):
                         except ZFSException:
                             failed_loading_keys.append(ds.name)
 
-        with nogil:
-            ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
+        IF HAVE_ZFS_FOREACH_MOUNTPOINT:
+            self.zpool_enable_datasets(newname)
+        ELSE:
+            with nogil:
+                ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
 
         self.write_history(
             'zpool import', str(pool.guid), '-l' if load_keys else '', newpool.name
         )
 
         if ret != 0:
-            raise self.get_error()
+                raise self.get_error()
 
         IF HAVE_ZFS_ENCRYPTION:
             if failed_loading_keys:

@@ -650,6 +650,7 @@ HAVE_ZPOOL_EVENTS_NEXT
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
 HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS
 HAVE_SENDFLAGS_T_VERBOSITY
+HAVE_ZFS_FOREACH_MOUNTPOINT
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL
 HAVE_ZPOOL_SEARCH_IMPORT_PARAMS
 HAVE_ZPOOL_READ_LABEL_LIBZUTIL
@@ -3976,6 +3977,36 @@ done
 
 fi
 
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for existence of zfs_foreach_mountpoint" >&5
+$as_echo "$as_me: Checking for existence of zfs_foreach_mountpoint" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			zfs_foreach_mountpoint(NULL, NULL, 0, NULL, NULL, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  HAVE_ZFS_FOREACH_MOUNTPOINT=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_ZFS_FOREACH_MOUNTPOINT=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking attribute name for verbose in sendflags_t struct" >&5
