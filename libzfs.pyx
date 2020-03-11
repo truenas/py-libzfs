@@ -642,6 +642,13 @@ cdef class ZFS(object):
             yield dataset[1][name]
 
     @staticmethod
+    cdef int __retrieve_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+        with gil:
+            handle_list = <object> arg
+            handle_list.append(handle)
+        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_datasets_handles, <void*>handle_list)
+
+    @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
         cdef int prop_id, ret, simple_handle, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
