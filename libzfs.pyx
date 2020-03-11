@@ -689,44 +689,45 @@ cdef class ZFS(object):
         ret = libzfs.zfs_share(zhp)
         return ret
 
-    cdef int zpool_enable_datasets(self, str name) nogil:
-        cdef libzfs.zfs_handle_t* handle
-        cdef const char *c_name
-        cdef libzfs.get_all_cb_t cb
+    IF HAVE_ZFS_FOREACH_MOUNTPOINT:
+        cdef int zpool_enable_datasets(self, str name) nogil:
+            cdef libzfs.zfs_handle_t* handle
+            cdef const char *c_name
+            cdef libzfs.get_all_cb_t cb
 
-        with gil:
-            mount_results = {'failed': []}
-            c_name = name
-            cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
+            with gil:
+                mount_results = {'failed': []}
+                c_name = name
+                cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
 
-        handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
-        if handle == NULL:
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+            if handle == NULL:
+                free(cb.cb_handles)
+                raise self.get_error()
+
+            # Gathering all handles first
+            ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
+
+            # FIXME: Please see if we can make parallel work for the below call
+            # Mount all datasets
+            libzfs.zfs_foreach_mountpoint(
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_results, False
+            )
+
+            # Share all datasets
+            libzfs.zfs_foreach_mountpoint(
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, NULL, False
+            )
+
+            # Free all handles
+            for i in range(cb.cb_used):
+                libzfs.zfs_close(cb.cb_handles[i])
             free(cb.cb_handles)
-            raise self.get_error()
-
-        # Gathering all handles first
-        ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
-
-        # FIXME: Please see if we can make parallel work for the below call
-        # Mount all datasets
-        libzfs.zfs_foreach_mountpoint(
-            self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_results, False
-        )
-
-        # Share all datasets
-        libzfs.zfs_foreach_mountpoint(
-            self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, NULL, False
-        )
-
-        # Free all handles
-        for i in range(cb.cb_used):
-            libzfs.zfs_close(cb.cb_handles[i])
-        free(cb.cb_handles)
-        with gil:
-            if mount_results['failed']:
-                raise ZFSException(
-                    Error.MOUNTFAILED, f'Failed to mount "{",".join(mount_results["failed"])}" datasets'
-                )
+            with gil:
+                if mount_results['failed']:
+                    raise ZFSException(
+                        Error.MOUNTFAILED, f'Failed to mount "{",".join(mount_results["failed"])}" datasets'
+                    )
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
