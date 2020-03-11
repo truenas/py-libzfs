@@ -1066,12 +1066,13 @@ cdef class ZFS(object):
         ELSE:
             with nogil:
                 ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
-            if ret != 0:
-                raise self.get_error()
 
         self.write_history(
             'zpool import', str(pool.guid), '-l' if load_keys else '', newpool.name
         )
+
+        if ret != 0:
+                raise self.get_error()
 
         IF HAVE_ZFS_ENCRYPTION:
             if failed_loading_keys:
