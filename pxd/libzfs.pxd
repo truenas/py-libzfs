@@ -652,6 +652,9 @@ cdef extern from "libzfs.h" nogil:
     
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
+    extern void zfs_foreach_mountpoint(
+        libzfs_handle_t *, zfs_handle_t **, size_t, zfs_iter_f, void*, boolean_t
+    )
 
     IF HAVE_ZFS_IOCTL_HEADER:
         extern int zfs_ioctl(libzfs_handle_t *, int request, zfs.zfs_cmd_t *)
