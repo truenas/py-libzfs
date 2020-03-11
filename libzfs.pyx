@@ -669,12 +669,27 @@ cdef class ZFS(object):
         libzfs.libzfs_add_handle(cb, handle)
         libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_mountable_datasets_handles, cb)
 
+    @staticmethod
+    cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+        cdef int ret
+        IF HAVE_ZFS_ENCRYPTION:
+            if libzfs.zfs_prop_get_int(zhp, zfs.ZFS_PROP_KEYSTATUS) == zfs.ZFS_KEYSTATUS_UNAVAILABLE:
+                return 0
+
+        ret = libzfs.zfs_mount(zhp, NULL, 0)
+        if ret != 0:
+            with gil:
+                mount_results = <object> arg
+                mount_results['failed'].append(libzfs.zfs_get_name(zhp))
+        return ret
+
     cdef int zpool_enable_datasets(self, str name) nogil:
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef libzfs.get_all_cb_t cb
 
         with gil:
+            mount_results = {'failed': []}
             c_name = name
             cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
 
@@ -686,10 +701,21 @@ cdef class ZFS(object):
         # Gathering all handles first
         ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
 
+        # FIXME: Please see if we can make parallel work for the below call
+        # Mount all datasets
+        libzfs.zfs_foreach_mountpoint(
+            self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_results, False
+        )
+
         # Free all handles
         for i in range(cb.cb_used):
             libzfs.zfs_close(cb.cb_handles[i])
         free(cb.cb_handles)
+        with gil:
+            if mount_results['failed']:
+                raise ZFSException(
+                    Error.MOUNTFAILED, f'Failed to mount "{",".join(mount_results["failed"])}" datasets'
+                )
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
