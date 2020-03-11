@@ -642,10 +642,32 @@ cdef class ZFS(object):
             yield dataset[1][name]
 
     @staticmethod
-    cdef int __retrieve_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+    cdef int __retrieve_mountable_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
         cdef libzfs.get_all_cb_t *cb = <libzfs.get_all_cb_t*>arg
+        if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_FILESYSTEM:
+            libzfs.zfs_close(handle)
+            return 0
+
+        if libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CANMOUNT) == zfs.ZFS_CANMOUNT_NOAUTO:
+            libzfs.zfs_close(handle)
+            return 0
+
+        IF HAVE_ZFS_ENCRYPTION:
+            if libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_KEYSTATUS) == zfs.ZFS_KEYSTATUS_UNAVAILABLE:
+                libzfs.zfs_close(handle)
+                return 0
+
+        IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
+            if (
+                libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_INCONSISTENT) and libzfs.zfs_prop_get(
+                    handle, zfs.ZFS_PROP_RECEIVE_RESUME_TOKEN, NULL, 0, NULL, NULL, 0, True
+                ) == 0
+            ):
+                libzfs.zfs_close(handle)
+                return 0
+
         libzfs.libzfs_add_handle(cb, handle)
-        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_datasets_handles, cb)
+        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_mountable_datasets_handles, cb)
 
     cdef int zpool_enable_datasets(self, str name) nogil:
         cdef libzfs.zfs_handle_t* handle
@@ -656,14 +678,13 @@ cdef class ZFS(object):
             c_name = name
             cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
 
-        with nogil:
-            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+        handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
         if handle == NULL:
             free(cb.cb_handles)
             raise self.get_error()
 
         # Gathering all handles first
-        ZFS.__retrieve_datasets_handles(handle, &cb)
+        ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
 
         # Free all handles
         for i in range(cb.cb_used):

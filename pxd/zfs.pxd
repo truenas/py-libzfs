@@ -226,9 +226,42 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZPROP_SRC_RECEIVED = 0x20
         ZPROP_SRC_ALL = 0x3f
 
-    ctypedef enum zfs_prop_t:
-        ZPROP_CONT = -2
-        ZPROP_INVAL	= -1
+    IF HAVE_ZFS_ENCRYPTION:
+        ctypedef enum zfs_keystatus_t:
+            ZFS_KEYSTATUS_NONE
+            ZFS_KEYSTATUS_UNAVAILABLE
+            ZFS_KEYSTATUS_AVAILABLE
+
+    IF HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST:
+        IF HAVE_ZFS_ENCRYPTION:
+            ctypedef enum zfs_prop_t:
+                ZPROP_CONT = -2
+                ZPROP_INVAL	= -1
+                ZFS_PROP_CANMOUNT
+                ZFS_PROP_KEYSTATUS
+                ZFS_PROP_RECEIVE_RESUME_TOKEN
+                ZFS_PROP_INCONSISTENT
+        ELSE:
+            ctypedef enum zfs_prop_t:
+                ZPROP_CONT = -2
+                ZPROP_INVAL	= -1
+                ZFS_PROP_CANMOUNT
+                ZFS_PROP_RECEIVE_RESUME_TOKEN
+                ZFS_PROP_INCONSISTENT
+    ELSE:
+        IF HAVE_ZFS_ENCRYPTION:
+            ctypedef enum zfs_prop_t:
+                ZPROP_CONT = -2
+                ZPROP_INVAL	= -1
+                ZFS_PROP_CANMOUNT
+                ZFS_PROP_KEYSTATUS
+                ZFS_PROP_INCONSISTENT
+        ELSE:
+            ctypedef enum zfs_prop_t:
+                ZPROP_CONT = -2
+                ZPROP_INVAL	= -1
+                ZFS_PROP_CANMOUNT
+                ZFS_PROP_INCONSISTENT
     
     ctypedef enum zprop_errflags_t:
         ZPROP_ERR_NOCLEAR = 0x1
