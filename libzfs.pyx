@@ -672,15 +672,14 @@ cdef class ZFS(object):
     @staticmethod
     cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
         cdef int ret
+        cdef nvpair.nvlist_t* mount_data = <nvpair.nvlist_t*>arg
         IF HAVE_ZFS_ENCRYPTION:
             if libzfs.zfs_prop_get_int(zhp, zfs.ZFS_PROP_KEYSTATUS) == zfs.ZFS_KEYSTATUS_UNAVAILABLE:
                 return 0
 
         ret = libzfs.zfs_mount(zhp, NULL, 0)
         if ret != 0:
-            with gil:
-                mount_results = <object> arg
-                mount_results['failed_mount'].append(libzfs.zfs_get_name(zhp))
+            nvpair.nvlist_add_boolean(mount_data, libzfs.zfs_get_name(zhp))
         return ret
 
     @staticmethod
@@ -700,6 +699,7 @@ cdef class ZFS(object):
             cdef libzfs.get_all_cb_t cb
 
             with gil:
+                mount_data = NVList(otherdict={})
                 mount_results = {'failed_mount': [], 'failed_share': []}
                 c_name = name
                 cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
@@ -712,10 +712,9 @@ cdef class ZFS(object):
             # Gathering all handles first
             ZFS.__retrieve_mountable_datasets_handles(handle, &cb)
 
-            # FIXME: Please see if we can make parallel work for the below call
             # Mount all datasets
             libzfs.zfs_foreach_mountpoint(
-                self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_results, False
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.mount_dataset, <void*>mount_data.handle, True
             )
 
             # Share all datasets
@@ -728,6 +727,7 @@ cdef class ZFS(object):
                 libzfs.zfs_close(cb.cb_handles[i])
             free(cb.cb_handles)
             with gil:
+                mount_results['failed_mount'] = mount_data.keys()
                 if mount_results['failed_mount'] or mount_results['failed_share']:
                     error_str = ''
                     if mount_results['failed_mount']:
