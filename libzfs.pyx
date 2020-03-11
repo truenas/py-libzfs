@@ -680,13 +680,17 @@ cdef class ZFS(object):
         if ret != 0:
             with gil:
                 mount_results = <object> arg
-                mount_results['failed'].append(libzfs.zfs_get_name(zhp))
+                mount_results['failed_mount'].append(libzfs.zfs_get_name(zhp))
         return ret
 
     @staticmethod
     cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
         cdef int ret
         ret = libzfs.zfs_share(zhp)
+        if ret != 0:
+            with gil:
+                mount_results = <object> arg
+                mount_results['failed_share'].append(libzfs.zfs_get_name(zhp))
         return ret
 
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
@@ -696,7 +700,7 @@ cdef class ZFS(object):
             cdef libzfs.get_all_cb_t cb
 
             with gil:
-                mount_results = {'failed': []}
+                mount_results = {'failed_mount': [], 'failed_share': []}
                 c_name = name
                 cb = libzfs.get_all_cb_t(cb_alloc=0, cb_used=0, cb_handles=NULL)
 
@@ -716,7 +720,7 @@ cdef class ZFS(object):
 
             # Share all datasets
             libzfs.zfs_foreach_mountpoint(
-                self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, NULL, False
+                self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, <void*>mount_results, False
             )
 
             # Free all handles
@@ -724,10 +728,15 @@ cdef class ZFS(object):
                 libzfs.zfs_close(cb.cb_handles[i])
             free(cb.cb_handles)
             with gil:
-                if mount_results['failed']:
-                    raise ZFSException(
-                        Error.MOUNTFAILED, f'Failed to mount "{",".join(mount_results["failed"])}" datasets'
-                    )
+                if mount_results['failed_mount'] or mount_results['failed_share']:
+                    error_str = ''
+                    if mount_results['failed_mount']:
+                        error_str += f'Failed to mount "{",".join(mount_results["failed_mount"])}" datasets'
+                    if mount_results['failed_share']:
+                        error_str += (
+                            '\n' if error_str else ''
+                        ) + f'Failed to share "{",".join(mount_results["failed_share"])}" datasets'
+                    raise ZFSException(Error.MOUNTFAILED, error_str)
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
@@ -1052,13 +1061,12 @@ cdef class ZFS(object):
         ELSE:
             with nogil:
                 ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
+            if ret != 0:
+                raise self.get_error()
 
         self.write_history(
             'zpool import', str(pool.guid), '-l' if load_keys else '', newpool.name
         )
-
-        if ret != 0:
-            raise self.get_error()
 
         IF HAVE_ZFS_ENCRYPTION:
             if failed_loading_keys:
