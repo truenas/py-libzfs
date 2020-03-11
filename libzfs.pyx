@@ -692,6 +692,10 @@ cdef class ZFS(object):
                 mount_results['failed_share'].append(libzfs.zfs_get_name(zhp))
         return ret
 
+    def run(self):
+        self.zpool_enable_datasets('pool')
+
+
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
         cdef int zpool_enable_datasets(self, str name) nogil:
             cdef libzfs.zfs_handle_t* handle
@@ -726,16 +730,17 @@ cdef class ZFS(object):
             for i in range(cb.cb_used):
                 libzfs.zfs_close(cb.cb_handles[i])
             free(cb.cb_handles)
+
             with gil:
                 mount_results['failed_mount'] = mount_data.keys()
                 if mount_results['failed_mount'] or mount_results['failed_share']:
                     error_str = ''
                     if mount_results['failed_mount']:
-                        error_str += f'Failed to mount "{",".join(mount_results["failed_mount"])}" datasets'
+                        error_str += f'Failed to mount "{",".join(mount_results["failed_mount"])}" dataset(s)'
                     if mount_results['failed_share']:
                         error_str += (
                             '\n' if error_str else ''
-                        ) + f'Failed to share "{",".join(mount_results["failed_share"])}" datasets'
+                        ) + f'Failed to share "{",".join(mount_results["failed_share"])}" dataset(s)'
                     raise ZFSException(Error.MOUNTFAILED, error_str)
 
     @staticmethod
