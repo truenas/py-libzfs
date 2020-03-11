@@ -1046,8 +1046,11 @@ cdef class ZFS(object):
                         except ZFSException:
                             failed_loading_keys.append(ds.name)
 
-        with nogil:
-            ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
+        IF HAVE_ZFS_FOREACH_MOUNTPOINT:
+            self.zpool_enable_datasets(newname)
+        ELSE:
+            with nogil:
+                ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
 
         self.write_history(
             'zpool import', str(pool.guid), '-l' if load_keys else '', newpool.name
