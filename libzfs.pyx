@@ -1947,9 +1947,10 @@ cdef class ZFSVdev(object):
         else:
             first_child = self
 
+        ashift_value = self.zpool.properties['ashift'].value
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        })
+        }, {'ashift': ashift_value} if ashift_value else None)
 
         first_child_path = first_child.path
         new_vdev_path = vdev.path
@@ -1975,9 +1976,10 @@ cdef class ZFSVdev(object):
         if self.type == zfs.VDEV_TYPE_FILE:
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
 
+        ashift_value = self.zpool.properties['ashift'].value
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        })
+        }, {'ashift': ashift_value} if ashift_value else None)
 
         self_path = self.path
         vdev_path = vdev.path
@@ -2759,7 +2761,8 @@ cdef class ZFSPool(object):
 
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
-        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
+        ashift_value = self.properties['ashift'].value
+        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': ashift_value} if ashift_value else None)
         cdef int ret
 
         with nogil:
