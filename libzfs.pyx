@@ -458,7 +458,9 @@ cdef class ZFS(object):
         cdef ZFSVdev root
         root = ZFSVdev(self, zfs.VDEV_TYPE_ROOT)
         root.children = topology.get('data', [])
-        ashift_value = props[zfs.ZPOOL_CONFIG_ASHIFT] if zfs.ZPOOL_CONFIG_ASHIFT in (props or {}) else None
+        ashift_value = (props or {}).get(zfs.ZPOOL_CONFIG_ASHIFT)
+        if ashift_value and not isinstance(ashift_value, int):
+            ashift_value = None
 
         def add_ashift_to_vdev(vdev):
             IF IS_OPENZFS:
@@ -1936,9 +1938,8 @@ cdef class ZFSVdev(object):
 
         self.nvlist[zfs.ZPOOL_CONFIG_CHILDREN] = self.nvlist.get_raw(zfs.ZPOOL_CONFIG_CHILDREN) + [vdev.nvlist]
 
-    def set_ashift(self, value):
-        if str(value).isdigit():
-            self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = int(value)
+    def set_ashift(self, int value):
+        self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = value
 
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'
@@ -1953,10 +1954,9 @@ cdef class ZFSVdev(object):
         else:
             first_child = self
 
-        ashift_value = self.zpool.properties['ashift'].value
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        }, {'ashift': ashift_value} if ashift_value else None)
+        }, {'ashift': self.zpool.properties['ashift'].parsed})
 
         first_child_path = first_child.path
         new_vdev_path = vdev.path
@@ -1982,10 +1982,9 @@ cdef class ZFSVdev(object):
         if self.type == zfs.VDEV_TYPE_FILE:
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
 
-        ashift_value = self.zpool.properties['ashift'].value
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        }, {'ashift': ashift_value} if ashift_value else None)
+        }, {'ashift': self.zpool.properties['ashift'].parsed})
 
         self_path = self.path
         vdev_path = vdev.path
@@ -2767,8 +2766,7 @@ cdef class ZFSPool(object):
 
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
-        ashift_value = self.properties['ashift'].value
-        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': ashift_value} if ashift_value else None)
+        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': self.properties['ashift'].parsed})
         cdef int ret
 
         with nogil:

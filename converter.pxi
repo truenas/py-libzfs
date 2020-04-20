@@ -64,6 +64,7 @@ ZPOOL_PROPERTY_CONVERTERS = {
     'size': ZfsConverter(int, readonly=True, nullable=True),
     'capacity': ZfsConverter(str, readonly=True, nullable=True),
     'altroot': ZfsConverter(str, nullable=True),
+    'ashift': ZfsConverter(int),
     'health': ZfsConverter(str, readonly=True),
     'guid': ZfsConverter(int, readonly=True),
     'version': ZfsConverter(int, nullable=True),
