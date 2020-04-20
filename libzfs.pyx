@@ -461,13 +461,14 @@ cdef class ZFS(object):
         ashift_value = props[zfs.ZPOOL_CONFIG_ASHIFT] if zfs.ZPOOL_CONFIG_ASHIFT in (props or {}) else None
 
         def add_ashift_to_vdev(vdev):
-            if ashift_value:
-                # Each leaf vdev is supposed to have the ashift property in it's nvlist
-                if vdev.type != 'disk':
-                    for child in vdev.children:
-                        add_ashift_to_vdev(child)
-                else:
-                    (<ZFSVdev>vdev).set_ashift(ashift_value)
+            IF IS_OPENZFS:
+                if ashift_value:
+                    # Each leaf vdev is supposed to have the ashift property in it's nvlist
+                    if vdev.type != 'disk':
+                        for child in vdev.children:
+                            add_ashift_to_vdev(child)
+                    else:
+                        (<ZFSVdev>vdev).set_ashift(ashift_value)
             return vdev
 
         root = add_ashift_to_vdev(root)
