@@ -454,36 +454,59 @@ cdef class ZFS(object):
             libzfs.libzfs_error_description(self.handle)
         )
 
-    cdef ZFSVdev make_vdev_tree(self, topology):
+    cdef ZFSVdev make_vdev_tree(self, topology, props=None):
         cdef ZFSVdev root
         root = ZFSVdev(self, zfs.VDEV_TYPE_ROOT)
         root.children = topology.get('data', [])
+        ashift_value = (props or {}).get(zfs.ZPOOL_CONFIG_ASHIFT)
+        if ashift_value and not isinstance(ashift_value, int):
+            ashift_value = None
+
+        def add_ashift_to_vdev(vdev):
+            IF IS_OPENZFS:
+                if ashift_value:
+                    # Each leaf vdev is supposed to have the ashift property in it's nvlist
+                    if vdev.type != 'disk':
+                        for child in vdev.children:
+                            add_ashift_to_vdev(child)
+                    else:
+                        (<ZFSVdev>vdev).set_ashift(ashift_value)
+            return vdev
+
+        root = <ZFSVdev>add_ashift_to_vdev(root)
 
         if 'cache' in topology:
-            root.nvlist[zfs.ZPOOL_CONFIG_L2CACHE] = [(<ZFSVdev>i).nvlist for i in topology['cache']]
+            root.nvlist[zfs.ZPOOL_CONFIG_L2CACHE] = [
+                (<ZFSVdev>add_ashift_to_vdev(<ZFSVdev>i)).nvlist for i in topology['cache']
+            ]
 
         if 'spare' in topology:
-            root.nvlist[zfs.ZPOOL_CONFIG_SPARES] = [(<ZFSVdev>i).nvlist for i in topology['spare']]
+            root.nvlist[zfs.ZPOOL_CONFIG_SPARES] = [
+                (<ZFSVdev>add_ashift_to_vdev(<ZFSVdev>i)).nvlist for i in topology['spare']
+            ]
 
         if 'log' in topology:
             for i in topology['log']:
-                (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
+                vdev = <ZFSVdev>i
+                vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
                 IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
-                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
-                root.add_child_vdev(i)
+                    vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
+                root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
 
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             if 'special' in topology:
                 for i in topology['special']:
-                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
-                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
-                    root.add_child_vdev(i)
+                    vdev = <ZFSVdev>i
+                    vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                    vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
+                    root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
 
             if 'dedup' in topology:
                 for i in topology['dedup']:
-                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
-                    (<ZFSVdev>i).nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_DEDUP
-                    root.add_child_vdev(i)
+                    vdev = <ZFSVdev>i
+                    vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                    vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_DEDUP
+                    root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
         return root
 
     @staticmethod
@@ -1183,7 +1206,7 @@ cdef class ZFS(object):
         return dataset
 
     def create(self, name, topology, opts, fsopts, enable_all_feat=True):
-        cdef NVList root = self.make_vdev_tree(topology).nvlist
+        cdef NVList root = self.make_vdev_tree(topology, opts).nvlist
         cdef NVList cfsopts
         cdef NVList copts
         cdef const char *c_name = name
@@ -1915,6 +1938,9 @@ cdef class ZFSVdev(object):
 
         self.nvlist[zfs.ZPOOL_CONFIG_CHILDREN] = self.nvlist.get_raw(zfs.ZPOOL_CONFIG_CHILDREN) + [vdev.nvlist]
 
+    def set_ashift(self, int value):
+        self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = value
+
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'
         cdef ZFSVdev root
@@ -1930,7 +1956,7 @@ cdef class ZFSVdev(object):
 
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        })
+        }, {'ashift': self.zpool.properties['ashift'].parsed})
 
         first_child_path = first_child.path
         new_vdev_path = vdev.path
@@ -1958,7 +1984,7 @@ cdef class ZFSVdev(object):
 
         root = self.root.make_vdev_tree({
             'data': [vdev]
-        })
+        }, {'ashift': self.zpool.properties['ashift'].parsed})
 
         self_path = self.path
         vdev_path = vdev.path
@@ -2740,7 +2766,7 @@ cdef class ZFSPool(object):
 
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
-        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree)
+        cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': self.properties['ashift'].parsed})
         cdef int ret
 
         with nogil:
