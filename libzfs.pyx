@@ -1936,8 +1936,9 @@ cdef class ZFSVdev(object):
 
         self.nvlist[zfs.ZPOOL_CONFIG_CHILDREN] = self.nvlist.get_raw(zfs.ZPOOL_CONFIG_CHILDREN) + [vdev.nvlist]
 
-    def set_ashift(self, int value):
-        self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = value
+    def set_ashift(self, value):
+        if str(value).isdigit():
+            self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = int(value)
 
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'

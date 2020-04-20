@@ -669,6 +669,7 @@ HAVE_ZFS_MAX_DATASET_NAME_LEN
 EGREP
 GREP
 CPP
+IS_OPENZFS
 freebsd_src
 zof
 OBJEXT
@@ -2996,6 +2997,8 @@ fi
 
 zof=false
 o3x=false
+IS_OPENZFS=1
+
 if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 	zof=true
 
@@ -3018,6 +3021,8 @@ elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
+	IS_OPENZFS=0
+
 	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS}
