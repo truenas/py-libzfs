@@ -625,6 +625,7 @@ HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
 HAVE_LZC_BOOKMARK
+HAVE_SENDFLAGS_T_DEDUP
 HAVE_SENDFLAGS_T_COMPRESS
 HAVE_RECVFLAGS_T_RESUMABLE
 HAVE_ZPOOL_MAXNAMELEN
@@ -4872,6 +4873,38 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_SENDFLAGS_T_COMPRESS=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for dedup member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for dedup member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.dedup = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_SENDFLAGS_T_DEDUP=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_SENDFLAGS_T_DEDUP=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
 
