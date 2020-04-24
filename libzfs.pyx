@@ -231,7 +231,8 @@ class SendFlag(enum.Enum):
     REPLICATE = 1
     DOALL = 2
     FROMORIGIN = 3
-    DEDUP = 3
+    IF HAVE_SENDFLAGS_T_DEDUP:
+        DEDUP = 3
     PROPS = 4
     DRYRUN = 5
     PARSABLE = 6
@@ -3871,8 +3872,9 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
     if SendFlag.FROMORIGIN in flags:
         cflags.fromorigin = 1
 
-    if SendFlag.DEDUP in flags:
-        cflags.dedup = 1
+    IF HAVE_SENDFLAGS_T_DEDUP:
+        if SendFlag.DEDUP in flags:
+            cflags.dedup = 1
 
     if SendFlag.PROPS in flags:
         cflags.props = 1
