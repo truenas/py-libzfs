@@ -327,6 +327,11 @@ class ZFSVdevStatsException(ZFSException):
         super(ZFSVdevStatsException, self).__init__(code, 'Failed to fetch ZFS Vdev Stats')
 
 
+class ZFSPoolScanStatsException(ZFSException):
+    def __init__(self, code):
+        super(ZFSPoolScanStatsException, self).__init__(code, 'Failed to retrieve ZFS pool scan stats')
+
+
 cdef class ZFS(object):
     cdef libzfs.libzfs_handle_t* handle
     cdef boolean_t mnttab_cache_enable
@@ -2197,13 +2202,25 @@ cdef class ZPoolScrub(object):
     cdef readonly ZFS root
     cdef readonly ZFSPool pool
     cdef readonly object stat
+    cdef zfs.pool_scan_stat_t *stats
 
     def __init__(self, ZFS root, ZFSPool pool):
         self.root = root
         self.pool = pool
         self.stat = None
-        if zfs.ZPOOL_CONFIG_SCAN_STATS in pool.config[zfs.ZPOOL_CONFIG_VDEV_TREE]:
-            self.stat = pool.config[zfs.ZPOOL_CONFIG_VDEV_TREE][zfs.ZPOOL_CONFIG_SCAN_STATS]
+        self.stats = NULL
+        cdef NVList config
+        cdef NVList nvroot = pool.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+        cdef int ret
+        cdef uint_t total
+        if zfs.ZPOOL_CONFIG_SCAN_STATS not in nvroot:
+            return
+
+        ret = nvroot.nvlist_lookup_uint64_array(
+            <nvpair.nvlist_t*>nvroot.handle, zfs.ZPOOL_CONFIG_SCAN_STATS, <uint64_t **>&self.stats, &total
+        )
+        if ret != 0:
+            raise ZFSPoolScanStatsException(ret)
 
     property state:
         def __get__(self):
