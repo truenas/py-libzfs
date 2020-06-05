@@ -2201,13 +2201,11 @@ cdef class ZFSVdev(object):
 cdef class ZPoolScrub(object):
     cdef readonly ZFS root
     cdef readonly ZFSPool pool
-    cdef readonly object stat
     cdef zfs.pool_scan_stat_t *stats
 
     def __init__(self, ZFS root, ZFSPool pool):
         self.root = root
         self.pool = pool
-        self.stat = None
         self.stats = NULL
         cdef NVList config
         cdef NVList nvroot = pool.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
@@ -2224,89 +2222,67 @@ cdef class ZPoolScrub(object):
 
     property state:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return ScanState(self.stat[1])
+            if self.stats != NULL:
+                return ScanState(self.stats.pss_state)
 
     property function:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return ScanFunction(self.stat[0])
+            if not self.stats != NULL:
+                return ScanFunction(self.stats.pss_func)
 
     property start_time:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return datetime.utcfromtimestamp(self.stat[2])
+            if self.stats != NULL:
+                return datetime.utcfromtimestamp(self.stats.pss_start_time)
 
     property end_time:
         def __get__(self):
-            if not self.stat or self.state == ScanState.SCANNING:
-                return None
-
-            return datetime.utcfromtimestamp(self.stat[3])
+            if self.stats != NULL and self.state != ScanState.SCANNING:
+                return datetime.utcfromtimestamp(self.stats.pss_end_time)
 
     property bytes_to_scan:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return self.stat[4]
+            if self.stats != NULL:
+                return self.stats.pss_to_examine
 
     property bytes_scanned:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return self.stat[5]
+            if self.stats != NULL:
+                return self.stats.pss_examined
 
     property total_secs_left:
         def __get__(self):
-            if not self.stat or self.state != ScanState.SCANNING:
-                return None
+            if self.state != ScanState.SCANNING:
+                return
 
             examined = self.bytes_scanned
             total = self.bytes_to_scan
-            elapsed = (int(time.time()) - self.stat[10]) or 1
-            pass_exam = self.stat[9] or 1
+            elapsed = (int(time.time()) - self.stats.pss_pass_start) or 1
+            pass_exam = self.stats.pss_pass_exam or 1
             rate = pass_exam / elapsed
             return int((total - examined) / rate)
 
     IF HAVE_POOL_SCAN_STAT_T_ISSUED:
         property bytes_issued:
             def __get__(self):
-                if not self.stat:
-                    return None
-
-                return self.stat[13]
+                if self.stats != NULL:
+                    return self.stats.pss_pass_issued
 
     IF HAVE_POOL_SCAN_STAT_T_PAUSE:
         property pause:
             def __get__(self):
-                if not self.stat:
-                    return None
-
-                if self.state != ScanState.SCANNING:
-                    return None
-                if self.stat[11] == 0:
-                    return None
-                return datetime.utcfromtimestamp(self.stat[11])
+                if self.state == ScanState.SCANNING and self.stats.pss_pass_scrub_pause != 0:
+                    return datetime.utcfromtimestamp(self.stats.pss_pass_scrub_pause)
 
     property errors:
         def __get__(self):
-            if not self.stat:
-                return None
-
-            return self.stat[8]
+            if self.stats != NULL:
+                return self.stats.pss_errors
 
     property percentage:
         def __get__(self):
-            if not self.stat:
-                return None
+            if self.stats != NULL:
+                return
 
             if not self.bytes_to_scan:
                 return 0
@@ -2319,7 +2295,7 @@ cdef class ZPoolScrub(object):
     def __getstate__(self):
         state = {
             'function': self.function.name if self.function else None,
-            'state': self.state.name if self.stat else None,
+            'state': self.state.name if self.stats != NULL else None,
             'start_time': self.start_time,
             'end_time': self.end_time,
             'percentage': self.percentage,
