@@ -661,8 +661,6 @@ HAVE_ZPOOL_LOAD_POLICY_T
 HAVE_ZPOOL_REWIND_POLICY_T
 HAVE_POOL_SCRUB_CMD_T
 HAVE_ZPOOL_ERRATA_T_ENUM
-HAVE_POOL_SCAN_STAT_T_ISSUED
-HAVE_POOL_SCAN_STAT_T_PAUSE
 HAVE_VDEV_AUX_ASHIFT_TOO_BIG
 HAVE_ZFS_PROP_VALID_FOR_TYPE
 HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS
@@ -3632,70 +3630,6 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "$as_me: OK" >&6;}
 else
   HAVE_VDEV_AUX_ASHIFT_TOO_BIG=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
-$as_echo "$as_me: Not found" >&6;}
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member" >&5
-$as_echo "$as_me: Checking existence of pss_pass_scrub_pause & pss_pass_scrub_spent_paused struct member" >&6;}
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/fs/zfs.h>
-int
-main ()
-{
-
-			pool_scan_stat_t o;
-			o.pss_pass_scrub_pause = 1;
-			o.pss_pass_scrub_spent_paused = 1 /* ; */
-
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_POOL_SCAN_STAT_T_PAUSE=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
-$as_echo "$as_me: OK" >&6;}
-else
-  HAVE_POOL_SCAN_STAT_T_PAUSE=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
-$as_echo "$as_me: Not found" >&6;}
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking existence of pss_pass_issued struct member" >&5
-$as_echo "$as_me: Checking existence of pss_pass_issued struct member" >&6;}
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/fs/zfs.h>
-int
-main ()
-{
-
-			pool_scan_stat_t o;
-			o.pss_pass_issued = 1;
-
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_POOL_SCAN_STAT_T_ISSUED=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
-$as_echo "$as_me: OK" >&6;}
-else
-  HAVE_POOL_SCAN_STAT_T_ISSUED=0
  { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
 $as_echo "$as_me: Not found" >&6;}
 
