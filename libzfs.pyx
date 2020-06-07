@@ -2262,17 +2262,15 @@ cdef class ZPoolScrub(object):
             issue_rate = pass_issued / elapsed
             return int((total - examined) / issue_rate)
 
-    IF HAVE_POOL_SCAN_STAT_T_ISSUED:
-        property bytes_issued:
-            def __get__(self):
-                if self.stats != NULL:
-                    return self.stats.pss_pass_issued
+    property bytes_issued:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pss_pass_issued
 
-    IF HAVE_POOL_SCAN_STAT_T_PAUSE:
-        property pause:
-            def __get__(self):
-                if self.state == ScanState.SCANNING and self.stats.pss_pass_scrub_pause != 0:
-                    return datetime.utcfromtimestamp(self.stats.pss_pass_scrub_pause)
+    property pause:
+        def __get__(self):
+            if self.state == ScanState.SCANNING and self.stats.pss_pass_scrub_pause != 0:
+                return datetime.utcfromtimestamp(self.stats.pss_pass_scrub_pause)
 
     property errors:
         def __get__(self):
@@ -2287,13 +2285,10 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            IF HAVE_POOL_SCAN_STAT_T_ISSUED:
-                return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
-            ELSE:
-                return (<float>self.bytes_scanned / <float>self.bytes_to_scan) * 100
+            return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
 
     def __getstate__(self):
-        state = {
+        return {
             'function': self.function.name if self.function else None,
             'state': self.state.name if self.stats != NULL else None,
             'start_time': self.start_time,
@@ -2301,14 +2296,11 @@ cdef class ZPoolScrub(object):
             'percentage': self.percentage,
             'bytes_to_process': self.bytes_scanned,
             'bytes_processed': self.bytes_to_scan,
+            'bytes_issued': self.bytes_issued,
+            'pause': self.pause,
             'errors': self.errors,
             'total_secs_left': self.total_secs_left
         }
-        if hasattr(self, 'bytes_issued'):
-            state['bytes_issued'] = self.bytes_issued
-        if hasattr(self, 'pause'):
-            state['pause'] = self.pause
-        return state
 
 
 cdef class ZFSPool(object):
