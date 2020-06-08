@@ -2227,7 +2227,7 @@ cdef class ZPoolScrub(object):
 
     property function:
         def __get__(self):
-            if not self.stats != NULL:
+            if self.stats != NULL:
                 return ScanFunction(self.stats.pss_func)
 
     property start_time:
