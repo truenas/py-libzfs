@@ -473,9 +473,6 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZIO_TYPE_CLAIM
         ZIO_TYPE_IOCTL
 
-    ctypedef struct pool_scan_stat_t:
-        pass
-    
     ctypedef enum dsl_scan_state_t:
         DSS_NONE
         DSS_SCANNING
@@ -504,6 +501,23 @@ cdef extern from "sys/fs/zfs.h" nogil:
         uint64_t	vs_logical_ashift
         uint64_t	vs_physical_ashift
         uint64_t	vs_fragmentation
+
+    ctypedef struct pool_scan_stat_t:
+        uint64_t    pss_func # pool_scan_func_t
+        uint64_t    pss_state # dsl_scan_state_t
+        uint64_t    pss_start_time # scan start time
+        uint64_t    pss_end_time # scan end time
+        uint64_t    pss_to_examine # total bytes to scan
+        uint64_t    pss_examined # total bytes located by scanner
+        uint64_t    pss_to_process # total bytes to process
+        uint64_t    pss_processed # total processed bytes
+        uint64_t    pss_errors # scan errors
+        uint64_t    pss_pass_exam # examined bytes per scan pass
+        uint64_t    pss_pass_start # start time of a scan pass
+        uint64_t    pss_pass_scrub_pause # pause time of a scrub pass
+        uint64_t    pss_pass_scrub_spent_paused
+        uint64_t    pss_pass_issued # issued bytes per scan pass
+        uint64_t    pss_issued # total bytes checked by scanner
 
     ctypedef struct ddt_object_t:
         uint64_t	ddo_count
