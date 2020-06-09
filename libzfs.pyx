@@ -2005,12 +2005,12 @@ cdef class ZPoolScrub(object):
             if not self.stat or self.state != ScanState.SCANNING:
                 return None
 
-            examined = self.bytes_scanned
+            issued = self.bytes_issued
             total = self.bytes_to_scan
-            elapsed = (int(time.time()) - self.stat[10]) or 1
-            pass_exam = self.stat[9] or 1
-            rate = pass_exam / elapsed
-            return int((total - examined) / rate)
+            elapsed = ((int(time.time()) - self.stat[10]) - self.stat[12]) or 1
+            pass_issued = self.stat[14] or 1
+            rate = pass_issued / elapsed
+            return int((total - issued) / rate)
 
     IF HAVE_POOL_SCAN_STAT_T_ISSUED:
         property bytes_issued:
