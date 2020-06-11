@@ -486,6 +486,7 @@ cdef extern from "libzfs.h" nogil:
                 int largeblock
                 int embed_data
                 int compress
+                int raw
         ELSE:
             ctypedef struct sendflags_t:
                 int verbose
@@ -500,6 +501,7 @@ cdef extern from "libzfs.h" nogil:
                 int largeblock
                 int embed_data
                 int compress
+                int raw
     ELSE:
         IF HAVE_SENDFLAGS_T_VERBOSITY:
             ctypedef struct sendflags_t:
@@ -515,6 +517,7 @@ cdef extern from "libzfs.h" nogil:
                 int largeblock
                 int embed_data
                 int compress
+                int raw
         ELSE:
             ctypedef struct sendflags_t:
                 int verbose
@@ -528,6 +531,7 @@ cdef extern from "libzfs.h" nogil:
                 int progress
                 int largeblock
                 int embed_data
+                int raw
 
     ctypedef int (*snapfilter_cb_t)(zfs_handle_t *, void *)
 
