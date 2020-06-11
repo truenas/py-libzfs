@@ -241,6 +241,7 @@ class SendFlag(enum.Enum):
     EMBED_DATA = 9
     IF HAVE_SENDFLAGS_T_COMPRESS:
         COMPRESS = 10
+    RAW = 11
 
 
 class DiffRecordType(enum.Enum):
@@ -3882,6 +3883,9 @@ cdef convert_sendflags(flags, libzfs.sendflags_t *cflags):
     IF HAVE_SENDFLAGS_T_COMPRESS:
         if SendFlag.COMPRESS in flags:
             cflags.compress = 1
+
+    if SendFlag.RAW in flags:
+        cflags.raw = 1
 
 
 def nicestrtonum(ZFS zfs, value):
