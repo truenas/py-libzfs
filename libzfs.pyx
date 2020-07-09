@@ -2280,7 +2280,7 @@ cdef class ZPoolScrub(object):
 
     property percentage:
         def __get__(self):
-            if self.stats != NULL:
+            if self.stats == NULL:
                 return
 
             if not self.bytes_to_scan:
