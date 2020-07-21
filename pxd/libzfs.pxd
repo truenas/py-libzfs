@@ -188,8 +188,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_vdev_online(zpool_handle_t *, const char *, int,
         zfs.vdev_state_t *)
     extern int zpool_vdev_offline(zpool_handle_t *, const char *, int)
-    extern int zpool_vdev_attach(zpool_handle_t *, const char *,
-        const char *, nvpair.nvlist_t *, int)
+    IF HAVE_ZPOOL_VDEV_ATTACH == 5:
+        extern int zpool_vdev_attach(zpool_handle_t *, const char *, const char *, nvpair.nvlist_t *, int)
+    ELSE:
+        extern int zpool_vdev_attach(zpool_handle_t *, const char *, const char *, nvpair.nvlist_t *, int, boolean_t)
     extern int zpool_vdev_detach(zpool_handle_t *, const char *)
     extern int zpool_vdev_remove(zpool_handle_t *, const char *)
 

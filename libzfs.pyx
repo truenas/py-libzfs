@@ -1972,9 +1972,14 @@ cdef class ZFSVdev(object):
         cdef const char* c_new_vdev_path = new_vdev_path
 
         with nogil:
-            rv = libzfs.zpool_vdev_attach(
-                self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0
-            )
+            IF HAVE_ZPOOL_VDEV_ATTACH == 5:
+                rv = libzfs.zpool_vdev_attach(
+                    self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0
+                )
+            ELSE:
+                rv = libzfs.zpool_vdev_attach(
+                    self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0, 0
+                )
 
         if rv != 0:
             raise self.root.get_error()
@@ -2000,7 +2005,10 @@ cdef class ZFSVdev(object):
         cdef const char *c_vdev_path = vdev_path
 
         with nogil:
-            rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1)
+            IF HAVE_ZPOOL_VDEV_ATTACH == 5:
+                rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1)
+            ELSE:
+                rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1, 0)
 
         if rv != 0:
             raise self.root.get_error()
