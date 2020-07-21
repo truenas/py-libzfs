@@ -300,6 +300,21 @@ else
 fi
 
 
+dnl Checking for parameters of zpool_vdev_attach
+
+AC_MSG_NOTICE([Checking zpool_vdev_attach parameters])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_vdev_attach(NULL, NULL, NULL, NULL, 0, 0);
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_VDEV_ATTACH, 6) AC_MSG_NOTICE([6 params])],
+	[AC_SUBST(HAVE_ZPOOL_VDEV_ATTACH, 5) AC_MSG_NOTICE([5 params])]
+)
+
+
 dnl Checking for existence of zfs_foreach_mountpoint function
 
 AC_MSG_NOTICE([Checking for existence of zfs_foreach_mountpoint])
