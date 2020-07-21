@@ -1952,6 +1952,7 @@ cdef class ZFSVdev(object):
         cdef const char *command = 'zpool attach'
         cdef ZFSVdev root
         cdef int rv
+        cdef boolean_t rebuild = False
 
         if self.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
             raise ZFSException(Error.NOTSUP, "Can attach disks to mirrors and stripes only")
@@ -1978,7 +1979,7 @@ cdef class ZFSVdev(object):
                 )
             ELSE:
                 rv = libzfs.zpool_vdev_attach(
-                    self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0, 0
+                    self.zpool.handle, c_first_child_path, c_new_vdev_path, root.nvlist.handle, 0, rebuild
                 )
 
         if rv != 0:
@@ -1990,6 +1991,7 @@ cdef class ZFSVdev(object):
         cdef const char *command = 'zpool replace'
         cdef ZFSVdev root
         cdef int rv
+        cdef boolean_t rebuild = False
 
         if self.type == zfs.VDEV_TYPE_FILE:
             raise ZFSException(Error.NOTSUP, "Can replace disks only")
@@ -2008,7 +2010,7 @@ cdef class ZFSVdev(object):
             IF HAVE_ZPOOL_VDEV_ATTACH == 5:
                 rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1)
             ELSE:
-                rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1, 0)
+                rv = libzfs.zpool_vdev_attach(self.zpool.handle, c_path, c_vdev_path, root.nvlist.handle, 1, rebuild)
 
         if rv != 0:
             raise self.root.get_error()
