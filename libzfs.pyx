@@ -3941,15 +3941,15 @@ def clear_label(device):
     cdef int fd
     cdef int err
 
-    fd = os.open(device, os.O_WRONLY)
+    fd = os.open(device, os.O_RDWR)
     if fd < 0:
-        raise OSError(errno, os.strerror(errno))
+        raise OSError(errno, f'Unable to open {device} for clearing label: {os.strerror(errno)}')
 
     with nogil:
         err = libzfs.zpool_clear_label(fd)
 
     if err != 0:
         os.close(fd)
-        raise OSError(errno, os.strerror(errno))
+        raise OSError(errno, f'Failed to clear zpool label for {device}: {os.strerror(errno)}')
 
     os.close(fd)
