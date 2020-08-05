@@ -67,6 +67,8 @@ if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
 	with_o3x="../zfs/"
 fi
 
+: ${freebsd_src:=/usr/src}
+
 zof=false
 o3x=false
 AC_SUBST(IS_OPENZFS, 1)
@@ -79,6 +81,24 @@ if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; the
 -D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
+
+elif [[ -d "${freebsd_src}/sys/contrib/openzfs" ]]; then
+	zof=true
+
+	openzfs_prefix="${freebsd_src}/sys/contrib/openzfs"
+
+	CFLAGS="${CFLAGS}
+-DIN_BASE -DHAVE_RPC_TYPES
+-I${openzfs_prefix}/include/
+-I${openzfs_prefix}/include/os/freebsd/
+-I${openzfs_prefix}/lib/libspl/include/
+-I${openzfs_prefix}/lib/libspl/include/os/freebsd/
+-I${freebsd_src}/sys/
+-I${freebsd_src}/cddl/compat/opensolaris/include/
+-include ${openzfs_prefix}/include/os/freebsd/spl/sys/ccompile.h
+-DHAVE_ISSETUGID
+"
+	LIBS="-lspl -lzutil ${LIBS}"
 
 elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 	o3x=true
@@ -93,7 +113,6 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	AC_SUBST(IS_OPENZFS, 0)
-	freebsd_src=${freebsd_src:=/usr/src}
 
         CFLAGS="${CFLAGS} 
 -I${freebsd_src}/cddl/lib/libumem
