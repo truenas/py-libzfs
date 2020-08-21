@@ -2344,6 +2344,8 @@ cdef class ZFSPool(object):
         except (ZFSException, AttributeError):
             root_ds = None
 
+        filter_vdevs = [zfs.VDEV_TYPE_HOLE, zfs.VDEV_TYPE_INDIRECT]
+
         state = {
             'name': self.name,
             'id': self.name,
@@ -2358,16 +2360,16 @@ cdef class ZFSPool(object):
             'scan': self.scrub.__getstate__(),
             'root_vdev': self.root_vdev.__getstate__(False),
             'groups': {
-                'data': [i.__getstate__() for i in self.data_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'log': [i.__getstate__() for i in self.log_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'cache': [i.__getstate__() for i in self.cache_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'data': [i.__getstate__() for i in self.data_vdevs if i.type not in filter_vdevs],
+                'log': [i.__getstate__() for i in self.log_vdevs if i.type not in filter_vdevs],
+                'cache': [i.__getstate__() for i in self.cache_vdevs if i.type not in filter_vdevs],
+                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type not in filter_vdevs],
             },
         }
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             state['groups'].update({
-                'special': [i.__getstate__() for i in self.special_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
-                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type != zfs.VDEV_TYPE_HOLE],
+                'special': [i.__getstate__() for i in self.special_vdevs if i.type not in filter_vdevs],
+                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type not in filter_vdevs],
             })
 
         if self.handle != NULL:
