@@ -74,6 +74,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* VDEV_TYPE_FILE
     const char* VDEV_TYPE_MISSING
     const char* VDEV_TYPE_HOLE
+    const char* VDEV_TYPE_INDIRECT
     const char* VDEV_TYPE_SPARE
     const char* VDEV_TYPE_LOG
     const char* VDEV_TYPE_L2CACHE
