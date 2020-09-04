@@ -434,9 +434,6 @@ cdef extern from "libzfs.h" nogil:
         zfs_handle_t	**cb_handles
         size_t		cb_alloc
         size_t		cb_used
-        int	cb_verbose
-        int		(*cb_getone)(zfs_handle_t *, void *)
-
 
     void libzfs_add_handle(get_all_cb_t *, zfs_handle_t *)
     int libzfs_dataset_cmp(const void *, const void *)
