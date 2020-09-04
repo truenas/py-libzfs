@@ -53,7 +53,6 @@ IF HAVE_NVPAIR_IN_SYS:
 			DATA_TYPE_INT8_ARRAY,
 			DATA_TYPE_UINT8_ARRAY,
 			DATA_TYPE_DOUBLE
-			DATA_TYPE_UINT8_ARRAY
 
 		ctypedef struct nvlist_t:
 			int32_t nvl_version
