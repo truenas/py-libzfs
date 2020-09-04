@@ -1,7 +1,22 @@
-PYTHON ?= /usr/local/bin/python2.7
+PYTHON ?= /usr/local/bin/python3.7
 PREFIX ?= /usr/local
 
-build:
+PXIS = \
+	converter.pxi \
+	nvpair.pxi \
+	pxd/config.pxi \
+	pxd/sendflags.pxi
+
+PXDS = \
+	pxd/libzfs.pxd \
+	pxd/nvpair.pxd \
+	pxd/types.pxd \
+	pxd/zfs.pxd
+
+build: libzfs.c
+
+libzfs.c: libzfs.pyx ${PXIS} ${PXDS}
+	rm -f libzfs.c
 	${PYTHON} setup.py build
 
 clean:

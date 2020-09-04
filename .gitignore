@@ -6,6 +6,7 @@ libzfs.egg-info/
 pxd/config.pxi
 pxd/sendflags.pxi
 venv/
+Makefile
 config.log
 config.status
 config.h
