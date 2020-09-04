@@ -1,0 +1,25 @@
+#
+# The sendflags_t struct has a lot of different variations.
+# We resort to using autoconf for the metaprogramming, because
+# Cython lacks the expressivity to conditionally generate fields.
+#
+
+cdef extern from "libzfs.h" nogil:
+    ctypedef struct sendflags_t:
+        @SENDFLAGS_T_VERBOSITY@
+        int replicate
+        int doall
+        int fromorigin
+        @SENDFLAGS_T_DEDUP@
+        int props
+        int dryrun
+        int parsable
+        int progress
+        int largeblock
+        int embed_data
+        @SENDFLAGS_T_COMPRESS@
+        @SENDFLAGS_T_RAW@
+        @SENDFLAGS_T_BACKUP@
+        @SENDFLAGS_T_HOLDS@
+        @SENDFLAGS_T_SAVED@
+        @SENDFLAGS_T_PROGRESSASTITLE@

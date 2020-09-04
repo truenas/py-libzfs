@@ -1,9 +1,12 @@
+__pycache__/
 autom4te.cache/
 build/
 pxd/config.pxi
+pxd/sendflags.pxi
 venv/
 config.log
 config.status
 config.h
+config.py
 *.c
 *.html
