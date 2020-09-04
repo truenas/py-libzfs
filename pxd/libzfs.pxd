@@ -3,6 +3,9 @@
 
 include "config.pxi"
 
+IF HAVE_SENDFLAGS_T_TYPEDEF:
+    include "sendflags.pxi"
+
 cimport nvpair
 cimport zfs
 from types cimport *
@@ -470,69 +473,6 @@ cdef extern from "libzfs.h" nogil:
     ELSE:
 
         extern int zfs_rename(zfs_handle_t *, const char *, boolean_t, boolean_t)
-
-    IF HAVE_SENDFLAGS_T_COMPRESS:
-        # FIXME: Please find a better way to do this
-        IF HAVE_SENDFLAGS_T_VERBOSITY:
-            ctypedef struct sendflags_t:
-                int verbosity
-                int replicate
-                int doall
-                int fromorigin
-                int dedup
-                int props
-                int dryrun
-                int parsable
-                int progress
-                int largeblock
-                int embed_data
-                int compress
-                int raw
-        ELSE:
-            ctypedef struct sendflags_t:
-                int verbose
-                int replicate
-                int doall
-                int fromorigin
-                int dedup
-                int props
-                int dryrun
-                int parsable
-                int progress
-                int largeblock
-                int embed_data
-                int compress
-                int raw
-    ELSE:
-        IF HAVE_SENDFLAGS_T_VERBOSITY:
-            ctypedef struct sendflags_t:
-                int verbosity
-                int replicate
-                int doall
-                int fromorigin
-                int dedup
-                int props
-                int dryrun
-                int parsable
-                int progress
-                int largeblock
-                int embed_data
-                int compress
-                int raw
-        ELSE:
-            ctypedef struct sendflags_t:
-                int verbose
-                int replicate
-                int doall
-                int fromorigin
-                int dedup
-                int props
-                int dryrun
-                int parsable
-                int progress
-                int largeblock
-                int embed_data
-                int raw
 
     ctypedef int (*snapfilter_cb_t)(zfs_handle_t *, void *)
 

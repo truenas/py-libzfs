@@ -625,8 +625,23 @@ HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
 HAVE_LZC_BOOKMARK
-HAVE_SENDFLAGS_T_DEDUP
+SENDFLAGS_T_PROGRESSASTITLE
+HAVE_SENDFLAGS_T_PROGRESSASTITLE
+SENDFLAGS_T_SAVED
+HAVE_SENDFLAGS_T_SAVED
+SENDFLAGS_T_HOLDS
+HAVE_SENDFLAGS_T_HOLDS
+SENDFLAGS_T_BACKUP
+HAVE_SENDFLAGS_T_BACKUP
+SENDFLAGS_T_RAW
+HAVE_SENDFLAGS_T_RAW
+SENDFLAGS_T_COMPRESS
 HAVE_SENDFLAGS_T_COMPRESS
+SENDFLAGS_T_DEDUP
+HAVE_SENDFLAGS_T_DEDUP
+SENDFLAGS_T_VERBOSITY
+HAVE_SENDFLAGS_T_VERBOSITY
+HAVE_SENDFLAGS_T_TYPEDEF
 HAVE_RECVFLAGS_T_RESUMABLE
 HAVE_ZPOOL_MAXNAMELEN
 HAVE_RENAMEFLAGS_T_RECURSE
@@ -637,7 +652,6 @@ HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
 HAVE_ZFS_SEND_RESUME
 HAVE_ZFS_RECEIVE
 HAVE_LZC_SEND_FLAG_EMBED_DATA
-HAVE_SENDFLAGS_T_TYPEDEF
 HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
@@ -650,7 +664,6 @@ HAVE_ZFS_ITER_SNAPSHOTS
 HAVE_ZPOOL_EVENTS_NEXT
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
 HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS
-HAVE_SENDFLAGS_T_VERBOSITY
 HAVE_ZFS_FOREACH_MOUNTPOINT
 HAVE_ZPOOL_VDEV_ATTACH
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL
@@ -4001,37 +4014,6 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking attribute name for verbose in sendflags_t struct" >&5
-$as_echo "$as_me: Checking attribute name for verbose in sendflags_t struct" >&6;}
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <libzfs.h>
-int
-main ()
-{
-
-			sendflags_t t;
-			t.verbosity = 1 /* ; */
-
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_SENDFLAGS_T_VERBOSITY=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbosity in sendflags_t struct" >&5
-$as_echo "$as_me: Attribute named as verbosity in sendflags_t struct" >&6;}
-else
-  HAVE_SENDFLAGS_T_VERBOSITY=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbose in sendflags_t struct" >&5
-$as_echo "$as_me: Attribute named as verbose in sendflags_t struct" >&6;}
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature zvol_volsize_to_reservation" >&5
 $as_echo "$as_me: Checking function signature zvol_volsize_to_reservation" >&6;}
@@ -4468,38 +4450,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking typedef sendflags_t in libzfs header" >&5
-$as_echo "$as_me: Checking typedef sendflags_t in libzfs header" >&6;}
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <libzfs.h>
-int
-main ()
-{
-
-			int i = sizeof(sendflags_t);
-			i = i; /* ; */
-
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_SENDFLAGS_T_TYPEDEF=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
-$as_echo "$as_me: OK" >&6;}
-else
-  HAVE_SENDFLAGS_T_TYPEDEF=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
-$as_echo "$as_me: Not found" >&6;}
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&5
 $as_echo "$as_me: Checking LZC_SEND_FLAG_EMBED_DATA presence" >&6;}
 
@@ -4835,8 +4785,40 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for compress member in sendflags_t struct" >&5
-$as_echo "$as_me: Checking for compress member in sendflags_t struct" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking typedef sendflags_t in libzfs header" >&5
+$as_echo "$as_me: Checking typedef sendflags_t in libzfs header" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			int i = sizeof(sendflags_t);
+			i = i; /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_SENDFLAGS_T_TYPEDEF=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_SENDFLAGS_T_TYPEDEF=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: Not found" >&5
+$as_echo "$as_me: Not found" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking attribute name for verbose in sendflags_t struct" >&5
+$as_echo "$as_me: Checking attribute name for verbose in sendflags_t struct" >&6;}
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -4846,7 +4828,7 @@ main ()
 {
 
 			sendflags_t t;
-			t.compress = 1 /* ; */
+			t.verbosity = 1 /* ; */
 
 
   ;
@@ -4854,13 +4836,23 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_SENDFLAGS_T_COMPRESS=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
-$as_echo "$as_me: OK" >&6;}
+
+		HAVE_SENDFLAGS_T_VERBOSITY=1
+
+		SENDFLAGS_T_VERBOSITY="int verbosity"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbosity in sendflags_t struct" >&5
+$as_echo "$as_me: Attribute named as verbosity in sendflags_t struct" >&6;}
+
 else
-  HAVE_SENDFLAGS_T_COMPRESS=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
-$as_echo "$as_me: NOT FOUND" >&6;}
+
+		HAVE_SENDFLAGS_T_VERBOSITY=0
+
+		SENDFLAGS_T_VERBOSITY="int verbose"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: Attribute named as verbose in sendflags_t struct" >&5
+$as_echo "$as_me: Attribute named as verbose in sendflags_t struct" >&6;}
+
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
@@ -4886,13 +4878,275 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  HAVE_SENDFLAGS_T_DEDUP=1
- { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+
+		HAVE_SENDFLAGS_T_DEDUP=1
+
+		SENDFLAGS_T_DEDUP="int dedup"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
 $as_echo "$as_me: OK" >&6;}
+
 else
-  HAVE_SENDFLAGS_T_DEDUP=0
- { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+
+		HAVE_SENDFLAGS_T_DEDUP=0
+
+		SENDFLAGS_T_DEDUP="int pad"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 $as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for compress member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for compress member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.compress = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_COMPRESS=1
+
+		SENDFLAGS_T_COMPRESS="int compress"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_COMPRESS=0
+
+		SENDFLAGS_T_COMPRESS=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for raw member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for raw member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.raw = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_RAW=1
+
+		SENDFLAGS_T_RAW="int raw"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_RAW=0
+
+		SENDFLAGS_T_RAW=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for backup member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for backup member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.backup = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_BACKUP=1
+
+		SENDFLAGS_T_BACKUP="int backup"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_BACKUP=0
+
+		SENDFLAGS_T_BACKUP=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for holds member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for holds member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.holds = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_HOLDS=1
+
+		SENDFLAGS_T_HOLDS="int holds"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_HOLDS=0
+
+		SENDFLAGS_T_HOLDS=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for saved member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for saved member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.saved = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_SAVED=1
+
+		SENDFLAGS_T_SAVED="int saved"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_SAVED=0
+
+		SENDFLAGS_T_SAVED=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking for progressastitle member in sendflags_t struct" >&5
+$as_echo "$as_me: Checking for progressastitle member in sendflags_t struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main ()
+{
+
+			sendflags_t t;
+			t.progressastitle = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		HAVE_SENDFLAGS_T_PROGRESSASTITLE=1
+
+		SENDFLAGS_T_PROGRESSASTITLE="int progressastitle"
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+
+else
+
+		HAVE_SENDFLAGS_T_PROGRESSASTITLE=0
+
+		SENDFLAGS_T_PROGRESSASTITLE=""
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
@@ -5151,6 +5405,11 @@ ac_config_files="$ac_config_files pxd/config.pxi"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: GENERATED pxd/config.pxi" >&5
 $as_echo "$as_me: GENERATED pxd/config.pxi" >&6;}
+
+ac_config_files="$ac_config_files pxd/sendflags.pxi"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: GENERATED pxd/sendflags.pxi" >&5
+$as_echo "$as_me: GENERATED pxd/sendflags.pxi" >&6;}
 
 
 	echo >& 6
@@ -5872,6 +6131,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "pxd/config.pxi") CONFIG_FILES="$CONFIG_FILES pxd/config.pxi" ;;
+    "pxd/sendflags.pxi") CONFIG_FILES="$CONFIG_FILES pxd/sendflags.pxi" ;;
     "config.py") CONFIG_FILES="$CONFIG_FILES config.py" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 

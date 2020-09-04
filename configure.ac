@@ -348,21 +348,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZFS_FOREACH_MOUNTPOINT, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
 
-dnl Checking attribute name for verbose in sendflags_t struct
-
-AC_MSG_NOTICE([Checking attribute name for verbose in sendflags_t struct])
-
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[#include <libzfs.h>],
-		[
-			sendflags_t t;
-			t.verbosity = 1 /* ; */
-		]
-	)],
-	[AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 1) AC_MSG_NOTICE([Attribute named as verbosity in sendflags_t struct])],
-	[AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 0) AC_MSG_NOTICE([Attribute named as verbose in sendflags_t struct])]
-)
-
 
 dnl Checking parameters of zvol_volsize_to_reservation function
 
@@ -568,22 +553,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
-dnl Checking typedef sendflags_t in zfs header
-
-AC_MSG_NOTICE([Checking typedef sendflags_t in libzfs header])
-
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[#include <libzfs.h>],
-		[
-			int i = sizeof(sendflags_t);
-			i = i; /* ; */
-		]
-	)],
-	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 1) AC_MSG_NOTICE([OK])],
-	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 0) AC_MSG_NOTICE([Not found])]
-)
-
-
 dnl Checking existence of an enum value
 
 AC_MSG_NOTICE([Checking LZC_SEND_FLAG_EMBED_DATA presence])
@@ -712,19 +681,41 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
-dnl Checking for compress member in sendflags_t struct
+dnl Checking typedef sendflags_t in zfs header
 
-AC_MSG_NOTICE([Checking for compress member in sendflags_t struct])
+AC_MSG_NOTICE([Checking typedef sendflags_t in libzfs header])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			int i = sizeof(sendflags_t);
+			i = i; /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_SENDFLAGS_T_TYPEDEF, 0) AC_MSG_NOTICE([Not found])]
+)
+
+
+dnl Checking attribute name for verbose in sendflags_t struct
+
+AC_MSG_NOTICE([Checking attribute name for verbose in sendflags_t struct])
 
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 		[#include <libzfs.h>],
 		[
 			sendflags_t t;
-			t.compress = 1 /* ; */
+			t.verbosity = 1 /* ; */
 		]
-	)],
-	[AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 1) AC_MSG_NOTICE([OK])],
-	[AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 0) AC_MSG_NOTICE([NOT FOUND])]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 1)
+		AC_SUBST(SENDFLAGS_T_VERBOSITY, "int verbosity")
+		AC_MSG_NOTICE([Attribute named as verbosity in sendflags_t struct])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_VERBOSITY, 0)
+		AC_SUBST(SENDFLAGS_T_VERBOSITY, "int verbose")
+		AC_MSG_NOTICE([Attribute named as verbose in sendflags_t struct])
+	]
 )
 
 
@@ -738,9 +729,147 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			sendflags_t t;
 			t.dedup = 1 /* ; */
 		]
-	)],
-	[AC_SUBST(HAVE_SENDFLAGS_T_DEDUP, 1) AC_MSG_NOTICE([OK])],
-	[AC_SUBST(HAVE_SENDFLAGS_T_DEDUP, 0) AC_MSG_NOTICE([NOT FOUND])]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_DEDUP, 1)
+		AC_SUBST(SENDFLAGS_T_DEDUP, "int dedup")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_DEDUP, 0)
+		AC_SUBST(SENDFLAGS_T_DEDUP, "int pad")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for compress member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for compress member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.compress = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 1)
+		AC_SUBST(SENDFLAGS_T_COMPRESS, "int compress")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_COMPRESS, 0)
+		AC_SUBST(SENDFLAGS_T_COMPRESS, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for raw member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for raw member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.raw = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_RAW, 1)
+		AC_SUBST(SENDFLAGS_T_RAW, "int raw")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_RAW, 0)
+		AC_SUBST(SENDFLAGS_T_RAW, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for backup member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for backup member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.backup = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_BACKUP, 1)
+		AC_SUBST(SENDFLAGS_T_BACKUP, "int backup")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_BACKUP, 0)
+		AC_SUBST(SENDFLAGS_T_BACKUP, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for holds member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for holds member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.holds = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_HOLDS, 1)
+		AC_SUBST(SENDFLAGS_T_HOLDS, "int holds")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_HOLDS, 0)
+		AC_SUBST(SENDFLAGS_T_HOLDS, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for saved member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for saved member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.saved = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_SAVED, 1)
+		AC_SUBST(SENDFLAGS_T_SAVED, "int saved")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_SAVED, 0)
+		AC_SUBST(SENDFLAGS_T_SAVED, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking for progressastitle member in sendflags_t struct
+
+AC_MSG_NOTICE([Checking for progressastitle member in sendflags_t struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			sendflags_t t;
+			t.progressastitle = 1 /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_SENDFLAGS_T_PROGRESSASTITLE, 1)
+		AC_SUBST(SENDFLAGS_T_PROGRESSASTITLE, "int progressastitle")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_SENDFLAGS_T_PROGRESSASTITLE, 0)
+		AC_SUBST(SENDFLAGS_T_PROGRESSASTITLE, "")
+		AC_MSG_NOTICE([NOT FOUND])
+	]
 )
 
 
@@ -859,6 +988,9 @@ SECTION_TITLE([GENERATING CONFIG.H])
 
 AC_CONFIG_FILES([pxd/config.pxi])
 AC_MSG_NOTICE([GENERATED pxd/config.pxi])
+
+AC_CONFIG_FILES([pxd/sendflags.pxi])
+AC_MSG_NOTICE([GENERATED pxd/sendflags.pxi])
 
 SECTION_TITLE([GENERATING config.py])
 
