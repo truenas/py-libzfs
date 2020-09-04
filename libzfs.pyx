@@ -789,8 +789,10 @@ cdef class ZFS(object):
         cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef zfs.zprop_source_t csource
-        cdef const char *name, *mntpt
-        cdef nvpair.nvlist_t *ptr, *nvlist
+        cdef const char *name
+        cdef const char *mntpt
+        cdef nvpair.nvlist_t *ptr
+        cdef nvpair.nvlist_t *nvlist
 
         with gil:
             snap_list = <object> arg
