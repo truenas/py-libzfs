@@ -1,6 +1,8 @@
 __pycache__/
 autom4te.cache/
 build/
+dist/
+libzfs.egg-info/
 pxd/config.pxi
 pxd/sendflags.pxi
 venv/
