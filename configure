@@ -3032,8 +3032,9 @@ if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
 	CFLAGS="${CFLAGS}
 -I${header_prefix}/include/libzfs
 -I${header_prefix}/include/libspl
--D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
+-D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID -D_GNU_SOURCE
 "
+
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 
 elif [ -d "${freebsd_src}/sys/contrib/openzfs" ]; then
