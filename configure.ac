@@ -64,7 +64,7 @@ else
 fi
 
 if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
-	with_o3x="../zfs/"
+	with_o3x="../zfs"
 fi
 
 : ${freebsd_src:=/usr/src}
@@ -76,8 +76,8 @@ if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; the
 	zof=true
 
 	CFLAGS="${CFLAGS} 
--I${header_prefix}/include/libzfs/
--I${header_prefix}/include/libspl/
+-I${header_prefix}/include/libzfs
+-I${header_prefix}/include/libspl
 -D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 "
 	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
@@ -89,12 +89,12 @@ elif [[ -d "${freebsd_src}/sys/contrib/openzfs" ]]; then
 
 	CFLAGS="${CFLAGS}
 -DIN_BASE -DHAVE_RPC_TYPES
--I${openzfs_prefix}/include/
--I${openzfs_prefix}/include/os/freebsd/
--I${openzfs_prefix}/lib/libspl/include/
--I${openzfs_prefix}/lib/libspl/include/os/freebsd/
--I${freebsd_src}/sys/
--I${freebsd_src}/cddl/compat/opensolaris/include/
+-I${openzfs_prefix}/include
+-I${openzfs_prefix}/include/os/freebsd
+-I${openzfs_prefix}/lib/libspl/include
+-I${openzfs_prefix}/lib/libspl/include/os/freebsd
+-I${freebsd_src}/sys
+-I${freebsd_src}/cddl/compat/opensolaris/include
 -include ${openzfs_prefix}/include/os/freebsd/spl/sys/ccompile.h
 -DHAVE_ISSETUGID
 "
@@ -104,9 +104,9 @@ elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
 	o3x=true
 
 	CFLAGS="${CFLAGS} 
--I${with_o3x}/include/
--I${with_o3x}/lib/libspl/include/
--I./include/
+-I${with_o3x}/include
+-I${with_o3x}/lib/libspl/include
+-I./include
 -D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
 -include ${with_o3x}/include/sys/zfs_mount.h
 "
@@ -116,7 +116,6 @@ else
 
         CFLAGS="${CFLAGS} 
 -I${freebsd_src}/cddl/lib/libumem
--I${freebsd_src}/sys/cddl/compat/opensolaris/
 -I${freebsd_src}/sys/cddl/compat/opensolaris
 -I${freebsd_src}/cddl/compat/opensolaris/include
 -I${freebsd_src}/cddl/compat/opensolaris/lib/libumem
