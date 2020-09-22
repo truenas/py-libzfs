@@ -2774,6 +2774,10 @@ cdef class ZFSPool(object):
                 ds = self.root.get_dataset(name)
                 ds.properties['keylocation'].value = 'prompt'
 
+        if self.root.history:
+            hopts = self.root.generate_history_opts(fsopts, '-o')
+            self.root.write_history('zfs create', hopts, name)
+
     def attach_vdevs(self, vdevs_tree):
         cdef const char *command = 'zpool add'
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': self.properties['ashift'].parsed})
