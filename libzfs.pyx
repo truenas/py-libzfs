@@ -623,12 +623,13 @@ cdef class ZFS(object):
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None, top_level_props=None, user_props=True):
+    def datasets_serialized(self, props=None, top_level_props=None, user_props=True, datasets=None):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
 
         prop_mapping = {}
+        datasets = datasets or [p.name for p in self.pools]
         if top_level_props is None:
             if props is None or 'mountpoint' in props:
                 # We want to add default mountpoint key here to keep existing behavior.
@@ -651,14 +652,13 @@ cdef class ZFS(object):
             if top_level_prop not in all_props:
                 raise ValueError(f'{top_level_prop} should be present in props.')
 
-        for p in self.pools:
+        for ds_name in datasets:
             c_name = handle = NULL
-            name = p.name
-            c_name = name
+            c_name = ds_name
 
             dataset = [
                 {
-                    'pool': name,
+                    'pool': ds_name.split('/', 1)[0],
                     'props': prop_mapping,
                     'top_level_props': top_level_props,
                     'user_props': user_props,
@@ -667,18 +667,19 @@ cdef class ZFS(object):
             ]
 
             with nogil:
-                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME)
                 if handle == NULL:
                     with gil:
                         e_args = self.get_error().args
                         logger.error(
-                            'Failed to retrieve root dataset handle for %s: %s', c_name, e_args[0] if e_args else ''
+                            'Failed to retrieve dataset handle for %s: %s', c_name, e_args[0] if e_args else ''
                         )
                         continue
                 else:
                     ZFS.__dataset_handles(handle, <void*>dataset)
 
-            yield dataset[1][name]
+            if len(dataset) > 1:
+                yield dataset[1][ds_name]
 
     @staticmethod
     cdef int __retrieve_mountable_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
