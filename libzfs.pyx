@@ -613,8 +613,14 @@ cdef class ZFS(object):
                 'children': list(child_data.values()),
                 'name': name,
                 'pool': configuration_data['pool'],
-                **encryption_dict
+                **encryption_dict,
             })
+            if configuration_data['snapshots']:
+                snap_list = ZFS._snapshots_snaplist_arg(None, False, False, False, False)
+                snap_list[0]['pool'] = configuration_data['pool']
+                ZFS.__datasets_snapshots(handle, <void*>snap_list)
+                data[name]['snapshots'] = snap_list[1:]
+
             for top_level_prop in configuration_data['top_level_props']:
                 data[name][top_level_prop] = properties.get(top_level_prop, {}).get('value')
 
@@ -623,7 +629,7 @@ cdef class ZFS(object):
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None, top_level_props=None, user_props=True, datasets=None):
+    def datasets_serialized(self, props=None, top_level_props=None, user_props=True, datasets=None, snapshots=False):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
@@ -662,6 +668,7 @@ cdef class ZFS(object):
                     'props': prop_mapping,
                     'top_level_props': top_level_props,
                     'user_props': user_props,
+                    'snapshots': snapshots,
                 },
                 {}
             ]
@@ -896,16 +903,23 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
+        cdef boolean_t close_handle, recursive
+
         ZFS.__snapshot_details(handle, arg)
         with gil:
             snap_list = <object> arg
-            if snap_list[0]['recursive']:
-                with nogil:
-                    libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
-        libzfs.zfs_close(handle)
+            close_handle = snap_list[0]['close_handle']
+            recursive = snap_list[0]['recursive']
+
+        if recursive:
+            libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
+        if close_handle:
+            libzfs.zfs_close(handle)
 
     @staticmethod
-    cdef object _snapshots_snaplist_arg(object props, object holds, object mounted, object recursive):
+    cdef object _snapshots_snaplist_arg(
+        object props, object holds, object mounted, object recursive, object close_handle
+    ):
         cdef int prop_id
 
         prop_mapping = {}
@@ -923,6 +937,7 @@ cdef class ZFS(object):
             'holds': holds,
             'mounted': mounted,
             'recursive': recursive,
+            'close_handle': close_handle,
         }]
 
     @staticmethod
@@ -933,7 +948,7 @@ cdef class ZFS(object):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
 
-        snap_list = ZFS._snapshots_snaplist_arg(props, holds, mounted, recursive)
+        snap_list = ZFS._snapshots_snaplist_arg(props, holds, mounted, recursive, True)
         for dataset in datasets:
             c_name = handle = NULL
             c_name = dataset
