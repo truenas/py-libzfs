@@ -897,16 +897,22 @@ cdef class ZFS(object):
     @staticmethod
     cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
         ZFS.__snapshot_details(handle, arg)
-        libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
+        with gil:
+            snap_list = <object> arg
+            if snap_list[0]['recursive']:
+                with nogil:
+                    libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
         libzfs.zfs_close(handle)
 
-
-    def snapshots_serialized(self, props=None, holds=False, mounted=False, datasets=None):
+    @staticmethod
+    cdef object _snapshots_serialized_impl(
+        libzfs.libzfs_handle_t *global_handle, object datasets, object props, object holds,
+        object mounted, boolean_t recursive,
+    ):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
 
-        datasets = datasets or [p.name for p in self.pools]
         prop_mapping = {}
         props = props or []
 
@@ -920,7 +926,8 @@ cdef class ZFS(object):
         snap_list = [{
             'props': prop_mapping,
             'holds': holds,
-            'mounted': mounted
+            'mounted': mounted,
+            'recursive': recursive,
         }]
         for dataset in datasets:
             c_name = handle = NULL
@@ -929,12 +936,17 @@ cdef class ZFS(object):
             snap_list[0]['pool'] = dataset.split('/', 1)[0]
 
             with nogil:
-                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_SNAPSHOT)
+                handle = libzfs.zfs_open(global_handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_SNAPSHOT)
                 if handle == NULL:
                     continue
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
 
         return snap_list[1:]
+
+
+    def snapshots_serialized(self, props=None, holds=False, mounted=False, datasets=None, recursive=True):
+        datasets = datasets or [p.name for p in self.pools]
+        return ZFS._snapshots_serialized_impl(self.handle, datasets, props, holds, mounted, recursive)
 
     property errno:
         def __get__(self):
