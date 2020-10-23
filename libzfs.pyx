@@ -894,8 +894,6 @@ cdef class ZFS(object):
 
             snap_list.append(snap_data)
 
-        libzfs.zfs_close(handle)
-
     @staticmethod
     cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
         ZFS.__snapshot_details(handle, arg)
@@ -903,11 +901,12 @@ cdef class ZFS(object):
         libzfs.zfs_close(handle)
 
 
-    def snapshots_serialized(self, props=None, holds=False, mounted=False):
+    def snapshots_serialized(self, props=None, holds=False, mounted=False, datasets=None):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
 
+        datasets = datasets or [p.name for p in self.pools]
         prop_mapping = {}
         props = props or []
 
@@ -923,15 +922,16 @@ cdef class ZFS(object):
             'holds': holds,
             'mounted': mounted
         }]
-        for p in self.pools:
+        for dataset in datasets:
             c_name = handle = NULL
-            name = p.name
-            c_name = name
+            c_name = dataset
 
-            snap_list[0]['pool'] = name
+            snap_list[0]['pool'] = dataset.split('/', 1)[0]
 
             with nogil:
-                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+                handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_SNAPSHOT)
+                if handle == NULL:
+                    continue
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
 
         return snap_list[1:]
