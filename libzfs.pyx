@@ -905,12 +905,7 @@ cdef class ZFS(object):
         libzfs.zfs_close(handle)
 
     @staticmethod
-    cdef object _snapshots_serialized_impl(
-        libzfs.libzfs_handle_t *global_handle, object datasets, object props, object holds,
-        object mounted, boolean_t recursive,
-    ):
-        cdef libzfs.zfs_handle_t* handle
-        cdef const char *c_name
+    cdef object _snapshots_snaplist_arg(object props, object holds, object mounted, object recursive):
         cdef int prop_id
 
         prop_mapping = {}
@@ -923,12 +918,22 @@ cdef class ZFS(object):
             if not props or prop_name in props:
                 prop_mapping[prop_name] = prop_id
 
-        snap_list = [{
+        return [{
             'props': prop_mapping,
             'holds': holds,
             'mounted': mounted,
             'recursive': recursive,
         }]
+
+    @staticmethod
+    cdef object _snapshots_serialized_impl(
+        libzfs.libzfs_handle_t *global_handle, object datasets, object props, object holds,
+        object mounted, object recursive,
+    ):
+        cdef libzfs.zfs_handle_t* handle
+        cdef const char *c_name
+
+        snap_list = ZFS._snapshots_snaplist_arg(props, holds, mounted, recursive)
         for dataset in datasets:
             c_name = handle = NULL
             c_name = dataset
