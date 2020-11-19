@@ -2084,12 +2084,12 @@ cdef class ZFSVdev(object):
 
     def remove(self):
         cdef const char *command = 'zpool remove'
-        path = self.path
-        cdef const char *c_path = path
+        path_guid = self.path or str(self.guid)
+        cdef const char *c_path_guid = path_guid
         cdef int rv
 
         with nogil:
-            rv = libzfs.zpool_vdev_remove(self.zpool.handle, c_path)
+            rv = libzfs.zpool_vdev_remove(self.zpool.handle, c_path_guid)
 
         if rv != 0:
             raise self.root.get_error()
