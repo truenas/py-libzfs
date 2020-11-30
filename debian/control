@@ -5,10 +5,10 @@ Maintainer: William Grzybowski <william@grzy.org>
 Build-Depends: debhelper-compat (= 12),
                dh-python,
                cython3,
-               libnvpair1,
-               libuutil1,
-               libzfs2,
-               libzfs2-devel,
+               libnvpair3,
+               libuutil3,
+               libzfs4,
+               libzfs4-devel,
                python3-all-dev,
                python3-setuptools
 Standards-Version: 4.4.1
