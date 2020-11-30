@@ -467,7 +467,7 @@ cdef class ZFS(object):
     cdef object get_error(self):
         return ZFSException(
             Error(libzfs.libzfs_errno(self.handle)),
-            libzfs.libzfs_error_description(self.handle)
+            (<bytes>libzfs.libzfs_error_description(self.handle)).decode('utf-8', 'backslashreplace')
         )
 
     cdef ZFSVdev make_vdev_tree(self, topology, props=None):
