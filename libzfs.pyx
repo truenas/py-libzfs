@@ -534,6 +534,7 @@ cdef class ZFS(object):
         cdef zfs.zprop_source_t csource
         cdef const char *name
         cdef zfs.zfs_type_t typ
+        cdef boolean_t retrieve_children
 
         cdef nvpair.nvlist_t *nvlist
 
@@ -545,6 +546,7 @@ cdef class ZFS(object):
             dataset_type = DatasetType(typ)
             data_list = <object> arg
             configuration_data = data_list[0]
+            retrieve_children = configuration_data['retrieve_children']
             data = data_list[1]
             children = []
             child_data = [configuration_data, {}]
@@ -591,7 +593,8 @@ cdef class ZFS(object):
                     'source': PropertySource(<int>csource).name
                 }
 
-        libzfs.zfs_iter_filesystems(handle, ZFS.__dataset_handles, <void*>child_data)
+        if retrieve_children:
+            libzfs.zfs_iter_filesystems(handle, ZFS.__dataset_handles, <void*>child_data)
 
         with gil:
             data[name] = {}
@@ -610,11 +613,13 @@ cdef class ZFS(object):
                 'properties': properties,
                 'id': name,
                 'type': dataset_type.name,
-                'children': list(child_data.values()),
                 'name': name,
                 'pool': configuration_data['pool'],
                 **encryption_dict,
             })
+            if retrieve_children:
+                data[name]['children'] = list(child_data.values())
+
             if configuration_data['snapshots']:
                 snap_list = ZFS._snapshots_snaplist_arg(None, False, False, False, False)
                 snap_list[0]['pool'] = configuration_data['pool']
@@ -629,7 +634,9 @@ cdef class ZFS(object):
 
         libzfs.zfs_close(handle)
 
-    def datasets_serialized(self, props=None, top_level_props=None, user_props=True, datasets=None, snapshots=False):
+    def datasets_serialized(
+        self, props=None, top_level_props=None, user_props=True, datasets=None, snapshots=False, retrieve_children=True
+    ):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
         cdef int prop_id
@@ -669,6 +676,7 @@ cdef class ZFS(object):
                     'top_level_props': top_level_props,
                     'user_props': user_props,
                     'snapshots': snapshots,
+                    'retrieve_children': retrieve_children,
                 },
                 {}
             ]
