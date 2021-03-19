@@ -602,12 +602,12 @@ cdef class ZFS(object):
             encryption_dict = {}
 
             IF HAVE_ZFS_ENCRYPTION:
-                encryptionroot = properties.get('encryptionroot', {}).get('value')
-                encryption_dict = {
-                    'encrypted': properties.get('encryption', {}).get('value', 'off') != 'off',
-                    'encryption_root': encryptionroot if encryptionroot else None,
-                    'key_loaded': properties.get('keystatus', {}).get('value') == 'available'
-                }
+                if 'encryption' in properties:
+                    encryption_dict['encrypted'] = properties['encryption']['value'] != 'off'
+                if 'encryptionroot' in properties:
+                    encryption_dict['encryption_root'] = properties['encryptionroot']['value'] or None
+                if 'keystatus' in properties:
+                    encryption_dict['key_loaded'] = properties['keystatus']['value'] == 'available'
 
             data[name].update({
                 'properties': properties,
