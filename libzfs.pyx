@@ -626,16 +626,15 @@ cdef class ZFS(object):
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
                 data[name]['snapshots'] = snap_list[1:]
 
-            for top_level_prop in configuration_data['top_level_props']:
-                data[name][top_level_prop] = properties.get(top_level_prop, {}).get('value')
-
-                if top_level_prop == 'mountpoint' and data[name][top_level_prop] == 'none':
-                    data[name]['mountpoint'] = None
+            data[name]['mountpoint'] = None
+            if properties.get('mounted', {}).get('value') == 'yes':
+                if properties.get('mountpoint', {}).get('value') != 'none':
+                    data[name]['mountpoint'] = properties['mountpoint']['value']
 
         libzfs.zfs_close(handle)
 
     def datasets_serialized(
-        self, props=None, top_level_props=None, user_props=True, datasets=None, snapshots=False, retrieve_children=True
+        self, props=None, user_props=True, datasets=None, snapshots=False, retrieve_children=True
     ):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
@@ -643,12 +642,6 @@ cdef class ZFS(object):
 
         prop_mapping = {}
         datasets = datasets or [p.name for p in self.pools]
-        if top_level_props is None:
-            if props is None or 'mountpoint' in props:
-                # We want to add default mountpoint key here to keep existing behavior.
-                top_level_props = ['mountpoint']
-            else:
-                top_level_props = []
 
         # If props is None, we include all properties, if it's an empty list, no property is retrieved
         for dataset_type in [DatasetType.FILESYSTEM, DatasetType.VOLUME] if props is None or len(props) else []:
@@ -660,11 +653,6 @@ cdef class ZFS(object):
                 if props is None or prop_name in props:
                     prop_mapping[dataset_type][prop_name] = prop_id
 
-        all_props = set(itertools.chain(*[prop_mapping[t] for t in prop_mapping]))
-        for top_level_prop in top_level_props:
-            if top_level_prop not in all_props:
-                raise ValueError(f'{top_level_prop} should be present in props.')
-
         for ds_name in datasets:
             c_name = handle = NULL
             c_name = ds_name
@@ -673,7 +661,6 @@ cdef class ZFS(object):
                 {
                     'pool': ds_name.split('/', 1)[0],
                     'props': prop_mapping,
-                    'top_level_props': top_level_props,
                     'user_props': user_props,
                     'snapshots': snapshots,
                     'retrieve_children': retrieve_children,
