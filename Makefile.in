@@ -1,4 +1,4 @@
-PYTHON ?= /usr/local/bin/python3.7
+PYTHON ?= python3
 PREFIX ?= /usr/local
 
 PXIS = \
