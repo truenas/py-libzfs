@@ -3851,7 +3851,7 @@ cdef class ZFSSnapshot(ZFSResource):
             if ret == 0:
                 return None
 
-            result = mntpt
+            result = str(mntpt)
             free(mntpt)
             return result
 
