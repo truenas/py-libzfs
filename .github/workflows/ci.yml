@@ -10,7 +10,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
-
+      - name: Install Dependencies
+        run: |
+          apt update
+          apt install -y debhelper-compat dh-python cython3 python3-all-dev python3-setuptools devscripts
       - name: Build deb package
         run: >
           dpkg-buildpackage
