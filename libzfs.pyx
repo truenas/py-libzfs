@@ -626,11 +626,6 @@ cdef class ZFS(object):
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
                 data[name]['snapshots'] = snap_list[1:]
 
-            data[name]['mountpoint'] = None
-            if properties.get('mounted', {}).get('value') == 'yes':
-                if properties.get('mountpoint', {}).get('value') != 'none':
-                    data[name]['mountpoint'] = properties['mountpoint']['value']
-
         libzfs.zfs_close(handle)
 
     def datasets_serialized(
