@@ -621,7 +621,7 @@ cdef class ZFS(object):
                 data[name]['children'] = list(child_data.values())
 
             if configuration_data['snapshots']:
-                snap_list = ZFS._snapshots_snaplist_arg(None, False, False, False, False)
+                snap_list = ZFS._snapshots_snaplist_arg(['name'], False, False, False, False)
                 snap_list[0]['pool'] = configuration_data['pool']
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
                 data[name]['snapshots'] = snap_list[1:]
@@ -952,7 +952,6 @@ cdef class ZFS(object):
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
 
         return snap_list[1:]
-
 
     def snapshots_serialized(self, props=None, holds=False, mounted=False, datasets=None, recursive=True):
         datasets = datasets or [p.name for p in self.pools]
