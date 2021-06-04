@@ -661,7 +661,7 @@ cdef class ZFS(object):
                     'props': prop_mapping,
                     'user_props': user_props,
                     'snapshots': snapshots,
-                    'snapshots_recursive': snapshots_recursive,
+                    'snapshots_recursive': bool(snapshots_recursive),
                     'retrieve_children': retrieve_children,
                 },
                 {}
