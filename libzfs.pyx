@@ -670,12 +670,9 @@ cdef class ZFS(object):
             with nogil:
                 handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME)
                 if handle == NULL:
-                    with gil:
-                        e_args = self.get_error().args
-                        logger.error(
-                            'Failed to retrieve dataset handle for %s: %s', c_name, e_args[0] if e_args else ''
-                        )
-                        continue
+                    # It just means that the dataset in question does not exist
+                    # and it's okay to continue checking the next one
+                    continue
                 else:
                     ZFS.__dataset_handles(handle, <void*>dataset)
 
