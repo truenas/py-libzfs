@@ -622,7 +622,11 @@ cdef class ZFS(object):
 
             if configuration_data['snapshots'] or configuration_data['snapshots_recursive']:
                 snap_props = ['name']
-                snap_props.extend(configuration_data['snapshot_props'] or [])
+                if configuration_data['snapshot_props'] is None:
+                    # We will retrieve all properties of snapshot in this case
+                    snap_props = None
+                else:
+                    snap_props.extend(configuration_data['snapshot_props'])
                 snap_list = ZFS._snapshots_snaplist_arg(
                     snap_props, False, False, configuration_data['snapshots_recursive'], False
                 )
