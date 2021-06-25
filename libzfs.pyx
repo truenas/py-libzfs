@@ -621,8 +621,14 @@ cdef class ZFS(object):
                 data[name]['children'] = list(child_data.values())
 
             if configuration_data['snapshots'] or configuration_data['snapshots_recursive']:
+                snap_props = ['name']
+                if configuration_data['snapshot_props'] is None:
+                    # We will retrieve all properties of snapshot in this case
+                    snap_props = None
+                else:
+                    snap_props.extend(configuration_data['snapshot_props'])
                 snap_list = ZFS._snapshots_snaplist_arg(
-                    ['name'], False, False, configuration_data['snapshots_recursive'], False
+                    snap_props, False, False, configuration_data['snapshots_recursive'], False
                 )
                 snap_list[0]['pool'] = configuration_data['pool']
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
@@ -632,7 +638,7 @@ cdef class ZFS(object):
 
     def datasets_serialized(
         self, props=None, user_props=True, datasets=None, snapshots=False, retrieve_children=True,
-        snapshots_recursive=False,
+        snapshots_recursive=False, snapshot_props=None,
     ):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
@@ -663,6 +669,7 @@ cdef class ZFS(object):
                     'snapshots': snapshots,
                     'snapshots_recursive': bool(snapshots_recursive),
                     'retrieve_children': retrieve_children,
+                    'snapshot_props': snapshot_props,
                 },
                 {}
             ]
