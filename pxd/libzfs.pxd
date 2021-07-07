@@ -17,7 +17,7 @@ cdef extern from "libzfs_core.h" nogil:
     ELSE:
         extern int lzc_send_space(const char *, const char *, uint64_t *)
 
-    extern int lzc_wait(const char *, zpool_wait_activity_t, boolean_t *)
+    extern int lzc_wait(const char *, zfs.zpool_wait_activity_t, boolean_t *)
 
     enum lzc_send_flags:
             LZC_SEND_FLAG_EMBED_DATA

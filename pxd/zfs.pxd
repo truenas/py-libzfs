@@ -96,7 +96,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ctypedef enum zpool_errata_t:
             pass
 
-    enum:
+    ctypedef enum zpool_wait_activity_t:
         ZPOOL_WAIT_CKPT_DISCARD,
         ZPOOL_WAIT_FREE,
         ZPOOL_WAIT_INITIALIZE,
