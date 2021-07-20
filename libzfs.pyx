@@ -2067,6 +2067,9 @@ cdef class ZFSVdev(object):
         if self.type not in (zfs.VDEV_TYPE_FILE, zfs.VDEV_TYPE_DISK):
             raise ZFSException(Error.NOTSUP, "Cannot detach virtual vdevs")
 
+        if self.parent is None:
+            raise ZFSException(Error.NOTSUP, "Cannot detach root-level vdevs")
+
         if self.parent.type not in (zfs.VDEV_TYPE_REPLACING, zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_SPARE):
             raise ZFSException(Error.NOTSUP, "Can detach disks from mirrors, replacing and spares only")
 
