@@ -23,6 +23,8 @@ cdef extern from "libzfs_core.h" nogil:
             LZC_SEND_FLAG_EMBED_DATA
     IF HAVE_LZC_BOOKMARK:
         extern int lzc_bookmark(nvpair.nvlist_t *bookmarks, nvpair.nvlist_t **errlist)
+    IF HAVE_LZC_SYNC:
+        extern int lzc_sync(const char *, nvpair.nvlist_t *innvl, nvpair.nvlist_t **outnvl)
 
 
 IF HAVE_LIBZUTIL_HEADER:

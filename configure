@@ -625,6 +625,7 @@ HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
 HAVE_LZC_SEND_SPACE
 HAVE_LZC_BOOKMARK
+HAVE_LZC_SYNC
 SENDFLAGS_T_PROGRESSASTITLE
 HAVE_SENDFLAGS_T_PROGRESSASTITLE
 SENDFLAGS_T_SAVED
@@ -5227,6 +5228,33 @@ then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
 $as_echo "$as_me: OK" >&6;}
 	HAVE_LZC_BOOKMARK=1
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking lzc_sync presence" >&5
+$as_echo "$as_me: Checking lzc_sync presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs_core.h>
+int
+main ()
+{
+
+			lzc_sync(NULL, NULL, NULL) /* ; */
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  HAVE_LZC_SYNC=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+else
+  HAVE_LZC_SYNC=0
+ { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+fi
 
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying existence and params of lzc_send_space" >&5

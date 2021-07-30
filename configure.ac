@@ -937,6 +937,29 @@ else
 
 fi
 
+dnl Checking lzc_sync existence
+
+AC_MSG_NOTICE([Verifying lzc_sync existence])
+
+exists=0
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs_core.h>],
+		[
+			lzc_sync(NULLL, NULL, NULL) /* ; */
+		]
+	)],
+	[exists=1],
+	[AC_MSG_NOTICE([NOT FOUND])]
+)
+if test "$exists" == 1
+then
+	AC_MSG_NOTICE([OK])
+	AC_SUBST(HAVE_LZC_SYNC, 1)
+else
+	AC_MSG_NOTICE([NOT_FOUND])
+	AC_SUBST(HAVE_LZC_SYNC, 0)
+fi
+
 
 SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
 

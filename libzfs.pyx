@@ -2749,6 +2749,18 @@ cdef class ZFSPool(object):
         if ret != 0:
             self.root.get_error()
 
+    IF HAVE_LZC_SYNC:
+        def sync(self, force=False):
+            cdef int ret
+            cdef const char *c_name = self.name
+            cdef NVList innvl = NVList()
+
+            innvl["force"] = force
+            with nogil:
+                ret = libzfs.lzc_sync(c_name, innvl.handle, NULL)
+            if ret != 0:
+                raise self.root.get_error()
+
     cdef NVList get_raw_config(self):
         cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
         return NVList(nvl)
