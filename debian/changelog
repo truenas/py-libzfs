@@ -1,4 +1,4 @@
-py-libzfs (0.5-1~truenas+2) bullseye-truenas-unstable; urgency=medium
+py-libzfs (0.6-1~truenas+2) bullseye-truenas-unstable; urgency=medium
 
   * Initial release (Closes: #932237)
 
