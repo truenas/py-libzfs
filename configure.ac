@@ -1,4 +1,4 @@
-AC_INIT(py-libzfs, 1.0)
+AC_INIT(py-libzfs, 1.1)
 
 AC_LANG(C)
 AC_PROG_CC
