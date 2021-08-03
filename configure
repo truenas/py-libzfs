@@ -623,6 +623,7 @@ LIBOBJS
 HAVE_THREAD_INIT_FINI
 HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
+HAVE_LZC_WAIT
 HAVE_LZC_SYNC
 HAVE_LZC_SEND_SPACE
 HAVE_LZC_BOOKMARK
@@ -5311,6 +5312,47 @@ else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT_FOUND" >&5
 $as_echo "$as_me: NOT_FOUND" >&6;}
 	HAVE_LZC_SYNC=0
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Verifying lzc_wait existence" >&5
+$as_echo "$as_me: Verifying lzc_wait existence" >&6;}
+
+exists=0
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs_core.h>
+int
+main ()
+{
+
+			lzc_wait(NULLL, 0, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  exists=1
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+$as_echo "$as_me: NOT FOUND" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+if test "$exists" == 1
+then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: OK" >&5
+$as_echo "$as_me: OK" >&6;}
+	HAVE_LZC_WAIT=1
+
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: NOT_FOUND" >&5
+$as_echo "$as_me: NOT_FOUND" >&6;}
+	HAVE_LZC_WAIT=0
 
 fi
 
