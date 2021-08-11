@@ -3360,10 +3360,6 @@ cdef class ZFSDataset(ZFSResource):
             handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
             ZFSDataset.__gather_snapshots(handle, <void*>snap_config)
 
-        # TODO: Fix error handling here for invalid specs
-        print('\n\nsnap config is -- ')
-        from pprint import pprint as pp
-        pp(snap_config)
         snap_names = NVList(otherdict={k: True for k in snap_config['snapshots']})
         with nogil:
             err = libzfs.zfs_destroy_snaps_nvl(self.root.handle, snap_names.handle, False)
