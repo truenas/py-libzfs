@@ -3318,7 +3318,7 @@ cdef class ZFSDataset(ZFSResource):
         libzfs.zfs_close(handle)
 
 
-    def delete_snapshots(self, snapshots_spec):
+    def delete_snapshots(self, snapshots_spec, recursive=False):
         # We expect snapshots_spec to be a dict conforming to following valid formats
         # {"all": false, "snapshots": [snapname1, {"start": snap1, "end": snap2}]}
         cdef const char *c_name
@@ -3351,7 +3351,7 @@ cdef class ZFSDataset(ZFSResource):
 
         c_name = self.name
         snap_config = {
-            'recursive': False,
+            'recursive': recursive,
             'failure': False,
             'snapshots': [],
             'snapshot_specification': snap_filter,
