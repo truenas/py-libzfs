@@ -3323,6 +3323,7 @@ cdef class ZFSDataset(ZFSResource):
         # {"all": false, "snapshots": [snapname1, {"start": snap1, "end": snap2}]}
         cdef const char *c_name
         cdef libzfs.zfs_handle_t * handle
+        cdef NVList snap_names
 
         snap_filter = '%' if snapshots_spec['all'] else ''
         for snap_spec in filter(
@@ -3351,9 +3352,16 @@ cdef class ZFSDataset(ZFSResource):
             handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
             ZFSDataset.__gather_snapshots(handle, <void*>snap_config)
 
+        # TODO: Fix error handling here for invalid specs
         print('\n\nsnap config is -- ')
         from pprint import pprint as pp
         pp(snap_config)
+        snap_names = NVList(otherdict={k: True for k in snap_config['snapshots']})
+        with nogil:
+            err = libzfs.zfs_destroy_snaps_nvl(self.root.handle, snap_names.handle, False)
+
+        if err != 0:
+            raise self.root.get_error()
 
     property children:
         def __get__(self):
