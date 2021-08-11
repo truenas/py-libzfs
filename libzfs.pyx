@@ -3261,6 +3261,31 @@ cdef class ZFSResource(ZFSObject):
         finally:
             free(iter.array)
 
+    def update_properties(self, all_properties):
+        cdef NVList props = NVList()
+        cdef int ret
+        invalid_values = []
+        for prop_name, prop_details in all_properties.items():
+            cur_prop = self.properties.get(prop_name)
+            if prop_details.get('source') == 'INHERIT' and cur_prop:
+                cur_prop.inherit(recursive=prop_details.get('recursive', False))
+            else:
+                if 'value' in prop_details:
+                    props[prop_name] = prop_details['value']
+                elif 'parsed' in prop_details:
+                    props[prop_name] = serialize_zfs_prop(prop_name, prop_details['parsed'])
+                else:
+                    invalid_values.append(prop_name)
+
+        if invalid_values:
+            raise ZFSException(f'Malformed values provided for {", ".join(invalid_values)!r}')
+
+        with nogil:
+            ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
+
+        if ret != 0:
+            raise self.root.get_error()
+
 
 cdef class ZFSDataset(ZFSResource):
     def __getstate__(self, recursive=True, snapshots=False, snapshots_recursive=False):
