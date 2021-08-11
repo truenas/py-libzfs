@@ -3311,6 +3311,92 @@ cdef class ZFSDataset(ZFSResource):
 
         return ret
 
+    @staticmethod
+    cdef int __snapshots_callback(libzfs.zfs_handle_t * handle, void *arg) nogil:
+        cdef const char *name = libzfs.zfs_get_name(handle)
+        with gil:
+            snap_config = <object> arg
+            snap_config['snapshots'].append(name)
+        libzfs.zfs_close(handle)
+
+    @staticmethod
+    cdef int __gather_snapshots(libzfs.zfs_handle_t * handle, void *arg) nogil:
+        cdef char *spec_orig
+        cdef int err
+
+        with gil:
+            snap_config = <object> arg
+            spec_orig = snap_config['snapshot_specification']
+
+        err = libzfs.zfs_iter_snapspec(handle, spec_orig, ZFSDataset.__snapshots_callback, arg)
+
+        with gil:
+            if err not in (0, py_errno.ENOENT):
+                snap_config['failure'] = True
+            else:
+                if snap_config['recursive']:
+                    with nogil:
+                        err = libzfs.zfs_iter_filesystems(handle, ZFSDataset.__gather_snapshots, arg)
+                    if err:
+                        snap_config['failure'] = True
+
+        libzfs.zfs_close(handle)
+
+
+    def delete_snapshots(self, snapshots_spec):
+        # We expect snapshots_spec to be a dict conforming to following valid formats
+        # {"all": false, "snapshots": [snapname1, {"start": snap1, "end": snap2}]}
+        cdef const char *c_name
+        cdef libzfs.zfs_handle_t * handle
+        cdef NVList snap_names
+
+        snap_filter = '%' if snapshots_spec['all'] else ''
+        invalid_snaps = []
+        for snap_spec in filter(
+            lambda v: any(k in v for k in ('start', 'end')) if isinstance(v, dict) else v, snapshots_spec['snapshots']
+        ):
+            if isinstance(snap_spec, str):
+                cur_filter = snap_spec
+            else:
+                cur_filter = ''
+                if snap_spec.get('start'):
+                    cur_filter = snap_spec['start']
+                    if not self.root.snapshots_serialized(['name'], datasets=[f'{self.name}@{snap_spec["start"]}']):
+                        invalid_snaps.append(snap_spec['start'])
+                cur_filter += '%'
+                if snap_spec.get('end'):
+                    cur_filter += snap_spec['end']
+                    if not self.root.snapshots_serialized(['name'], datasets=[f'{self.name}@{snap_spec["end"]}']):
+                        invalid_snaps.append(snap_spec['end'])
+
+            snap_filter += f'{"," if snap_filter else ""}{cur_filter}'
+
+        if invalid_snaps:
+            raise ZFSException(py_errno.ENOENT, f'{", ".join(invalid_snaps)} snapshot(s) could not be located')
+
+        c_name = self.name
+        snap_config = {
+            'recursive': snapshots_spec.get('recursive', False),
+            'failure': False,
+            'snapshots': [],
+            'snapshot_specification': snap_filter,
+        }
+        with nogil:
+            handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+            ZFSDataset.__gather_snapshots(handle, <void*>snap_config)
+
+        if snap_config['failure']:
+            raise self.root.get_error()
+
+        snap_names = NVList(otherdict={k: True for k in snap_config['snapshots']})
+        with nogil:
+            err = libzfs.zfs_destroy_snaps_nvl(self.root.handle, snap_names.handle, False)
+
+        if err != 0:
+            raise self.root.get_error()
+
+        return snap_config['snapshots']
+
     property children:
         def __get__(self):
             cdef ZFSDataset dataset
