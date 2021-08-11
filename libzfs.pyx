@@ -3286,6 +3286,75 @@ cdef class ZFSDataset(ZFSResource):
 
         return ret
 
+    @staticmethod
+    cdef int __snapshots_callback(libzfs.zfs_handle_t * handle, void *arg) nogil:
+        cdef const char *name = libzfs.zfs_get_name(handle)
+        with gil:
+            snap_config = <object> arg
+            snap_config['snapshots'].append(name)
+        libzfs.zfs_close(handle)
+
+    @staticmethod
+    cdef int __gather_snapshots(libzfs.zfs_handle_t * handle, void *arg) nogil:
+        cdef char *spec_orig
+        cdef int err
+
+        with gil:
+            snap_config = <object> arg
+            spec_orig = snap_config['snapshot_specification']
+
+        err = libzfs.zfs_iter_snapspec(handle, spec_orig, ZFSDataset.__snapshots_callback, arg)
+
+        with gil:
+            if err not in (0, py_errno.ENOENT):
+                snap_config['failure'] = True
+            else:
+                if snap_config['recursive']:
+                    with nogil:
+                        err = libzfs.zfs_iter_filesystems(handle, ZFSDataset.__gather_snapshots, arg)
+                    if err:
+                        snap_config['failure'] = True
+
+        libzfs.zfs_close(handle)
+
+
+    def delete_snapshots(self, snapshots_spec):
+        # We expect snapshots_spec to be a dict conforming to following valid formats
+        # {"all": false, "snapshots": [snapname1, {"start": snap1, "end": snap2}]}
+        cdef const char *c_name
+        cdef libzfs.zfs_handle_t * handle
+
+        snap_filter = '%' if snapshots_spec['all'] else ''
+        for snap_spec in filter(
+            lambda v: any(k in v for k in ('start', 'end')) if isinstance(v, dict) else v, snapshots_spec['snapshots']
+        ):
+            if isinstance(snap_spec, str):
+                cur_filter = snap_spec
+            else:
+                cur_filter = ''
+                if snap_spec.get('start'):
+                    cur_filter = snap_spec['start']
+                cur_filter += '%'
+                if snap_spec.get('end'):
+                    cur_filter += snap_spec['end']
+
+            snap_filter += f'{"," if snap_filter else ""}{cur_filter}'
+
+        c_name = self.name
+        snap_config = {
+            'recursive': False,
+            'failure': False,
+            'snapshots': [],
+            'snapshot_specification': snap_filter,
+        }
+        with nogil:
+            handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+            ZFSDataset.__gather_snapshots(handle, <void*>snap_config)
+
+        print('\n\nsnap config is -- ')
+        from pprint import pprint as pp
+        pp(snap_config)
+
     property children:
         def __get__(self):
             cdef ZFSDataset dataset
