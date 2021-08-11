@@ -3326,6 +3326,7 @@ cdef class ZFSDataset(ZFSResource):
         cdef NVList snap_names
 
         snap_filter = '%' if snapshots_spec['all'] else ''
+        invalid_snaps = []
         for snap_spec in filter(
             lambda v: any(k in v for k in ('start', 'end')) if isinstance(v, dict) else v, snapshots_spec['snapshots']
         ):
@@ -3335,11 +3336,18 @@ cdef class ZFSDataset(ZFSResource):
                 cur_filter = ''
                 if snap_spec.get('start'):
                     cur_filter = snap_spec['start']
+                    if not self.root.snapshots_serialized(['name'], datasets=[f'{self.name}@{snap_spec["start"]}']):
+                        invalid_snaps.append(snap_spec['start'])
                 cur_filter += '%'
                 if snap_spec.get('end'):
                     cur_filter += snap_spec['end']
+                    if not self.root.snapshots_serialized(['name'], datasets=[f'{self.name}@{snap_spec["end"]}']):
+                        invalid_snaps.append(snap_spec['end'])
 
             snap_filter += f'{"," if snap_filter else ""}{cur_filter}'
+
+        if invalid_snaps:
+            raise ZFSException(py_errno.ENOENT, f'{", ".join(invalid_snaps)} snapshot(s) could not be located')
 
         c_name = self.name
         snap_config = {
@@ -3362,6 +3370,8 @@ cdef class ZFSDataset(ZFSResource):
 
         if err != 0:
             raise self.root.get_error()
+
+        return snap_config['snapshots']
 
     property children:
         def __get__(self):
