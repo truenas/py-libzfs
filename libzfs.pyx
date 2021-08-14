@@ -3374,7 +3374,8 @@ cdef class ZFSDataset(ZFSResource):
         if invalid_snaps:
             raise ZFSException(py_errno.ENOENT, f'{", ".join(invalid_snaps)} snapshot(s) could not be located')
 
-        c_name = self.name
+        name = self.name
+        c_name = name
         snap_config = {
             'recursive': snapshots_spec.get('recursive', False),
             'failure': False,
@@ -3383,6 +3384,11 @@ cdef class ZFSDataset(ZFSResource):
         }
         with nogil:
             handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+
+        if handle == NULL:
+            raise ZFSException(py_errno.EFAULT, f'Unable to open zfs handle for {name!r} dataset')
+
+        with nogil:
             ZFSDataset.__gather_snapshots(handle, <void*>snap_config)
 
         if snap_config['failure']:
