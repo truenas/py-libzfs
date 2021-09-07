@@ -2615,7 +2615,7 @@ cdef class ZFSPool(object):
         try:
             nvinfo = self.get_raw_config()[zfs.ZPOOL_CONFIG_LOAD_INFO]
             return dict(nvinfo[zfs.ZPOOL_CONFIG_UNSUP_FEAT])
-        except ValueError as e:
+        except (KeyError, ValueError) as e:
             return str(e)
 
     property status_detail:
