@@ -40,6 +40,7 @@ case "${host_os}" in
 		;;
 esac
 
+CFLAGS="-DCYTHON_FALLTHROUGH"
 LIBS="-lzfs -lnvpair -lzfs_core -luutil"
 
 if [[ "${build_freebsd}" = "yes" ]]; then
