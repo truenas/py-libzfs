@@ -6,6 +6,7 @@ import stat
 import enum
 import errno
 import itertools
+import platform
 import tempfile
 import logging
 import time
@@ -1277,6 +1278,8 @@ cdef class ZFS(object):
             opts = opts.copy()
             for i in range(0, zfs.SPA_FEATURES):
                 feat = &zfs.spa_feature_table[i]
+                if platform.system().lower() == 'freebsd' and feat.fi_uname == 'edonr':
+                    continue
                 opts['feature@{}'.format(feat.fi_uname)] = 'enabled'
 
         copts = NVList(otherdict=opts)
