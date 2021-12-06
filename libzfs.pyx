@@ -589,10 +589,11 @@ cdef class ZFS(object):
                     strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
 
-                    libzfs.zfs_prop_get(
+                    if libzfs.zfs_prop_get(
                         handle, prop_id, cvalue, libzfs.ZFS_MAXPROPLEN,
                         &csource, csrcstr, MAX_DATASET_NAME_LEN, False
-                    )
+                    ) != 0:
+                        csource = zfs.ZPROP_SRC_NONE
 
                     libzfs.zfs_prop_get(
                         handle, prop_id, crawvalue, libzfs.ZFS_MAXPROPLEN,
@@ -865,10 +866,11 @@ cdef class ZFS(object):
                     strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(csrcstr, '', MAX_DATASET_NAME_LEN + 1)
 
-                    libzfs.zfs_prop_get(
+                    if libzfs.zfs_prop_get(
                         handle, prop_id, cvalue, libzfs.ZFS_MAXPROPLEN,
                         &csource, csrcstr, MAX_DATASET_NAME_LEN, False
-                    )
+                    ) != 0:
+                        csource = zfs.ZPROP_SRC_NONE
 
                     libzfs.zfs_prop_get(
                         handle, prop_id, crawvalue, libzfs.ZFS_MAXPROPLEN,
@@ -1603,7 +1605,8 @@ cdef class ZPoolProperty(object):
             cdef zfs.zprop_source_t src
 
             with nogil:
-                libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True)
+                if libzfs.zpool_get_prop(self.pool.handle, self.propid, NULL, 0, &src, True) != 0:
+                    src = zfs.ZPROP_SRC_NONE
 
             return PropertySource(src)
 
@@ -1703,11 +1706,12 @@ cdef class ZFSProperty(object):
     def refresh(self):
         with nogil:
             self.cname = libzfs.zfs_prop_to_name(self.propid)
-            libzfs.zfs_prop_get(
+            if libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
                 &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
                 False
-            )
+            ) != 0:
+                self.csource = zfs.ZPROP_SRC_NONE
 
             libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
