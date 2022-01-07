@@ -17,6 +17,7 @@ from datetime import datetime
 from libc.errno cimport errno
 from libc.string cimport memset, strncpy
 from libc.stdlib cimport realloc
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 import errno as py_errno
 import urllib.parse
@@ -1667,14 +1668,23 @@ cdef class ZPoolFeature(object):
 cdef class ZFSProperty(object):
     cdef readonly ZFSObject dataset
     cdef int propid
+    cdef bint free
     cdef const char *cname
     cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
-    cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
     cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
     cdef zfs.zprop_source_t csource
+    cdef str craw_value
 
     def __init__(self):
         raise RuntimeError('ZFSProperty cannot be instantiated by the user')
+
+    def __dealloc__(self):
+        pass
+        # PyMem_Free(self.cvalue)
+        # PyMem_Free(self.cname)
+        # if self.crawvalue:
+        #    print(self.crawvalue)
+        # PyMem_Free(self.csrcstr)
 
     def __getstate__(self):
         return {
@@ -1690,9 +1700,12 @@ cdef class ZFSProperty(object):
     def __repr__(self):
         return str(self)
 
-    def refresh(self):
+    cdef refresh(self):
+        self.free = True
+        cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         with nogil:
             self.cname = libzfs.zfs_prop_to_name(self.propid)
+            '''
             libzfs.zfs_prop_get(
                 self.dataset.handle, self.propid, self.cvalue, libzfs.ZFS_MAXPROPLEN,
                 &self.csource, self.csrcstr, MAX_DATASET_NAME_LEN,
@@ -1700,10 +1713,18 @@ cdef class ZFSProperty(object):
             )
 
             libzfs.zfs_prop_get(
-                self.dataset.handle, self.propid, self.crawvalue, libzfs.ZFS_MAXPROPLEN,
+                self.dataset.handle, self.propid, crawvalue, libzfs.ZFS_MAXPROPLEN,
                 NULL, NULL, 0,
                 True
-            )
+            )'''
+
+        try:
+            # self.craw_value = <str>crawvalue
+            self.craw_value = ''
+        except Exception as e:
+            print('\n\ngot an exception for prop ', self.cname,' -- ', self.dataset.name)
+            # print(crawvalue)
+            # print(type(crawvalue))
 
     property name:
         def __get__(self):
@@ -1730,7 +1751,7 @@ cdef class ZFSProperty(object):
 
     property rawvalue:
         def __get__(self):
-            return self.crawvalue
+            return self.craw_value
 
     property source:
         def __get__(self):
