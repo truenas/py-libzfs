@@ -13,14 +13,11 @@ from libc.stdlib cimport malloc, free
 @cython.internal
 cdef class NVList(object):
     cdef nvpair.nvlist_t* handle
-    cdef int foreign
 
     def __init__(self, uintptr_t nvlist=0, otherdict=None):
         if nvlist:
-            self.foreign = True
             self.handle = <nvpair.nvlist_t*>nvlist
         else:
-            self.foreign = False
             nvpair.nvlist_alloc(&self.handle, nvpair.NV_UNIQUE_NAME, 0)
 
         if otherdict:
@@ -29,9 +26,8 @@ cdef class NVList(object):
 
 
     def __dealloc__(self):
-        if not self.foreign:
-            nvpair.nvlist_free(self.handle)
-            self.handle = NULL
+        nvpair.nvlist_free(self.handle)
+        self.handle = NULL
 
     cdef object get_raw(self, key):
         cdef nvpair.nvpair_t* pair = self.__get_pair(key)
