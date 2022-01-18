@@ -908,18 +908,20 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
-        cdef boolean_t close_handle, recursive
+        cdef boolean_t close_handle, recursive, is_dataset
 
+        is_dataset = libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_SNAPSHOT
         ZFS.__snapshot_details(handle, arg)
         with gil:
             snap_list = <object> arg
             close_handle = snap_list[0]['close_handle']
             recursive = snap_list[0]['recursive']
 
-        if recursive:
-            libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
-        if close_handle:
-            libzfs.zfs_close(handle)
+        if is_dataset:
+            if recursive:
+                libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
+            if close_handle:
+                libzfs.zfs_close(handle)
 
     @staticmethod
     cdef object _snapshots_snaplist_arg(
