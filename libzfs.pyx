@@ -904,6 +904,8 @@ cdef class ZFS(object):
 
             snap_list.append(snap_data)
 
+        libzfs.zfs_close(handle)
+
     @staticmethod
     cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
         cdef boolean_t close_handle, recursive
