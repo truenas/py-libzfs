@@ -2407,6 +2407,7 @@ cdef class ZFSPool(object):
             'hostname': self.hostname,
             'status': self.status,
             'healthy': self.healthy,
+            'warning': self.warning,
             'error_count': self.error_count,
             'root_dataset': root_ds,
             'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
@@ -2595,18 +2596,25 @@ cdef class ZFSPool(object):
                 ELSE:
                     return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
+    def __warning_statuses(self):
+        statuses = [
+            PoolStatus.RESILVERING,
+            PoolStatus.VERSION_OLDER,
+            PoolStatus.FEAT_DISABLED,
+        ]
+
+        IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+            statuses.append(PoolStatus.NON_NATIVE_ASHIFT)
+
+        return statuses
+
     property healthy:
         def __get__(self):
-            ok = [
-                PoolStatus.OK,
-                PoolStatus.VERSION_OLDER,
-                PoolStatus.FEAT_DISABLED
-            ]
+            return self.status_code in [PoolStatus.OK] + self.__warning_statuses()
 
-            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
-                ok.append(PoolStatus.NON_NATIVE_ASHIFT)
-
-            return self.status_code in ok
+    property warning:
+        def __get__(self):
+            return self.status_code in self.__warning_statuses()
 
     def __unsup_features(self):
         try:
