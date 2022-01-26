@@ -813,7 +813,7 @@ cdef class ZFS(object):
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef zfs.zprop_source_t csource
         cdef const char *name
-        cdef const char *mntpt
+        cdef char *mntpt
         cdef nvpair.nvlist_t *ptr
         cdef nvpair.nvlist_t *nvlist
 
@@ -903,7 +903,13 @@ cdef class ZFS(object):
             ret = libzfs.zfs_is_mounted(handle, &mntpt)
 
             with gil:
-                snap_data['mountpoint'] = mntpt if ret !=0 else None
+                if ret == 0:
+                    snap_data['mountpoint'] = None
+                else:
+                    try:
+                        snap_data['mountpoint'] = str(mntpt)
+                    finally:
+                        free(mntpt)
 
         with gil:
             if not simple_handle:
