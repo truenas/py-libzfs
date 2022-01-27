@@ -1083,6 +1083,9 @@ cdef class ZFS(object):
 
         if search_paths:
             iargs.path = <char **>malloc(len(search_paths) * sizeof(char *))
+            if not iargs.path:
+                raise MemoryError()
+
             iargs.paths = len(search_paths)
             for i, p in enumerate(search_paths):
                 iargs.path[i] = <char *>p
@@ -3252,12 +3255,18 @@ cdef class ZFSResource(ZFSObject):
 
     @staticmethod
     cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        cdef iter_state *iter
+        cdef iter_state *iter, new
 
         iter = <iter_state *>arg
         if iter.length == iter.alloc:
-            iter.alloc += 128
-            iter.array = <uintptr_t *>realloc(iter.array, iter.alloc * sizeof(uintptr_t))
+            new.alloc = iter.alloc + 128
+            new.array = <uintptr_t *>realloc(iter.array, new.alloc * sizeof(uintptr_t))
+            if not new.array:
+                free(iter.array)
+                raise MemoryError()
+
+            iter.alloc = new.alloc
+            iter.array = new.array
 
         iter.array[iter.length] = <uintptr_t>handle
         iter.length += 1
@@ -3270,6 +3279,7 @@ cdef class ZFSResource(ZFSObject):
         cdef int recursion = allow_recursion
 
         with nogil:
+            memset(&iter, 0, sizeof(iter))
             libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
 
         try:
@@ -3441,6 +3451,7 @@ cdef class ZFSDataset(ZFSResource):
 
             datasets = []
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 libzfs.zfs_iter_filesystems(self.handle, self.__iterate, <void*>&iter)
 
             try:
@@ -3465,8 +3476,8 @@ cdef class ZFSDataset(ZFSResource):
             cdef ZFSSnapshot snapshot
             cdef iter_state iter
 
-            memset(&iter, 0, sizeof(iter))
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
                     libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
                 ELSE:
@@ -3491,6 +3502,7 @@ cdef class ZFSDataset(ZFSResource):
             cdef iter_state iter
 
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
             try:
