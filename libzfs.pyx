@@ -3278,8 +3278,8 @@ cdef class ZFSResource(ZFSObject):
         cdef iter_state iter
         cdef int recursion = allow_recursion
 
-        memset(&iter, 0, sizeof(iter))
         with nogil:
+            memset(&iter, 0, sizeof(iter))
             libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
 
         try:
@@ -3450,8 +3450,8 @@ cdef class ZFSDataset(ZFSResource):
             cdef iter_state iter
 
             datasets = []
-            memset(&iter, 0, sizeof(iter))
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 libzfs.zfs_iter_filesystems(self.handle, self.__iterate, <void*>&iter)
 
             try:
@@ -3476,8 +3476,8 @@ cdef class ZFSDataset(ZFSResource):
             cdef ZFSSnapshot snapshot
             cdef iter_state iter
 
-            memset(&iter, 0, sizeof(iter))
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
                     libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
                 ELSE:
@@ -3501,8 +3501,8 @@ cdef class ZFSDataset(ZFSResource):
             cdef ZFSBookmark bookmark
             cdef iter_state iter
 
-            memset(&iter, 0, sizeof(iter))
             with nogil:
+                memset(&iter, 0, sizeof(iter))
                 libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
             try:
