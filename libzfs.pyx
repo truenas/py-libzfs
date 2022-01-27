@@ -1253,13 +1253,7 @@ cdef class ZFS(object):
         return snap
 
     def get_object(self, name):
-        try:
-            return self.get_dataset(name)
-        except ZFSException as err:
-            if err.code == Error.NOENT:
-                return self.get_snapshot(name)
-
-            raise err
+        return self.get_snapshot(name) if "@" in name else self.get_dataset(name)
 
     def get_dataset_by_path(self, path):
         cdef libzfs.zfs_handle_t* handle
