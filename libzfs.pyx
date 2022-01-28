@@ -3523,7 +3523,7 @@ cdef class ZFSDataset(ZFSResource):
                         if iter.array[h]:
                             libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
 
-                free(iter.array)
+                    free(iter.array)
 
     property bookmarks:
         def __get__(self):
