@@ -3249,7 +3249,8 @@ cdef class ZFSResource(ZFSObject):
 
     @staticmethod
     cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        cdef iter_state *iter, new
+        cdef iter_state *iter
+        cdef iter_state new
 
         iter = <iter_state *>arg
         if iter.length == iter.alloc:
@@ -3304,8 +3305,7 @@ cdef class ZFSResource(ZFSObject):
             with nogil:
                 for h in range(0, iter.length):
                     if iter.array[h]:
-                        with nogil:
-                            libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
+                        libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
 
                 free(iter.array)
 
