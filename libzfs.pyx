@@ -3219,7 +3219,8 @@ cdef class ZFSResource(ZFSObject):
 
     @staticmethod
     cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
-        cdef iter_state *iter, new
+        cdef iter_state *iter
+        cdef iter_state new
 
         iter = <iter_state *>arg
         if iter.length == iter.alloc:
@@ -3243,7 +3244,12 @@ cdef class ZFSResource(ZFSObject):
         cdef int recursion = allow_recursion
 
         with nogil:
-            memset(&iter, 0, sizeof(iter))
+            iter.length = 0
+            iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
+            if not iter.array:
+                raise MemoryError()
+
+            iter.alloc = 128
             libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
 
         try:
@@ -3252,19 +3258,26 @@ cdef class ZFSResource(ZFSObject):
 
                 if type == zfs.ZFS_TYPE_FILESYSTEM or type == zfs.ZFS_TYPE_VOLUME:
                     dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    iter.array[h] = 0
                     dataset.root = self.root
                     dataset.pool = self.pool
-                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     yield dataset
 
                 if type == zfs.ZFS_TYPE_SNAPSHOT:
                     snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    iter.array[h] = 0
                     snapshot.root = self.root
                     snapshot.pool = self.pool
-                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     yield snapshot
         finally:
-            free(iter.array)
+            with nogil:
+                for h in range(0, iter.length):
+                    if iter.array[h]:
+                        libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
+
+                free(iter.array)
 
 
 cdef class ZFSDataset(ZFSResource):
@@ -3298,18 +3311,29 @@ cdef class ZFSDataset(ZFSResource):
 
             datasets = []
             with nogil:
-                memset(&iter, 0, sizeof(iter))
+                iter.length = 0
+                iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
+                if not iter.array:
+                    raise MemoryError()
+
+                iter.alloc = 128
                 libzfs.zfs_iter_filesystems(self.handle, self.__iterate, <void*>&iter)
 
             try:
                 for h in range(0, iter.length):
                     dataset = ZFSDataset.__new__(ZFSDataset)
+                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    iter.array[h] = 0
                     dataset.root = self.root
                     dataset.pool = self.pool
-                    dataset.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     yield dataset
             finally:
-                free(iter.array)
+                with nogil:
+                    for h in range(0, iter.length):
+                        if iter.array[h]:
+                            libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
+
+                    free(iter.array)
 
     property children_recursive:
         def __get__(self):
@@ -3324,7 +3348,12 @@ cdef class ZFSDataset(ZFSResource):
             cdef iter_state iter
 
             with nogil:
-                memset(&iter, 0, sizeof(iter))
+                iter.length = 0
+                iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
+                if not iter.array:
+                    raise MemoryError()
+
+                iter.alloc = 128
                 IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
                     libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
                 ELSE:
@@ -3333,15 +3362,21 @@ cdef class ZFSDataset(ZFSResource):
             try:
                 for h in range(0, iter.length):
                     snapshot = ZFSSnapshot.__new__(ZFSSnapshot)
+                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
+                    iter.array[h] = 0
                     snapshot.root = self.root
                     snapshot.pool = self.pool
-                    snapshot.handle = <libzfs.zfs_handle_t*>iter.array[h]
                     if snapshot.snapshot_name == '$ORIGIN':
                         continue
 
                     yield snapshot
             finally:
-                free(iter.array)
+                with nogil:
+                    for h in range(0, iter.length):
+                        if iter.array[h]:
+                            libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
+
+                    free(iter.array)
 
     property bookmarks:
         def __get__(self):
@@ -3349,18 +3384,29 @@ cdef class ZFSDataset(ZFSResource):
             cdef iter_state iter
 
             with nogil:
-                memset(&iter, 0, sizeof(iter))
+                iter.length = 0
+                iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
+                if not iter.array:
+                    raise MemoryError()
+
+                iter.alloc = 128
                 libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
 
             try:
                 for b in range(0, iter.length):
                     bookmark = ZFSBookmark.__new__(ZFSBookmark)
+                    bookmark.handle = <libzfs.zfs_handle_t*>iter.array[b]
+                    iter.array[b] = 0
                     bookmark.root = self.root
                     bookmark.pool = self.pool
-                    bookmark.handle = <libzfs.zfs_handle_t*>iter.array[b]
                     yield bookmark
             finally:
-                free(iter.array)
+                with nogil:
+                    for h in range(0, iter.length):
+                        if iter.array[h]:
+                            libzfs.zfs_close(<libzfs.zfs_handle_t*>iter.array[h])
+
+                    free(iter.array)
 
     property snapshots_recursive:
         def __get__(self):
