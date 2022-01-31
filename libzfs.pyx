@@ -464,9 +464,22 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg) nogil:
-        with gil:
-            pools = <object>arg
-            pools.append(<uintptr_t>handle)
+        cdef iter_state *iter
+        cdef iter_state new
+
+        iter = <iter_state *>arg
+        if iter.length == iter.alloc:
+            new.alloc = iter.alloc + 32
+            new.array = <uintptr_t *>realloc(iter.array, new.alloc * sizeof(uintptr_t))
+            if not new.array:
+                free(iter.array)
+                raise MemoryError()
+
+            iter.alloc = new.alloc
+            iter.array = new.array
+
+        iter.array[iter.length] = <uintptr_t>handle
+        iter.length += 1
 
     cdef object get_error(self):
         return ZFSException(
@@ -1002,19 +1015,39 @@ cdef class ZFS(object):
                     libzfs.libzfs_mnttab_cache(self.handle, self.mnttab_cache_enable)
 
             cdef ZFSPool pool
-            pools = []
+            cdef iter_state iter
+            cdef libzfs.zpool_handle_t *handle
 
-            with nogil:
-                libzfs.zpool_iter(self.handle, self.__iterate_pools, <void*>pools)
+            try:
+                with nogil:
+                    iter.length = 0
+                    iter.array = <uintptr_t *>malloc(32 * sizeof(uintptr_t))
+                    if not iter.array:
+                        raise MemoryError()
 
-            for h in pools:
-                pool = ZFSPool.__new__(ZFSPool)
-                pool.root = self
-                pool.handle = <libzfs.zpool_handle_t*><uintptr_t>h
-                if pool.name == '$import':
-                    continue
+                    iter.alloc = 32
 
-                yield pool
+                    libzfs.zpool_iter(self.handle, self.__iterate_pools, <void*>&iter)
+
+                for h in range(0, iter.length):
+                    handle = <libzfs.zpool_handle_t*>iter.array[h]
+                    pool = ZFSPool.__new__(ZFSPool)
+                    pool.root = self
+                    pool.handle = handle
+                    iter.array[h] = 0
+                    if pool.name == '$import':
+                        continue
+
+                    yield pool
+
+            finally:
+                with nogil:
+                    for h in range(0, iter.length):
+                        if iter.array[h] != 0:
+                            handle = <libzfs.zpool_handle_t *>iter.array[h]
+                            libzfs.zpool_close(handle)
+
+                    free(iter.array)
 
             if self.mnttab_cache_enable:
                 with nogil:
@@ -2402,7 +2435,7 @@ cdef class ZFSPool(object):
         raise RuntimeError('ZFSPool cannot be instantiated by the user')
 
     def __dealloc__(self):
-        if self.free:
+        if self.free and self.handle != NULL:
             with nogil:
                 libzfs.zpool_close(self.handle)
 
@@ -3108,8 +3141,9 @@ cdef class ZFSObject(object):
         raise RuntimeError('ZFSObject cannot be instantiated by the user')
 
     def __dealloc__(self):
-        with nogil:
-            libzfs.zfs_close(self.handle)
+        if self.handle != NULL:
+            with nogil:
+                libzfs.zfs_close(self.handle)
 
     def __str__(self):
         return "<libzfs.{0} name '{1}' type '{2}'>".format(self.__class__.__name__, self.name, self.type.name)
