@@ -2034,6 +2034,7 @@ cdef class ZFSVdev(object):
 
     def __getstate__(self, recursive=True):
         ret = {
+            'name': self.name,
             'type': self.type,
             'path': self.path,
             'guid': str(self.guid),
@@ -2254,6 +2255,19 @@ cdef class ZFSVdev(object):
     property guid:
         def __get__(self):
             return self.nvlist.get(zfs.ZPOOL_CONFIG_GUID)
+
+    property name:
+        def __get__(self):
+            cdef char *mntpt
+            mntpt = libzfs.zpool_vdev_name(
+                <libzfs.libzfs_handle_t *>self.root,
+                <libzfs.zpool_handle_t *>self.zpool.handle,
+                self.nvlist.handle,
+                libzfs.VDEV_NAME_TYPE_ID)
+            try:
+                return str(mntpt)
+            finally:
+                free(mntpt)
 
     property path:
         def __get__(self):
