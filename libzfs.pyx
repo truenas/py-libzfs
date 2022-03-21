@@ -845,12 +845,7 @@ cdef class ZFS(object):
             simple_handle = len(props) == 1 and 'name' in props
             snap_data = {}
 
-        IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
-            libzfs.zfs_iter_snapshots(
-                handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg
-            )
-        ELSE:
-            libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list)
+        libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg)
 
         if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_SNAPSHOT:
             return 0
@@ -3545,10 +3540,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
-                    libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
-                ELSE:
-                    libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter)
+                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
 
             try:
                 for h in range(0, iter.length):
