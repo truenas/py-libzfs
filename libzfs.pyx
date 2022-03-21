@@ -3838,6 +3838,17 @@ cdef class ZFSDataset(ZFSResource):
         for i in self.children:
             i._mount_recursive(ignore_errors, skip_unloaded_keys)
 
+    def unshare(self, recursive=False):
+        if recursive:
+            with nogil:
+                ret = zfs_unshareall(self.handle)
+        else:
+            with nogil:
+                ret = zfs_unshare(self.handle)
+
+        if ret != 0:
+            raise self.root.get_error()
+
     def umount(self, force=False):
         cdef int flags = 0
         cdef int ret
