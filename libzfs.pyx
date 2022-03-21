@@ -658,7 +658,7 @@ cdef class ZFS(object):
                 else:
                     snap_props.extend(configuration_data['snapshot_props'])
                 snap_list = ZFS._snapshots_snaplist_arg(
-                    snap_props, False, False, configuration_data['snapshots_recursive'], False
+                    snap_props, False, False, configuration_data['snapshots_recursive'], False, 0, 0
                 )
                 snap_list[0]['pool'] = configuration_data['pool']
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
@@ -829,6 +829,8 @@ cdef class ZFS(object):
         cdef char *mntpt
         cdef nvpair.nvlist_t *ptr
         cdef nvpair.nvlist_t *nvlist
+        cdef uint64_t min_txg
+        cdef uint64_t max_txg
 
         with gil:
             snap_list = <object> arg
@@ -837,14 +839,13 @@ cdef class ZFS(object):
             props = configuration_data['props']
             holds = configuration_data['holds']
             mounted = configuration_data['mounted']
+            min_txg = configuration_data['min_txg']
+            max_txg = configuration_data['max_txg']
             properties = {}
             simple_handle = len(props) == 1 and 'name' in props
             snap_data = {}
 
-        IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
-            libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, 0, 0)
-        ELSE:
-            libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list)
+        libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg)
 
         if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_SNAPSHOT:
             return 0
@@ -960,7 +961,7 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef object _snapshots_snaplist_arg(
-        object props, object holds, object mounted, object recursive, object close_handle
+        object props, object holds, object mounted, object recursive, object close_handle, int min_txg, int max_txg
     ):
         cdef int prop_id
 
@@ -980,17 +981,19 @@ cdef class ZFS(object):
             'mounted': mounted,
             'recursive': recursive,
             'close_handle': close_handle,
+            'min_txg': min_txg,
+            'max_txg': max_txg,
         }]
 
     @staticmethod
     cdef object _snapshots_serialized_impl(
         libzfs.libzfs_handle_t *global_handle, object datasets, object props, object holds,
-        object mounted, object recursive,
+        object mounted, object recursive, int min_txg, int max_txg
     ):
         cdef libzfs.zfs_handle_t* handle
         cdef const char *c_name
 
-        snap_list = ZFS._snapshots_snaplist_arg(props, holds, mounted, recursive, True)
+        snap_list = ZFS._snapshots_snaplist_arg(props, holds, mounted, recursive, True, min_txg, max_txg)
         for dataset in datasets:
             c_name = handle = NULL
             c_name = dataset
@@ -1005,9 +1008,11 @@ cdef class ZFS(object):
 
         return snap_list[1:]
 
-    def snapshots_serialized(self, props=None, holds=False, mounted=False, datasets=None, recursive=True):
+    def snapshots_serialized(
+        self, props=None, holds=False, mounted=False, datasets=None, recursive=True, min_txg=0, max_txg=0
+    ):
         datasets = datasets or [p.name for p in self.pools]
-        return ZFS._snapshots_serialized_impl(self.handle, datasets, props, holds, mounted, recursive)
+        return ZFS._snapshots_serialized_impl(self.handle, datasets, props, holds, mounted, recursive, min_txg, max_txg)
 
     property errno:
         def __get__(self):
@@ -3535,10 +3540,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                IF HAVE_ZFS_ITER_SNAPSHOTS == 6:
-                    libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
-                ELSE:
-                    libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter)
+                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
 
             try:
                 for h in range(0, iter.length):
