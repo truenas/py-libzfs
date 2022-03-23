@@ -768,11 +768,11 @@ cdef class ZFS(object):
         return ret
 
     def run(self):
-        self.zpool_enable_datasets('pool')
+        self.zpool_enable_datasets('pool', False)
 
 
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
-        cdef int zpool_enable_datasets(self, str name) nogil:
+        cdef int zpool_enable_datasets(self, str name, int enable_shares) nogil:
             cdef libzfs.zfs_handle_t* handle
             cdef const char *c_name
             cdef libzfs.get_all_cb_t cb
@@ -797,9 +797,10 @@ cdef class ZFS(object):
             )
 
             # Share all datasets
-            libzfs.zfs_foreach_mountpoint(
-                self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, <void*>mount_results, False
-            )
+            if enable_shares:
+                libzfs.zfs_foreach_mountpoint(
+                    self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, <void*>mount_results, False
+                )
 
             # Free all handles
             for i in range(cb.cb_used):
@@ -1154,14 +1155,14 @@ cdef class ZFS(object):
 
     IF HAVE_ZFS_ENCRYPTION:
         def import_pool(
-            self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False
+            self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False, enable_shares=False
         ):
-            return self.__import_pool(pool, newname, opts, missing_log, any_host, load_keys)
+            return self.__import_pool(pool, newname, opts, missing_log, any_host, load_keys, enable_shares)
     ELSE:
-        def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False):
-            return self.__import_pool(pool, newname, opts, missing_log, any_host)
+        def import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, enable_shares=False):
+            return self.__import_pool(pool, newname, opts, missing_log, any_host, enable_shares)
 
-    def __import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False):
+    def __import_pool(self, ZFSImportablePool pool, newname, opts, missing_log=False, any_host=False, load_keys=False, enable_shares=False):
         cdef const char *c_newname = newname
         cdef NVList copts = NVList(otherdict=opts)
         cdef int ret
@@ -1200,7 +1201,7 @@ cdef class ZFS(object):
                             failed_loading_keys.append(ds.name)
 
         IF HAVE_ZFS_FOREACH_MOUNTPOINT:
-            self.zpool_enable_datasets(newname)
+            self.zpool_enable_datasets(newname, enable_shares)
         ELSE:
             with nogil:
                 ret = libzfs.zpool_enable_datasets(newpool.handle, NULL, 0)
