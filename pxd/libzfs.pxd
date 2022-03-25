@@ -222,6 +222,12 @@ cdef extern from "libzfs.h" nogil:
     extern const char *zpool_prop_to_name(int prop)
     extern const char *zpool_prop_values(int prop)
 
+    ctypedef enum vdev_name_t:
+        VDEV_NAME_PATH
+        VDEV_NAME_GUID
+        VDEV_NAME_FOLLOW_LINKS
+        VDEV_NAME_TYPE_ID
+
     IF HAVE_ZPOOL_EVENTS_NEXT:
         extern int zpool_events_next(libzfs_handle_t *, nvpair.nvlist_t **, int *, unsigned, int);
 
