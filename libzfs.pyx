@@ -999,7 +999,8 @@ cdef class ZFS(object):
             snap_list[0]['pool'] = dataset.split('/', 1)[0]
 
             with nogil:
-                handle = libzfs.zfs_open(global_handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_SNAPSHOT)
+                handle = libzfs.zfs_open(global_handle, c_name,
+                                         zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME | zfs.ZFS_TYPE_SNAPSHOT)
                 if handle == NULL:
                     continue
                 ZFS.__datasets_snapshots(handle, <void*>snap_list)
@@ -1243,7 +1244,7 @@ cdef class ZFS(object):
         cdef ZFSDataset dataset
 
         with nogil:
-            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM|zfs.ZFS_TYPE_VOLUME)
+            handle = libzfs.zfs_open(self.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME)
 
         if handle == NULL:
             raise ZFSException(Error.NOENT, 'Dataset {0} not found'.format(name))
@@ -3466,7 +3467,7 @@ cdef class ZFSDataset(ZFSResource):
             'snapshot_specification': snap_filter,
         }
         with nogil:
-            handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM)
+            handle = libzfs.zfs_open(self.root.handle, c_name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME)
 
         if handle == NULL:
             raise ZFSException(py_errno.EFAULT, f'Unable to open zfs handle for {name!r} dataset')
