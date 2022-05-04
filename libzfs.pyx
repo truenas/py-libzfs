@@ -620,7 +620,8 @@ cdef class ZFS(object):
                     'parsed': parse_zfs_prop(prop_name, crawvalue),
                     'rawvalue': crawvalue,
                     'value': cvalue,
-                    'source': PropertySource(<int>csource).name
+                    'source': PropertySource(<int>csource).name,
+                    'source_info': str(csrcstr) if csource == zfs.ZPROP_SRC_INHERITED else None
                 }
 
         if retrieve_children:
@@ -1805,6 +1806,10 @@ cdef class ZFSProperty(object):
     property source:
         def __get__(self):
             return PropertySource(<int>self.csource)
+
+    property source_info:
+        def __get__(self):
+            return str(self.csrcstr)
 
     property parsed:
         def __get__(self):
