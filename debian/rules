@@ -10,3 +10,8 @@ export PYBUILD_NAME=libzfs
 override_dh_auto_configure:
 	./configure --prefix=/usr
 	dh_auto_configure
+
+override_dh_install:
+	mkdir -p debian/usr/share/py-libzfs
+	dh_install ./libzfs.c usr/share/py-libzfs/
+	dh_install
