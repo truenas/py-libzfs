@@ -2415,21 +2415,26 @@ cdef class ZPoolScrub(object):
     property bytes_scanned:
         def __get__(self):
             if self.stats != NULL:
-                return self.stats.pss_issued
+                return self.stats.pss_examined
 
     property total_secs_left:
         def __get__(self):
             if self.state != ScanState.SCANNING:
                 return
 
-            examined = self.bytes_scanned
             total = self.bytes_to_scan
+            issued = self.bytes_issued
             elapsed = ((int(time.time()) - self.stats.pss_pass_start) - self.stats.pss_pass_scrub_spent_paused) or 1
             pass_issued = self.stats.pss_pass_issued or 1
             issue_rate = pass_issued / elapsed
-            return int((total - examined) / issue_rate)
+            return int((total - issued) / issue_rate)
 
     property bytes_issued:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pss_issued
+
+    property bytes_issued_per_pass:
         def __get__(self):
             if self.stats != NULL:
                 return self.stats.pss_pass_issued
