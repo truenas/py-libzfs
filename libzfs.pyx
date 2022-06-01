@@ -301,6 +301,26 @@ cdef struct prop_iter_state:
     void *props
 
 
+def validate_dataset_name(name):
+    return validate_zfs_resource_name(name, zfs.ZFS_TYPE_FILESYSTEM | zfs.ZFS_TYPE_VOLUME)
+
+
+def validate_snapshot_name(name):
+    return validate_zfs_resource_name(name, zfs.ZFS_TYPE_SNAPSHOT)
+
+
+def validate_pool_name(name):
+    return validate_zfs_resource_name(name, zfs.ZFS_TYPE_POOL)
+
+
+cdef validate_zfs_resource_name(str name, int r_type):
+    cdef const char *c_name = name
+    cdef int ret
+    with nogil:
+        ret = libzfs.zfs_name_valid(c_name, <zfs.zfs_type_t>r_type)
+    return bool(ret)
+
+
 class DiffRecord(object):
     def __init__(self, raw):
         timestamp, cmd, typ, rest = raw.split(maxsplit=3)

@@ -43,7 +43,7 @@ except ImportError:
         config = namedtuple('config', ['CFLAGS', 'CPPFLAGS', 'LDFLAGS'])([], [], [])
 
 
-libraries=['nvpair', 'zfs', 'zfs_core', 'uutil']
+libraries = ['nvpair', 'zfs', 'zfs_core', 'uutil']
 if platform.system().lower() == 'freebsd':
     libraries.append('geom')
 
