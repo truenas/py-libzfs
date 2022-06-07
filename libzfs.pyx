@@ -2776,6 +2776,8 @@ cdef class ZFSPool(object):
 
             for i in range(0, zfs.SPA_FEATURES):
                 feat = &zfs.spa_feature_table[i]
+                if platform.system().lower() == 'freebsd' and feat.fi_uname == 'edonr':
+                    continue
                 f = ZPoolFeature.__new__(ZPoolFeature)
                 f.feature = feat
                 f.pool = self
