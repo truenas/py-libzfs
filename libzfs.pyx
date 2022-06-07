@@ -244,8 +244,6 @@ class SendFlag(enum.Enum):
     REPLICATE = 1
     DOALL = 2
     FROMORIGIN = 3
-    IF HAVE_SENDFLAGS_T_DEDUP:
-        DEDUP = 3
     PROPS = 4
     DRYRUN = 5
     PARSABLE = 6
@@ -264,6 +262,8 @@ class SendFlag(enum.Enum):
         SAVED = 14
     IF HAVE_SENDFLAGS_T_PROGRESSASTITLE:
         PROGRESSASTITLE = 15
+    IF HAVE_SENDFLAGS_T_DEDUP:
+        DEDUP = 16
 
 
 class DiffRecordType(enum.Enum):
