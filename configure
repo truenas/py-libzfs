@@ -655,6 +655,7 @@ HAVE_LZC_SEND_FLAG_EMBED_DATA
 HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
+HAVE_ZFS_SHARE
 HAVE_ZPOOL_SCAN
 HAVE_ZPOOL_GET_STATUS
 HAVE_ZFS_VDEV_STAT_ASHIFT
@@ -4362,7 +4363,35 @@ $as_echo "$as_me: 2 params" >&6;}
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_share" >&5
+$as_echo "$as_me: Checking function signature of zfs_share" >&6;}
 
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zfs_share(NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_SHARE=1
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 1 param" >&5
+$as_echo "$as_me: 1 param" >&6;}
+else $as_nop
+  HAVE_ZFS_SHARE=2
+ { $as_echo "$as_me:${as_lineno-$LINENO}: 2 params" >&5
+$as_echo "$as_me: 2 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_send_one" >&5
 $as_echo "$as_me: Checking function signature of zfs_send_one" >&6;}

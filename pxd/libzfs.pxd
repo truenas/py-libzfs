@@ -560,23 +560,37 @@ cdef extern from "libzfs.h" nogil:
     extern int zfs_unmount(zfs_handle_t *, const char *, int)
     extern int zfs_unmountall(zfs_handle_t *, int)
 
-    extern int zfs_is_shared(zfs_handle_t *)
-    extern int zfs_share(zfs_handle_t *)
-    extern int zfs_unshare(zfs_handle_t *)
+    IF HAVE_ZFS_SHARE == 1:
+        extern int zfs_is_shared(zfs_handle_t *)
+        extern int zfs_share(zfs_handle_t *)
+        extern int zfs_unshare(zfs_handle_t *)
 
-    extern int zfs_is_shared_nfs(zfs_handle_t *, char **)
-    extern int zfs_is_shared_smb(zfs_handle_t *, char **)
-    extern int zfs_share_nfs(zfs_handle_t *)
-    extern int zfs_share_smb(zfs_handle_t *)
-    extern int zfs_shareall(zfs_handle_t *)
-    extern int zfs_unshare_nfs(zfs_handle_t *, const char *)
-    extern int zfs_unshare_smb(zfs_handle_t *, const char *)
-    extern int zfs_unshareall_nfs(zfs_handle_t *)
-    extern int zfs_unshareall_smb(zfs_handle_t *)
-    extern int zfs_unshareall_bypath(zfs_handle_t *, const char *)
-    extern int zfs_unshareall(zfs_handle_t *)
-    extern int zfs_deleg_share_nfs(libzfs_handle_t *, char *, char *, char *,
-        void *, void *, int, zfs_share_op_t)
+        extern int zfs_is_shared_nfs(zfs_handle_t *, char **)
+        extern int zfs_is_shared_smb(zfs_handle_t *, char **)
+        extern int zfs_share_nfs(zfs_handle_t *)
+        extern int zfs_share_smb(zfs_handle_t *)
+        extern int zfs_shareall(zfs_handle_t *)
+        extern int zfs_unshare_nfs(zfs_handle_t *, const char *)
+        extern int zfs_unshare_smb(zfs_handle_t *, const char *)
+        extern int zfs_unshareall_nfs(zfs_handle_t *)
+        extern int zfs_unshareall_smb(zfs_handle_t *)
+        extern int zfs_unshareall_bypath(zfs_handle_t *, const char *)
+        extern int zfs_unshareall(zfs_handle_t *)
+        extern int zfs_deleg_share_nfs(libzfs_handle_t *, char *, char *, char *,
+            void *, void *, int, zfs_share_op_t)
+    ELSE:
+        cdef enum sa_protocol:
+            SA_PROTOCOL_NFS,
+            SA_PROTOCOL_SMB,
+            SA_PROTOCOL_COUNT
+        enum:
+            SA_NO_PROTOCOL
+
+        extern boolean_t zfs_is_shared(zfs_handle_t *, char **, const sa_protocol *)
+        extern int zfs_share(zfs_handle_t *, const sa_protocol *)
+        extern int zfs_unshare(zfs_handle_t *, const char *, const sa_protocol *)
+        extern int zfs_unshareall(zfs_handle_t *, const sa_protocol *)
+        extern void zfs_commit_shares(const sa_protocol *)
 
     extern int zfs_jail(zfs_handle_t *, int, int)
 

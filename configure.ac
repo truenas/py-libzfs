@@ -503,6 +503,21 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+dnl Checking function signature of zfs_share
+
+AC_MSG_NOTICE([Checking function signature of zfs_share])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zfs_share(NULL) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_SHARE, 1) AC_MSG_NOTICE([1 param])],
+	[AC_SUBST(HAVE_ZFS_SHARE, 2) AC_MSG_NOTICE([2 params])]
+)
+
+
 dnl Checking function signature of zfs_send_one
 
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
