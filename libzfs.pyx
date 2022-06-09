@@ -781,7 +781,10 @@ cdef class ZFS(object):
     @staticmethod
     cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
         cdef int ret
-        ret = libzfs.zfs_share(zhp)
+        IF HAVE_ZFS_SHARE == 1:
+            ret = libzfs.zfs_share(zhp)
+        ELSE:
+            ret = libzfs.zfs_share(zhp, NULL)
         if ret != 0:
             with gil:
                 mount_results = <object> arg
@@ -822,6 +825,11 @@ cdef class ZFS(object):
                 libzfs.zfs_foreach_mountpoint(
                     self.handle, cb.cb_handles, cb.cb_used, ZFS.share_one_dataset, <void*>mount_results, False
                 )
+                IF HAVE_ZFS_SHARE == 2:
+                    with gil:
+                        if not mount_results['failed_share']:
+                            with nogil:
+                                libzfs.zfs_commit_shares(NULL)
 
             # Free all handles
             for i in range(cb.cb_used):
