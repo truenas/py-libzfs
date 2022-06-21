@@ -514,10 +514,11 @@ cdef class ZFS(object):
         iter.length += 1
 
     cdef object get_error(self):
-        return ZFSException(
-            Error(libzfs.libzfs_errno(self.handle)),
-            (<bytes>libzfs.libzfs_error_description(self.handle)).decode('utf-8', 'backslashreplace')
-        )
+        description = (<bytes>libzfs.libzfs_error_description(self.handle)).decode('utf-8', 'backslashreplace')
+        error_action = (<bytes>libzfs.libzfs_error_action(self.handle)).decode('utf-8', 'backslashreplace')
+        if error_action:
+            description = f'{error_action}: {description}'
+        return ZFSException(Error(libzfs.libzfs_errno(self.handle)), description)
 
     cdef ZFSVdev make_vdev_tree(self, topology, props=None):
         cdef ZFSVdev root
