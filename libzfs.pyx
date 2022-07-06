@@ -184,9 +184,13 @@ class PoolStatus(enum.IntEnum):
     FAILING_DEV = libzfs.ZPOOL_STATUS_FAILING_DEV
     VERSION_NEWER = libzfs.ZPOOL_STATUS_VERSION_NEWER
     HOSTID_MISMATCH = libzfs.ZPOOL_STATUS_HOSTID_MISMATCH
+    HOSTID_ACTIVE = libzfs.ZPOOL_STATUS_HOSTID_ACTIVE
+    HOSTID_REQUIRED = libzfs.ZPOOL_STATUS_HOSTID_REQUIRED
     IO_FAILURE_WAIT = libzfs.ZPOOL_STATUS_IO_FAILURE_WAIT
     IO_FAILURE_CONTINUE = libzfs.ZPOOL_STATUS_IO_FAILURE_CONTINUE
+    IO_FAILURE_MMP = libzfs.ZPOOL_STATUS_IO_FAILURE_MMP
     BAD_LOG = libzfs.ZPOOL_STATUS_BAD_LOG
+    ERRATA = libzfs.ZPOOL_STATUS_ERRATA
     UNSUP_FEAT_READ = libzfs.ZPOOL_STATUS_UNSUP_FEAT_READ
     UNSUP_FEAT_WRITE = libzfs.ZPOOL_STATUS_UNSUP_FEAT_WRITE
     FAULTED_DEV_R = libzfs.ZPOOL_STATUS_FAULTED_DEV_R
@@ -196,8 +200,11 @@ class PoolStatus(enum.IntEnum):
     RESILVERING = libzfs.ZPOOL_STATUS_RESILVERING
     OFFLINE_DEV = libzfs.ZPOOL_STATUS_OFFLINE_DEV
     REMOVED_DEV = libzfs.ZPOOL_STATUS_REMOVED_DEV
-    IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
-        NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
+    REBUILDING = libzfs.ZPOOL_STATUS_REBUILDING
+    REBUILD_SCRUB = libzfs.ZPOOL_STATUS_REBUILD_SCRUB
+    NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
+    COMPATIBILITY_ERR = libzfs.ZPOOL_STATUS_COMPATIBILITY_ERR
+    INCOMPATIBLE_FEAT = libzfs.ZPOOL_STATUS_INCOMPATIBLE_FEAT
     OK = libzfs.ZPOOL_STATUS_OK
 
 
@@ -1760,7 +1767,7 @@ cdef class ZPoolFeature(object):
         if ret != 0:
             raise self.pool.root.get_error()
 
-        self.pool.root.write_history('zpool set', (self.name, 'enabled'), self.pool.name)
+        self.pool.root.write_history('zpool set', (name, 'enabled'), self.pool.name)
 
 
 cdef class ZFSProperty(object):
@@ -2745,6 +2752,7 @@ cdef class ZFSPool(object):
             if code is None:
                 return None
 
+            # https://github.com/openzfs/zfs/blob/master/cmd/zpool/zpool_main.c, `switch (reason)`
             status_mapping = {
                 PoolStatus.MISSING_DEV_R: 'One or more devices could not be opened. Sufficient replicas exist for '
                                           'the pool to continue functioning in a degraded state.',
@@ -2764,6 +2772,10 @@ cdef class ZFSPool(object):
                                         'replicas exist for the pool to continue functioning in a degraded state.',
                 PoolStatus.RESILVERING: 'One or more devices is currently being resilvered. The pool will continue '
                                         'to function, possibly in a degraded state.',
+                PoolStatus.REBUILDING: 'One or more devices is currently being resilvered. The pool will continue '
+                                       'to function, possibly in a degraded state.',
+                PoolStatus.REBUILD_SCRUB: 'One or more devices have been sequentially resilvered, scrubbing the pool '
+		                                  'is recommended.',
                 PoolStatus.CORRUPT_DATA: 'One or more devices has experienced an error resulting in data '
                                          'corruption. Applications may be affected.',
                 PoolStatus.CORRUPT_POOL: 'The pool metadata is corrupted and the pool cannot be opened.',
@@ -2773,6 +2785,11 @@ cdef class ZFSPool(object):
                                           'The pool cannot be accessed on this system.',
                 PoolStatus.FEAT_DISABLED: 'Some supported features are not enabled on the pool. The pool can still '
                                           'be used, but some features are unavailable.',
+                PoolStatus.COMPATIBILITY_ERR: 'This pool has a compatibility list specified, but it could not be '
+                                              'read/parsed at this time. The pool can still be used, but this '
+                                              'should be investigated.',
+                PoolStatus.INCOMPATIBLE_FEAT: 'One or more features are enabled on the pool despite not being '
+                                              'requested by the \'compatibility\' property.',
                 PoolStatus.UNSUP_FEAT_READ: 'The pool cannot be accessed on this system because it uses the following '
                                             f'feature(s) not supported on this system: {self.__unsup_features()}',
                 PoolStatus.UNSUP_FEAT_WRITE: 'The pool can only be accessed in read-only mode on this system. It '
@@ -2783,15 +2800,19 @@ cdef class ZFSPool(object):
                                           'degraded state.',
                 PoolStatus.FAULTED_DEV_NR: 'One or more devices are faulted in response to persistent errors. '
                                            'There are insufficient replicas for the pool to continue functioning.',
+                PoolStatus.FAILURE_MMP: 'The pool is suspended because multihost writes failed or were delayed; '
+		                                'another system could import the pool undetected.',
+                PoolStatus.IO_FAILURE_WAIT: 'One or more devices are faulted in response to IO failures.',
                 PoolStatus.IO_FAILURE_CONTINUE: 'One or more devices are faulted in response to IO failures.',
                 PoolStatus.BAD_LOG: 'An intent log record could not be read. Waiting for administrator intervention '
-                                    'to fix the faulted pool.'
+                                    'to fix the faulted pool.',
+                PoolStatus.NON_NATIVE_ASHIFT: 'One or more devices are configured to use a non-native block size. '
+                                              'Expect reduced performance.',
+                PoolStatus.HOSTID_MISMATCH: 'Mismatch between pool hostid and system hostid on imported pool. This '
+                                            'pool was previously imported into a system with a different hostid, and '
+                                            'then was verbatim imported into this system.',
+                PoolStatus.ERRATA: 'Errata detected.',
             }
-
-            IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
-                status_mapping[PoolStatus.NON_NATIVE_ASHIFT] = 'One or more devices are configured to use a ' \
-                                                               'non-native block size. Expect reduced performance.'
-
             return status_mapping.get(code.value)
 
     property error_count:
