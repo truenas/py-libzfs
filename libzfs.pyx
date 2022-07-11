@@ -2881,7 +2881,7 @@ cdef class ZFSPool(object):
             with nogil:
                 ret = libzfs.lzc_sync(c_name, innvl.handle, NULL)
             if ret != 0:
-                raise self.root.get_error()
+                raise OSError(ret, os.strerror(ret))
 
     cdef NVList get_raw_config(self):
         cdef uintptr_t nvl = <uintptr_t>libzfs.zpool_get_config(self.handle, NULL)
