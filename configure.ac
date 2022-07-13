@@ -544,16 +544,6 @@ dnl Checking existence of an enum value
 
 AC_MSG_NOTICE([Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence])
 
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-		[#include <libzfs.h>],
-		[
-			ZPOOL_STATUS_NON_NATIVE_ASHIFT == ZPOOL_STATUS_NON_NATIVE_ASHIFT /* ; */
-		]
-	)],
-	[AC_SUBST(HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT, 1) AC_MSG_NOTICE([OK])],
-	[AC_SUBST(HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT, 0) AC_MSG_NOTICE([NOT FOUND])]
-)
-
 
 dnl Checking existence of an enum value
 
