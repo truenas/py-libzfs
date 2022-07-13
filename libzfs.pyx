@@ -2662,16 +2662,12 @@ cdef class ZFSPool(object):
                     return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id))
 
     def __warning_statuses(self):
-        statuses = [
+        return [
             PoolStatus.RESILVERING,
             PoolStatus.VERSION_OLDER,
             PoolStatus.FEAT_DISABLED,
+            PoolStatus.NON_NATIVE_ASHIFT,
         ]
-
-        IF HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT:
-            statuses.append(PoolStatus.NON_NATIVE_ASHIFT)
-
-        return statuses
 
     property healthy:
         def __get__(self):
