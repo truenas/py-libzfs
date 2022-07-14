@@ -2738,7 +2738,7 @@ cdef class ZFSPool(object):
                                           'degraded state.',
                 PoolStatus.FAULTED_DEV_NR: 'One or more devices are faulted in response to persistent errors. '
                                            'There are insufficient replicas for the pool to continue functioning.',
-                PoolStatus.FAILURE_MMP: 'The pool is suspended because multihost writes failed or were delayed; '
+                PoolStatus.IO_FAILURE_MMP: 'The pool is suspended because multihost writes failed or were delayed; '
 		                                'another system could import the pool undetected.',
                 PoolStatus.IO_FAILURE_WAIT: 'One or more devices are faulted in response to IO failures.',
                 PoolStatus.IO_FAILURE_CONTINUE: 'One or more devices are faulted in response to IO failures.',
