@@ -2892,7 +2892,7 @@ cdef class ZFSPool(object):
     IF HAVE_LZC_SYNC:
         def sync(self, force=False):
             cdef int ret
-            cdef const char *c_name = self.name
+            cdef const char *c_name = libzfs.zpool_get_name(self.handle)
             cdef NVList innvl = NVList()
 
             innvl["force"] = force
