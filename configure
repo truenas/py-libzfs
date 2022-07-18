@@ -680,7 +680,6 @@ HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
 HAVE_ZFS_SEND_RESUME
 HAVE_ZFS_RECEIVE
 HAVE_LZC_SEND_FLAG_EMBED_DATA
-HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
 HAVE_ZPOOL_SCAN
@@ -4485,33 +4484,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&5
 printf "%s\n" "$as_me: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&6;}
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <libzfs.h>
-int
-main (void)
-{
-
-			ZPOOL_STATUS_NON_NATIVE_ASHIFT == ZPOOL_STATUS_NON_NATIVE_ASHIFT /* ; */
-
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT=1
- { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
-printf "%s\n" "$as_me: OK" >&6;}
-else $as_nop
-  HAVE_ZPOOL_STATUS_NON_NATIVE_ASHIFT=0
- { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
-printf "%s\n" "$as_me: NOT FOUND" >&6;}
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 
