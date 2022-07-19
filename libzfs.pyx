@@ -2885,9 +2885,8 @@ cdef class ZFSPool(object):
 
             with nogil:
                 ret = libzfs.lzc_wait(pool_name, c_activity_type, NULL)
-
             if ret != 0:
-                self.root.get_error()
+                raise OSError(ret, os.strerror(ret))
 
     IF HAVE_LZC_SYNC:
         def sync(self, force=False):
