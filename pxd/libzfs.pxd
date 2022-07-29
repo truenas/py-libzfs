@@ -2,6 +2,7 @@
 # cython: language_level=3, c_string_type=unicode, c_string_encoding=default
 
 include "config.pxi"
+include "zpool_status.pxi"
 
 IF HAVE_SENDFLAGS_T_TYPEDEF:
     include "sendflags.pxi"
@@ -230,41 +231,6 @@ cdef extern from "libzfs.h" nogil:
 
     IF HAVE_ZPOOL_EVENTS_NEXT:
         extern int zpool_events_next(libzfs_handle_t *, nvpair.nvlist_t **, int *, unsigned, int);
-
-    ctypedef enum zpool_status_t:
-        ZPOOL_STATUS_CORRUPT_CACHE
-        ZPOOL_STATUS_MISSING_DEV_R
-        ZPOOL_STATUS_MISSING_DEV_NR
-        ZPOOL_STATUS_CORRUPT_LABEL_R
-        ZPOOL_STATUS_CORRUPT_LABEL_NR
-        ZPOOL_STATUS_BAD_GUID_SUM
-        ZPOOL_STATUS_CORRUPT_POOL
-        ZPOOL_STATUS_CORRUPT_DATA
-        ZPOOL_STATUS_FAILING_DEV
-        ZPOOL_STATUS_VERSION_NEWER
-        ZPOOL_STATUS_HOSTID_MISMATCH
-        ZPOOL_STATUS_HOSTID_ACTIVE
-        ZPOOL_STATUS_HOSTID_REQUIRED
-        ZPOOL_STATUS_IO_FAILURE_WAIT
-        ZPOOL_STATUS_IO_FAILURE_CONTINUE
-        ZPOOL_STATUS_IO_FAILURE_MMP
-        ZPOOL_STATUS_BAD_LOG
-        ZPOOL_STATUS_ERRATA
-        ZPOOL_STATUS_UNSUP_FEAT_READ
-        ZPOOL_STATUS_UNSUP_FEAT_WRITE
-        ZPOOL_STATUS_FAULTED_DEV_R
-        ZPOOL_STATUS_FAULTED_DEV_NR
-        ZPOOL_STATUS_VERSION_OLDER
-        ZPOOL_STATUS_FEAT_DISABLED
-        ZPOOL_STATUS_RESILVERING
-        ZPOOL_STATUS_OFFLINE_DEV
-        ZPOOL_STATUS_REMOVED_DEV
-        ZPOOL_STATUS_REBUILDING
-        ZPOOL_STATUS_REBUILD_SCRUB
-        ZPOOL_STATUS_NON_NATIVE_ASHIFT
-        ZPOOL_STATUS_COMPATIBILITY_ERR
-        ZPOOL_STATUS_INCOMPATIBLE_FEAT
-        ZPOOL_STATUS_OK
 
     IF HAVE_ZPOOL_GET_STATUS == 3 and HAVE_ZPOOL_ERRATA_T_ENUM:
         extern zpool_status_t zpool_get_status(zpool_handle_t *, char **, zfs.zpool_errata_t *)

@@ -190,7 +190,8 @@ class PoolStatus(enum.IntEnum):
     IO_FAILURE_CONTINUE = libzfs.ZPOOL_STATUS_IO_FAILURE_CONTINUE
     IO_FAILURE_MMP = libzfs.ZPOOL_STATUS_IO_FAILURE_MMP
     BAD_LOG = libzfs.ZPOOL_STATUS_BAD_LOG
-    ERRATA = libzfs.ZPOOL_STATUS_ERRATA
+    IF HAVE_ZPOOL_STATUS_ERRATA:
+        ERRATA = libzfs.ZPOOL_STATUS_ERRATA
     UNSUP_FEAT_READ = libzfs.ZPOOL_STATUS_UNSUP_FEAT_READ
     UNSUP_FEAT_WRITE = libzfs.ZPOOL_STATUS_UNSUP_FEAT_WRITE
     FAULTED_DEV_R = libzfs.ZPOOL_STATUS_FAULTED_DEV_R
@@ -200,11 +201,15 @@ class PoolStatus(enum.IntEnum):
     RESILVERING = libzfs.ZPOOL_STATUS_RESILVERING
     OFFLINE_DEV = libzfs.ZPOOL_STATUS_OFFLINE_DEV
     REMOVED_DEV = libzfs.ZPOOL_STATUS_REMOVED_DEV
-    REBUILDING = libzfs.ZPOOL_STATUS_REBUILDING
-    REBUILD_SCRUB = libzfs.ZPOOL_STATUS_REBUILD_SCRUB
+    IF HAVE_ZPOOL_STATUS_REBUILDING:
+        REBUILDING = libzfs.ZPOOL_STATUS_REBUILDING
+    IF HAVE_ZPOOL_STATUS_REBUILD_SCRUB:
+        REBUILD_SCRUB = libzfs.ZPOOL_STATUS_REBUILD_SCRUB
     NON_NATIVE_ASHIFT = libzfs.ZPOOL_STATUS_NON_NATIVE_ASHIFT
-    COMPATIBILITY_ERR = libzfs.ZPOOL_STATUS_COMPATIBILITY_ERR
-    INCOMPATIBLE_FEAT = libzfs.ZPOOL_STATUS_INCOMPATIBLE_FEAT
+    IF HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR:
+        COMPATIBILITY_ERR = libzfs.ZPOOL_STATUS_COMPATIBILITY_ERR
+    IF HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT:
+        INCOMPATIBLE_FEAT = libzfs.ZPOOL_STATUS_INCOMPATIBLE_FEAT
     OK = libzfs.ZPOOL_STATUS_OK
 
 
@@ -2768,10 +2773,6 @@ cdef class ZFSPool(object):
                                         'replicas exist for the pool to continue functioning in a degraded state.',
                 PoolStatus.RESILVERING: 'One or more devices is currently being resilvered. The pool will continue '
                                         'to function, possibly in a degraded state.',
-                PoolStatus.REBUILDING: 'One or more devices is currently being resilvered. The pool will continue '
-                                       'to function, possibly in a degraded state.',
-                PoolStatus.REBUILD_SCRUB: 'One or more devices have been sequentially resilvered, scrubbing the pool '
-		                                  'is recommended.',
                 PoolStatus.CORRUPT_DATA: 'One or more devices has experienced an error resulting in data '
                                          'corruption. Applications may be affected.',
                 PoolStatus.CORRUPT_POOL: 'The pool metadata is corrupted and the pool cannot be opened.',
@@ -2781,11 +2782,6 @@ cdef class ZFSPool(object):
                                           'The pool cannot be accessed on this system.',
                 PoolStatus.FEAT_DISABLED: 'Some supported features are not enabled on the pool. The pool can still '
                                           'be used, but some features are unavailable.',
-                PoolStatus.COMPATIBILITY_ERR: 'This pool has a compatibility list specified, but it could not be '
-                                              'read/parsed at this time. The pool can still be used, but this '
-                                              'should be investigated.',
-                PoolStatus.INCOMPATIBLE_FEAT: 'One or more features are enabled on the pool despite not being '
-                                              'requested by the \'compatibility\' property.',
                 PoolStatus.UNSUP_FEAT_READ: 'The pool cannot be accessed on this system because it uses the following '
                                             f'feature(s) not supported on this system: {self.__unsup_features()}',
                 PoolStatus.UNSUP_FEAT_WRITE: 'The pool can only be accessed in read-only mode on this system. It '
@@ -2807,8 +2803,22 @@ cdef class ZFSPool(object):
                 PoolStatus.HOSTID_MISMATCH: 'Mismatch between pool hostid and system hostid on imported pool. This '
                                             'pool was previously imported into a system with a different hostid, and '
                                             'then was verbatim imported into this system.',
-                PoolStatus.ERRATA: 'Errata detected.',
             }
+            IF HAVE_ZPOOL_STATUS_ERRATA:
+                status_mapping[PoolStatus.ERRATA] = 'Errata detected.'
+            IF HAVE_ZPOOL_STATUS_REBUILDING:
+                status_mapping[PoolStatus.REBUILDING] = 'One or more devices is currently being resilvered. The pool '\
+                                                        'will continue to function, possibly in a degraded state.'
+            IF HAVE_ZPOOL_STATUS_REBUILD_SCRUB:
+                status_mapping[PoolStatus.REBUILD_SCRUB] = 'One or more devices have been sequentially resilvered, '\
+                                                           'scrubbing the pool is recommended.'
+            IF HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR:
+                status_mapping[PoolStatus.COMPATIBILITY_ERR] = 'This pool has a compatibility list specified, but it '\
+                                                               'could not be read/parsed at this time. The pool can '\
+                                                               'still be used, but this should be investigated.'
+            IF HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT:
+                status_mapping[PoolStatus.INCOMPATIBLE_FEAT] = 'One or more features are enabled on the pool despite '\
+                                                               'not being requested by the \'compatibility\' property.'
             return status_mapping.get(code.value)
 
     property error_count:

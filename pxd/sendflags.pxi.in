@@ -23,3 +23,5 @@ cdef extern from "libzfs.h" nogil:
         @SENDFLAGS_T_HOLDS@
         @SENDFLAGS_T_SAVED@
         @SENDFLAGS_T_PROGRESSASTITLE@
+
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

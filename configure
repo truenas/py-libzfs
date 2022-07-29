@@ -680,6 +680,16 @@ HAVE_ZFS_SEND_RESUME_TOKEN_TO_NVLIST
 HAVE_ZFS_SEND_RESUME
 HAVE_ZFS_RECEIVE
 HAVE_LZC_SEND_FLAG_EMBED_DATA
+ZPOOL_STATUS_INCOMPATIBLE_FEAT
+HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT
+ZPOOL_STATUS_COMPATIBILITY_ERR
+HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR
+ZPOOL_STATUS_REBUILD_SCRUB
+HAVE_ZPOOL_STATUS_REBUILD_SCRUB
+ZPOOL_STATUS_REBUILDING
+HAVE_ZPOOL_STATUS_REBUILDING
+ZPOOL_STATUS_ERRATA
+HAVE_ZPOOL_STATUS_ERRATA
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
 HAVE_ZFS_SHARE
@@ -4482,8 +4492,213 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&5
-printf "%s\n" "$as_me: Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence" >&6;}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_ERRATA presence" >&5
+printf "%s\n" "$as_me: Checking ZPOOL_STATUS_ERRATA presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_status_t status = ZPOOL_STATUS_ERRATA /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		HAVE_ZPOOL_STATUS_ERRATA=1
+
+		ZPOOL_STATUS_ERRATA="ZPOOL_STATUS_ERRATA"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+
+else $as_nop
+
+		HAVE_ZPOOL_STATUS_ERRATA=0
+
+		ZPOOL_STATUS_ERRATA="# ZPOOL_STATUS_ERRATA not defined"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_REBUILDING presence" >&5
+printf "%s\n" "$as_me: Checking ZPOOL_STATUS_REBUILDING presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_status_t status = ZPOOL_STATUS_REBUILDING /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		HAVE_ZPOOL_STATUS_REBUILDING=1
+
+		ZPOOL_STATUS_REBUILDING="ZPOOL_STATUS_REBUILDING"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+
+else $as_nop
+
+		HAVE_ZPOOL_STATUS_REBUILDING=0
+
+		ZPOOL_STATUS_REBUILDING="# ZPOOL_STATUS_REBUILDING not defined"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_REBUILD_SCRUB presence" >&5
+printf "%s\n" "$as_me: Checking ZPOOL_STATUS_REBUILD_SCRUB presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_status_t status = ZPOOL_STATUS_REBUILD_SCRUB /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		HAVE_ZPOOL_STATUS_REBUILD_SCRUB=1
+
+		ZPOOL_STATUS_REBUILD_SCRUB="ZPOOL_STATUS_REBUILD_SCRUB"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+
+else $as_nop
+
+		HAVE_ZPOOL_STATUS_REBUILD_SCRUB=0
+
+		ZPOOL_STATUS_REBUILD_SCRUB="# ZPOOL_STATUS_REBUILD_SCRUB not defined"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_COMPATIBILITY_ERR presence" >&5
+printf "%s\n" "$as_me: Checking ZPOOL_STATUS_COMPATIBILITY_ERR presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_status_t status = ZPOOL_STATUS_COMPATIBILITY_ERR /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR=1
+
+		ZPOOL_STATUS_COMPATIBILITY_ERR="ZPOOL_STATUS_COMPATIBILITY_ERR"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+
+else $as_nop
+
+		HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR=0
+
+		ZPOOL_STATUS_COMPATIBILITY_ERR="# ZPOOL_STATUS_COMPATIBILITY_ERR not defined"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_INCOMPATIBLE_FEAT presence" >&5
+printf "%s\n" "$as_me: Checking ZPOOL_STATUS_INCOMPATIBLE_FEAT presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_status_t status = ZPOOL_STATUS_INCOMPATIBLE_FEAT /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT=1
+
+		ZPOOL_STATUS_INCOMPATIBLE_FEAT="ZPOOL_STATUS_INCOMPATIBLE_FEAT"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+
+else $as_nop
+
+		HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT=0
+
+		ZPOOL_STATUS_INCOMPATIBLE_FEAT="# ZPOOL_STATUS_INCOMPATIBLE_FEAT not defined"
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 
@@ -5517,34 +5732,21 @@ fi
 
 
 	echo >& 6
-	echo '   GENERATING CONFIG.H   ' | sed -e's/./-/g' >&6
-	echo '   GENERATING CONFIG.H' >& 6
-	echo '   GENERATING CONFIG.H   ' | sed -e's/./-/g' >&6
+	echo '   GENERATING FILES   ' | sed -e's/./-/g' >&6
+	echo '   GENERATING FILES' >& 6
+	echo '   GENERATING FILES   ' | sed -e's/./-/g' >&6
 
 
 ac_config_files="$ac_config_files pxd/config.pxi"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: GENERATED pxd/config.pxi" >&5
-printf "%s\n" "$as_me: GENERATED pxd/config.pxi" >&6;}
-
 ac_config_files="$ac_config_files pxd/sendflags.pxi"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: GENERATED pxd/sendflags.pxi" >&5
-printf "%s\n" "$as_me: GENERATED pxd/sendflags.pxi" >&6;}
-
-
-	echo >& 6
-	echo '   GENERATING config.py   ' | sed -e's/./-/g' >&6
-	echo '   GENERATING config.py' >& 6
-	echo '   GENERATING config.py   ' | sed -e's/./-/g' >&6
-
+ac_config_files="$ac_config_files pxd/zpool_status.pxi"
 
 ac_config_files="$ac_config_files config.py"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: GENERATED config.py" >&5
-printf "%s\n" "$as_me: GENERATED config.py" >&6;}
-
 ac_config_files="$ac_config_files Makefile"
+
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6248,6 +6450,7 @@ do
   case $ac_config_target in
     "pxd/config.pxi") CONFIG_FILES="$CONFIG_FILES pxd/config.pxi" ;;
     "pxd/sendflags.pxi") CONFIG_FILES="$CONFIG_FILES pxd/sendflags.pxi" ;;
+    "pxd/zpool_status.pxi") CONFIG_FILES="$CONFIG_FILES pxd/zpool_status.pxi" ;;
     "config.py") CONFIG_FILES="$CONFIG_FILES config.py" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 
