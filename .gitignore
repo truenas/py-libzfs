@@ -5,6 +5,7 @@ dist/
 libzfs.egg-info/
 pxd/config.pxi
 pxd/sendflags.pxi
+pxd/zpool_status.pxi
 venv/
 Makefile
 config.log

@@ -1,4 +1,4 @@
-AC_INIT(py-libzfs, 1.1)
+AC_INIT([py-libzfs],[1.1])
 
 AC_LANG(C)
 AC_PROG_CC
@@ -141,8 +141,8 @@ CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
 SECTION_TITLE([RUNNING TESTS ON zfs.h HEADER])
 
 
-AC_CHECK_HEADERS([sys/types.h], [], [AC_ERROR([A working sys/types header is required])])
-AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_ERROR([A working zfs header is required])],[
+AC_CHECK_HEADERS([sys/types.h], [], [AC_MSG_ERROR(A working sys/types header is required)])
+AC_CHECK_HEADERS([sys/fs/zfs.h], [], [AC_MSG_ERROR(A working zfs header is required)],[
 	#include <sys/types.h>
 ])
 
@@ -305,14 +305,14 @@ SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
 if [[ "$zof" = false ]] || [[ "$o3x" = true ]]; then
-	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
+	AC_CHECK_HEADERS([libzfs.h], [], [AC_MSG_ERROR(A working libzfs header is required)], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
 		#include <sys/fs/zfs.h>
 		#include <sys/zfs_ioctl.h>
 	])
 else
-	AC_CHECK_HEADERS([libzfs.h], [], [AC_ERROR([A working libzfs header is required])], [
+	AC_CHECK_HEADERS([libzfs.h], [], [AC_MSG_ERROR(A working libzfs header is required)], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
 		#include <sys/fs/zfs.h>
@@ -542,7 +542,107 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 dnl Checking existence of an enum value
 
-AC_MSG_NOTICE([Checking ZPOOL_STATUS_NON_NATIVE_ASHIFT presence])
+AC_MSG_NOTICE([Checking ZPOOL_STATUS_ERRATA presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_status_t status = ZPOOL_STATUS_ERRATA /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_ERRATA, 1)
+		AC_SUBST(ZPOOL_STATUS_ERRATA, "ZPOOL_STATUS_ERRATA")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_ERRATA, 0)
+		AC_SUBST(ZPOOL_STATUS_ERRATA, ["# ZPOOL_STATUS_ERRATA not defined"])
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking existence of an enum value
+
+AC_MSG_NOTICE([Checking ZPOOL_STATUS_REBUILDING presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_status_t status = ZPOOL_STATUS_REBUILDING /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_REBUILDING, 1)
+		AC_SUBST(ZPOOL_STATUS_REBUILDING, "ZPOOL_STATUS_REBUILDING")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_REBUILDING, 0)
+		AC_SUBST(ZPOOL_STATUS_REBUILDING, ["# ZPOOL_STATUS_REBUILDING not defined"])
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking existence of an enum value
+
+AC_MSG_NOTICE([Checking ZPOOL_STATUS_REBUILD_SCRUB presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_status_t status = ZPOOL_STATUS_REBUILD_SCRUB /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_REBUILD_SCRUB, 1)
+		AC_SUBST(ZPOOL_STATUS_REBUILD_SCRUB, "ZPOOL_STATUS_REBUILD_SCRUB")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_REBUILD_SCRUB, 0)
+		AC_SUBST(ZPOOL_STATUS_REBUILD_SCRUB, ["# ZPOOL_STATUS_REBUILD_SCRUB not defined"])
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking existence of an enum value
+
+AC_MSG_NOTICE([Checking ZPOOL_STATUS_COMPATIBILITY_ERR presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_status_t status = ZPOOL_STATUS_COMPATIBILITY_ERR /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR, 1)
+		AC_SUBST(ZPOOL_STATUS_COMPATIBILITY_ERR, "ZPOOL_STATUS_COMPATIBILITY_ERR")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_COMPATIBILITY_ERR, 0)
+		AC_SUBST(ZPOOL_STATUS_COMPATIBILITY_ERR, ["# ZPOOL_STATUS_COMPATIBILITY_ERR not defined"])
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
+
+
+dnl Checking existence of an enum value
+
+AC_MSG_NOTICE([Checking ZPOOL_STATUS_INCOMPATIBLE_FEAT presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_status_t status = ZPOOL_STATUS_INCOMPATIBLE_FEAT /* ; */
+		]
+	)],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT, 1)
+		AC_SUBST(ZPOOL_STATUS_INCOMPATIBLE_FEAT, "ZPOOL_STATUS_INCOMPATIBLE_FEAT")
+		AC_MSG_NOTICE([OK])
+	],[
+		AC_SUBST(HAVE_ZPOOL_STATUS_INCOMPATIBLE_FEAT, 0)
+		AC_SUBST(ZPOOL_STATUS_INCOMPATIBLE_FEAT, ["# ZPOOL_STATUS_INCOMPATIBLE_FEAT not defined"])
+		AC_MSG_NOTICE([NOT FOUND])
+	]
+)
 
 
 dnl Checking existence of an enum value
@@ -868,7 +968,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs_core.h HEADER])
 
 
-AC_CHECK_HEADERS([libzfs_core.h], [], [AC_ERROR([A working libzfs_core header is required])], [
+AC_CHECK_HEADERS([libzfs_core.h], [], [AC_MSG_ERROR(A working libzfs_core header is required)], [
 	#include <sys/types.h>
 	#include <sys/param.h>
 ])
@@ -1006,18 +1106,12 @@ then
 	)
 fi
 
-SECTION_TITLE([GENERATING CONFIG.H])
+SECTION_TITLE([GENERATING FILES])
 
 AC_CONFIG_FILES([pxd/config.pxi])
-AC_MSG_NOTICE([GENERATED pxd/config.pxi])
-
 AC_CONFIG_FILES([pxd/sendflags.pxi])
-AC_MSG_NOTICE([GENERATED pxd/sendflags.pxi])
-
-SECTION_TITLE([GENERATING config.py])
-
+AC_CONFIG_FILES([pxd/zpool_status.pxi])
 AC_CONFIG_FILES([config.py])
-AC_MSG_NOTICE([GENERATED config.py])
+AC_CONFIG_FILES([Makefile])
 
-dnl Process Makefile.in to create Makefile
-AC_OUTPUT(Makefile)
+AC_OUTPUT
