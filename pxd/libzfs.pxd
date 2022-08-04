@@ -311,7 +311,6 @@ cdef extern from "libzfs.h" nogil:
         nvpair.nvlist_t ***, uint_t *)
     extern void zpool_obj_to_path(zpool_handle_t *, uint64_t, uint64_t, char *,
         size_t len)
-    extern int zpool_get_physpath(zpool_handle_t *, char *, size_t)
     extern void zpool_explain_recover(libzfs_handle_t *, const char *, int,
         nvpair.nvlist_t *)
 
