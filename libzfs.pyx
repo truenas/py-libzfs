@@ -369,7 +369,7 @@ class ZFSException(RuntimeError):
         self.code = code
 
     def __reduce__(self):
-        return (self.__class__, (self.code, self.args))
+        return (self.__class__, (self.code, *self.args))
 
 
 class ZFSVdevStatsException(ZFSException):
