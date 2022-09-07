@@ -56,22 +56,22 @@ dnl We allow setting a zof variable which the users can set to force autoconf to
 
 AC_ARG_VAR(zof, AS_HELP_STRING([Force configure to run ZoL(f) checks]))
 AC_ARG_VAR(freebsd_src, AS_HELP_STRING([Provide path for freebsd source tree. This defaults to /usr/src/]))
-AC_ARG_WITH([o3x], AS_HELP_STRING([--with-o3x=PATH], [path to ZFS on OSX source tree. Defaults to ../zfs/]))
 
 if [[ "$prefix" = "NONE" ]]; then
-	header_prefix=/usr/local
+	if [[ "$build_macos" = "yes" ]]; then
+		header_prefix=/usr/local/zfs
+	else
+		header_prefix=/usr/local
+	fi
 else
 	header_prefix=$prefix
 fi
 
-if [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" = "x" ]]; then
-	with_o3x="../zfs"
-fi
+
 
 : ${freebsd_src:=/usr/src}
 
 zof=false
-o3x=false
 AC_SUBST(IS_OPENZFS, 1)
 if [[ -f "$header_prefix/include/libzfs/libzfs.h" ]] || [[ "$zof" = true ]]; then
 	zof=true
@@ -101,18 +101,6 @@ elif [[ -d "${freebsd_src}/sys/contrib/openzfs" ]]; then
 -DHAVE_ISSETUGID
 "
 	LIBS="-lspl -lzutil ${LIBS}"
-
-elif [[ "$build_macos" = "yes" ]] && [[ "x$with_o3x" != "x"  ]]; then
-	o3x=true
-
-	CFLAGS="${CFLAGS} 
--I${with_o3x}/include
--I${with_o3x}/lib/libspl/include
--I./include
--D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
--include ${with_o3x}/include/sys/zfs_mount.h
-"
-	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	AC_SUBST(IS_OPENZFS, 0)
 
@@ -133,6 +121,10 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
 -DNEED_SOLARIS_BOOLEAN -D_XPG6"
 
+fi
+
+if [[ "$build_macos" = "yes" ]]; then
+	CFLAGS="${CFLAGS} -DHAVE_STRLCAT -DHAVE_STRLCPY"
 fi
 
 CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
@@ -304,7 +296,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 SECTION_TITLE([RUNNING TESTS ON libzfs.h HEADER])
 
 
-if [[ "$zof" = false ]] || [[ "$o3x" = true ]]; then
+if [[ "$zof" = false ]]; then
 	AC_CHECK_HEADERS([libzfs.h], [], [AC_MSG_ERROR(A working libzfs header is required)], [
 		#include <sys/types.h>
 		#include <sys/mnttab.h>
@@ -501,7 +493,7 @@ dnl Checking function signature of zfs_send_one
 
 AC_MSG_NOTICE([Checking function signature of zfs_send_one])
 
-if [[ "$zof" = false ]] && [[ "$o3x" = false ]]; then
+if [[ "$zof" = false ]]; then
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 			[#include <libzfs.h>],
 			[

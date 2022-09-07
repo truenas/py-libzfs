@@ -768,7 +768,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-with_o3x
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1393,11 +1392,6 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of py-libzfs 1.1:";;
    esac
   cat <<\_ACEOF
-
-Optional Packages:
-  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
-  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-o3x=PATH         path to ZFS on OSX source tree. Defaults to ../zfs/
 
 Some influential environment variables:
   CC          C compiler command
@@ -3413,27 +3407,21 @@ fi
 
 
 
-# Check whether --with-o3x was given.
-if test ${with_o3x+y}
-then :
-  withval=$with_o3x;
-fi
-
-
 if [ "$prefix" = "NONE" ]; then
-	header_prefix=/usr/local
+	if [ "$build_macos" = "yes" ]; then
+		header_prefix=/usr/local/zfs
+	else
+		header_prefix=/usr/local
+	fi
 else
 	header_prefix=$prefix
 fi
 
-if [ "$build_macos" = "yes" ] && [ "x$with_o3x" = "x" ]; then
-	with_o3x="../zfs"
-fi
+
 
 : ${freebsd_src:=/usr/src}
 
 zof=false
-o3x=false
 IS_OPENZFS=1
 
 if [ -f "$header_prefix/include/libzfs/libzfs.h" ] || [ "$zof" = true ]; then
@@ -3464,18 +3452,6 @@ elif [ -d "${freebsd_src}/sys/contrib/openzfs" ]; then
 -DHAVE_ISSETUGID
 "
 	LIBS="-lspl -lzutil ${LIBS}"
-
-elif [ "$build_macos" = "yes" ] && [ "x$with_o3x" != "x"  ]; then
-	o3x=true
-
-	CFLAGS="${CFLAGS}
--I${with_o3x}/include
--I${with_o3x}/lib/libspl/include
--I./include
--D_MACHINE_ENDIAN_H_ -DHAVE_ISSETUGID
--include ${with_o3x}/include/sys/zfs_mount.h
-"
-	LDFLAGS="-L${header_prefix}/lib ${LDFLAGS}"
 else
 	IS_OPENZFS=0
 
@@ -3497,6 +3473,10 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
 -DNEED_SOLARIS_BOOLEAN -D_XPG6"
 
+fi
+
+if [ "$build_macos" = "yes" ]; then
+	CFLAGS="${CFLAGS} -DHAVE_STRLCAT -DHAVE_STRLCPY"
 fi
 
 CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
@@ -3969,7 +3949,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
 
 
-if [ "$zof" = false ] || [ "$o3x" = true ]; then
+if [ "$zof" = false ]; then
 	       for ac_header in libzfs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libzfs.h" "ac_cv_header_libzfs_h" "
@@ -4401,7 +4381,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_send_one" >&5
 printf "%s\n" "$as_me: Checking function signature of zfs_send_one" >&6;}
 
-if [ "$zof" = false ] && [ "$o3x" = false ]; then
+if [ "$zof" = false ]; then
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libzfs.h>
