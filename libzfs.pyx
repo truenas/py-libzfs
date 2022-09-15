@@ -633,6 +633,7 @@ cdef class ZFS(object):
                 }
 
             for prop_name, prop_id in configuration_data['props'].get(dataset_type, {}).items():
+                csource = zfs.ZPROP_SRC_NONE
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
@@ -920,7 +921,7 @@ cdef class ZFS(object):
                 }
 
             for prop_name, prop_id in (props if not simple_handle else {}).items():
-
+                csource = zfs.ZPROP_SRC_NONE
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
                     strncpy(crawvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
@@ -1802,6 +1803,7 @@ cdef class ZFSProperty(object):
         return str(self)
 
     def refresh(self):
+        self.csource = zfs.ZPROP_SRC_NONE
         with nogil:
             self.cname = libzfs.zfs_prop_to_name(self.propid)
             if libzfs.zfs_prop_get(
