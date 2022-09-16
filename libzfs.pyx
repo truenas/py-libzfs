@@ -1340,10 +1340,18 @@ cdef class ZFS(object):
     def get_dataset_by_path(self, path):
         cdef libzfs.zfs_handle_t* handle
         cdef char *c_path = path
-        cdef zfs.zfs_type_t dataset_type = DatasetType.FILESYSTEM.value
+        cdef zfs.zfs_type_t dataset_type
+
+        if '.zfs/snapshot' in path:
+            dataset_type = zfs.ZFS_TYPE_SNAPSHOT
+        else:
+            dataset_type = zfs.ZFS_TYPE_FILESYSTEM
 
         with nogil:
             handle = libzfs.zfs_path_to_zhandle(self.handle, c_path, dataset_type)
+            if handle == NULL and dataset_type == zfs.ZFS_TYPE_SNAPSHOT:
+                dataset_type = zfs.ZFS_TYPE_FILESYSTEM
+                handle = libzfs.zfs_path_to_zhandle(self.handle, c_path, dataset_type)
 
         cdef ZFSPool pool
         cdef ZFSDataset dataset
@@ -1357,7 +1365,11 @@ cdef class ZFS(object):
         with nogil:
             pool.handle = libzfs.zfs_get_pool_handle(handle)
 
-        dataset = ZFSDataset.__new__(ZFSDataset)
+        if dataset_type == zfs.ZFS_TYPE_SNAPSHOT:
+            dataset = ZFSSnapshot.__new__(ZFSSnapshot)
+        else:
+            dataset = ZFSDataset.__new__(ZFSDataset)
+
         dataset.root = self
         dataset.pool = pool
         dataset.handle = handle
