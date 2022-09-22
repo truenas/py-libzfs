@@ -114,6 +114,16 @@ class Error(enum.IntEnum):
         CRYPTO_FAILED = libzfs.EZFS_CRYPTOFAILED
 
 
+class LpcError(enum.IntEnum):
+    IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+        SUCCESS = libzfs.LPC_SUCCESS
+        BADCACHE = libzfs.LPC_BADCACHE
+        BADPATH = libzfs.LPC_BADPATH
+        NOMEM = libzfs.LPC_NOMEM
+        EACCESS = libzfs.LPC_EACCESS
+        UNKNOWN = libzfs.LPC_UNKNOWN
+
+
 class PropertySource(enum.IntEnum):
     NONE = zfs.ZPROP_SRC_NONE
     DEFAULT = zfs.ZPROP_SRC_DEFAULT
@@ -1176,18 +1186,29 @@ cdef class ZFS(object):
         if cachefile:
             iargs.cachefile = cachefile
 
+        IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+            cdef libzfs.libpc_handle_t lpch
+            lpch.lpc_lib_handle = self.handle
+            lpch.lpc_ops = &libzfs.libzfs_config_ops
+            lpch.lpc_printerr = True
+
         with nogil:
             IF HAVE_THREAD_INIT_FINI:
                 thread_init()
             IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
                 result = libzfs.zpool_search_import(self.handle, &iargs, &libzfs.libzfs_config_ops)
+            ELIF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+                result = libzfs.zpool_search_import(&lpch, &iargs)
             ELSE:
                 result = libzfs.zpool_search_import(self.handle, &iargs)
             IF HAVE_THREAD_INIT_FINI:
                 thread_fini()
 
         if result is NULL:
-            return
+            IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
+                raise ZFSException(LpcError(lpch.lpc_error), lpch.lpc_desc)
+            ELSE:
+                return
 
         nv = NVList(nvlist=<uintptr_t>result)
         for name, config in nv.items(raw=True):

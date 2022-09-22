@@ -3952,9 +3952,33 @@ then :
  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
 printf "%s\n" "$as_me: OK" >&6;}
 else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzutil.h>
+int
+main (void)
+{
+
+			zpool_search_import(NULL, NULL);
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL=1
+ HAVE_ZPOOL_SEARCH_IMPORT_PARAMS=2
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else $as_nop
   HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL=0
  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
 printf "%s\n" "$as_me: NOT FOUND" >&6;}
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
