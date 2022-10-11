@@ -3469,7 +3469,7 @@ cdef class ZFSResource(ZFSObject):
                     invalid_values.append(prop_name)
 
         if invalid_values:
-            raise ZFSException(f'Malformed values provided for {", ".join(invalid_values)!r}')
+            raise ZFSException(Error.BADPROP, f'Malformed values provided for {", ".join(invalid_values)!r}')
 
         with nogil:
             ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
