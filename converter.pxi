@@ -58,6 +58,8 @@ class ZfsConverter(object):
         if self.typ is datetime:
             return str(value.timestamp())
 
+UINT64_MAX = '18446744073709551615'
+
 
 ZPOOL_PROPERTY_CONVERTERS = {
     'name': ZfsConverter(str, readonly=True),
@@ -140,10 +142,10 @@ ZFS_PROPERTY_CONVERTERS = {
     'volmode': ZfsConverter(str),
     'volsize': ZfsConverter(int),
     'volblocksize': ZfsConverter(int),
-    'filesystem_limit': ZfsConverter(int),
-    'snapshot_limit': ZfsConverter(int),
-    'filesystem_count': ZfsConverter(int, readonly=True),
-    'snapshot_count': ZfsConverter(int, readonly=True),
+    'filesystem_limit': ZfsConverter(int, nullable=True, read_null=UINT64_MAX),
+    'snapshot_limit': ZfsConverter(int, nullable=True, read_null=UINT64_MAX),
+    'filesystem_count': ZfsConverter(int, readonly=True, nullable=True, read_null=UINT64_MAX),
+    'snapshot_count': ZfsConverter(int, readonly=True, nullable=True, read_null=UINT64_MAX),
     'redundant_metadata': ZfsConverter(str)
 }
 
