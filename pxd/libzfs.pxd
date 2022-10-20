@@ -35,6 +35,7 @@ IF HAVE_LIBZUTIL_HEADER:
             pass
 
         extern const pool_config_ops_t libzfs_config_ops;
+        extern boolean_t zfs_dev_is_whole_disk(const char *)
 
         IF HAVE_ZPOOL_READ_LABEL_LIBZUTIL and HAVE_ZPOOL_READ_LABEL_PARAMS == 3:
             extern int zpool_read_label(int, nvpair.nvlist_t **, int *)

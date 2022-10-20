@@ -550,27 +550,34 @@ cdef class ZFS(object):
         if ashift_value and not isinstance(ashift_value, int):
             ashift_value = None
 
-        def add_ashift_to_vdev(vdev):
+        def add_properties_to_vdev(vdev):
+            cdef char vpath[zfs.MAXPATHLEN + 1]
+            cdef boolean_t whole_disk
             IF IS_OPENZFS:
-                if ashift_value:
-                    # Each leaf vdev is supposed to have the ashift property in it's nvlist
-                    if vdev.type != 'disk':
-                        for child in vdev.children:
-                            add_ashift_to_vdev(child)
-                    else:
+                # Each leaf vdev is supposed to have the wholedisk
+                # and ashift properties in its nvlist
+                if vdev.type != 'disk':
+                    for child in vdev.children:
+                        add_properties_to_vdev(child)
+                else:
+                    strncpy(vpath, vdev.path, zfs.MAXPATHLEN)
+                    with nogil:
+                        whole_disk = zfs_dev_is_whole_disk(vpath)
+                    (<ZFSVdev>vdev).set_whole_disk(whole_disk)
+                    if ashift_value:
                         (<ZFSVdev>vdev).set_ashift(ashift_value)
             return vdev
 
-        root = <ZFSVdev>add_ashift_to_vdev(root)
+        root = <ZFSVdev>add_properties_to_vdev(root)
 
         if 'cache' in topology:
             root.nvlist[zfs.ZPOOL_CONFIG_L2CACHE] = [
-                (<ZFSVdev>add_ashift_to_vdev(<ZFSVdev>i)).nvlist for i in topology['cache']
+                (<ZFSVdev>add_properties_to_vdev(<ZFSVdev>i)).nvlist for i in topology['cache']
             ]
 
         if 'spare' in topology:
             root.nvlist[zfs.ZPOOL_CONFIG_SPARES] = [
-                (<ZFSVdev>add_ashift_to_vdev(<ZFSVdev>i)).nvlist for i in topology['spare']
+                (<ZFSVdev>add_properties_to_vdev(<ZFSVdev>i)).nvlist for i in topology['spare']
             ]
 
         if 'log' in topology:
@@ -579,7 +586,7 @@ cdef class ZFS(object):
                 vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = 1L
                 IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
                     vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
-                root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
+                root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
 
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             if 'special' in topology:
@@ -587,14 +594,14 @@ cdef class ZFS(object):
                     vdev = <ZFSVdev>i
                     vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
                     vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
-                    root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
+                    root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
 
             if 'dedup' in topology:
                 for i in topology['dedup']:
                     vdev = <ZFSVdev>i
                     vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
                     vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_DEDUP
-                    root.add_child_vdev((<ZFSVdev>add_ashift_to_vdev(vdev)))
+                    root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
         return root
 
     @staticmethod
@@ -2131,6 +2138,9 @@ cdef class ZFSVdev(object):
 
     def set_ashift(self, int value):
         self.nvlist[zfs.ZPOOL_CONFIG_ASHIFT] = value
+
+    def set_whole_disk(self, boolean_t value):
+        self.nvlist[zfs.ZPOOL_CONFIG_WHOLE_DISK] = value
 
     def attach(self, ZFSVdev vdev):
         cdef const char *command = 'zpool attach'
