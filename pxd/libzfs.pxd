@@ -467,6 +467,10 @@ cdef extern from "libzfs.h" nogil:
     ELSE:
         extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
+    ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t) # XXX: uint32_t should be uid_t
+
+    extern int zfs_userspace(zfs_handle_t *, zfs.zfs_userquota_prop_t, zfs_userspace_cb_t, void *)
+
     extern int zfs_get_fsacl(zfs_handle_t *, nvpair.nvlist_t **)
     extern int zfs_set_fsacl(zfs_handle_t *, int, nvpair.nvlist_t *)
 

@@ -37,6 +37,21 @@ class DatasetType(enum.IntEnum):
     BOOKMARK = zfs.ZFS_TYPE_BOOKMARK
 
 
+class UserquotaProp(enum.IntEnum):
+    USERUSED = zfs.ZFS_PROP_USERUSED
+    USERQUOTA = zfs.ZFS_PROP_USERQUOTA
+    GROUPUSED = zfs.ZFS_PROP_GROUPUSED
+    GROUPQUOTA = zfs.ZFS_PROP_GROUPQUOTA
+    USEROBJUSED = zfs.ZFS_PROP_USEROBJUSED
+    USEROBJQUOTA = zfs.ZFS_PROP_USEROBJQUOTA
+    GROUPOBJUSED = zfs.ZFS_PROP_GROUPOBJUSED
+    GROUPOBJQUOTA = zfs.ZFS_PROP_GROUPOBJQUOTA
+    PROJECTUSED = zfs.ZFS_PROP_PROJECTUSED
+    PROJECTQUOTA = zfs.ZFS_PROP_PROJECTQUOTA
+    PROJECTOBJUSED = zfs.ZFS_PROP_PROJECTOBJUSED
+    PROJECTOBJQUOTA = zfs.ZFS_PROP_PROJECTOBJQUOTA
+
+
 class Error(enum.IntEnum):
     SUCCESS = libzfs.EZFS_SUCCESS
     NOMEM = libzfs.EZFS_NOMEM
@@ -1472,8 +1487,8 @@ cdef class ZFS(object):
             raise ZFSException(self.errno, self.errstr)
 
     def receive(self, name, fd, force=False, nomount=False, resumable=False, props=None, limitds=None):
-        cdef libzfs.libzfs_handle_t *handle = self.handle,
-        cdef libzfs.recvflags_t flags;
+        cdef libzfs.libzfs_handle_t *handle = self.handle
+        cdef libzfs.recvflags_t flags
         cdef NVList props_nvl = None
         cdef NVList limitds_nvl = None
         cdef nvpair.nvlist_t *c_props_nvl = NULL
@@ -3486,6 +3501,24 @@ cdef class ZFSResource(ZFSObject):
 
         if ret != 0:
             raise self.root.get_error()
+
+    @staticmethod
+    cdef int _userspace_cb(void *data, const char *domain, uint32_t rid, uint64_t space) nogil:
+        with gil:
+            result = <list>data
+            result.append({'domain': domain, 'rid': rid, 'space': space})
+
+    def userspace(self, quota_props):
+        results = {}
+        for quota_prop in quota_props:
+            prop: zfs.zfs_userquota_prop_t = quota_prop.value
+            result = []
+            with nogil:
+                ret = libzfs.zfs_userspace(self.handle, prop, ZFSResource._userspace_cb, <void*>result)
+            if ret:
+                raise self.get_error()
+            results[quota_prop] = result
+        return results
 
 
 cdef class ZFSDataset(ZFSResource):
