@@ -227,6 +227,14 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZFS_PROP_USERQUOTA
         ZFS_PROP_GROUPUSED
         ZFS_PROP_GROUPQUOTA
+        ZFS_PROP_USEROBJUSED
+        ZFS_PROP_USEROBJQUOTA
+        ZFS_PROP_GROUPOBJUSED
+        ZFS_PROP_GROUPOBJQUOTA
+        ZFS_PROP_PROJECTUSED
+        ZFS_PROP_PROJECTQUOTA
+        ZFS_PROP_PROJECTOBJUSED
+        ZFS_PROP_PROJECTOBJQUOTA
     
     extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS]
 
