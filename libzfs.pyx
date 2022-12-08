@@ -1226,6 +1226,9 @@ cdef class ZFS(object):
             IF HAVE_THREAD_INIT_FINI:
                 thread_fini()
 
+        if iargs.path != NULL:
+            free(iargs.path)
+
         if result is NULL:
             IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
                 raise ZFSException(LpcError(lpch.lpc_error), lpch.lpc_desc)
