@@ -258,6 +258,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
             ctypedef enum zfs_prop_t:
                 ZPROP_CONT = -2
                 ZPROP_INVAL	= -1
+                ZFS_PROP_CREATETXG
                 ZFS_PROP_CANMOUNT
                 ZFS_PROP_KEYSTATUS
                 ZFS_PROP_RECEIVE_RESUME_TOKEN
@@ -266,6 +267,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
             ctypedef enum zfs_prop_t:
                 ZPROP_CONT = -2
                 ZPROP_INVAL	= -1
+                ZFS_PROP_CREATETXG
                 ZFS_PROP_CANMOUNT
                 ZFS_PROP_RECEIVE_RESUME_TOKEN
                 ZFS_PROP_INCONSISTENT
@@ -274,6 +276,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
             ctypedef enum zfs_prop_t:
                 ZPROP_CONT = -2
                 ZPROP_INVAL	= -1
+                ZFS_PROP_CREATETXG
                 ZFS_PROP_CANMOUNT
                 ZFS_PROP_KEYSTATUS
                 ZFS_PROP_INCONSISTENT
@@ -281,6 +284,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
             ctypedef enum zfs_prop_t:
                 ZPROP_CONT = -2
                 ZPROP_INVAL	= -1
+                ZFS_PROP_CREATETXG
                 ZFS_PROP_CANMOUNT
                 ZFS_PROP_INCONSISTENT
     
