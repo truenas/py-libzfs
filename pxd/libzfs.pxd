@@ -36,6 +36,8 @@ IF HAVE_LIBZUTIL_HEADER:
 
         IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 3:
             extern nvpair.nvlist_t *zpool_search_import(void *, importargs_t *, const pool_config_ops_t *)
+        ELSE:
+            extern nvpair.nvlist_t *zpool_search_import(void *, importargs_t *)
 
 
 cdef extern from "libzfs.h" nogil:
@@ -63,58 +65,58 @@ cdef extern from "libzfs.h" nogil:
         EZFS_PROPREADONLY
         EZFS_PROPTYPE
         EZFS_PROPNONINHERIT
-        EZFS_PROPSPACE	
-        EZFS_BADTYPE	
-        EZFS_BUSY	
-        EZFS_EXISTS	
-        EZFS_NOENT	
-        EZFS_BADSTREAM	
+        EZFS_PROPSPACE
+        EZFS_BADTYPE
+        EZFS_BUSY
+        EZFS_EXISTS
+        EZFS_NOENT
+        EZFS_BADSTREAM
         EZFS_DSREADONLY
-        EZFS_VOLTOOBIG	
+        EZFS_VOLTOOBIG
         EZFS_INVALIDNAME
         EZFS_BADRESTORE
-        EZFS_BADBACKUP	
-        EZFS_BADTARGET	
-        EZFS_NODEVICE	
-        EZFS_BADDEV	
+        EZFS_BADBACKUP
+        EZFS_BADTARGET
+        EZFS_NODEVICE
+        EZFS_BADDEV
         EZFS_NOREPLICAS
         EZFS_RESILVERING
         EZFS_BADVERSION
         EZFS_POOLUNAVAIL
         EZFS_DEVOVERFLOW
-        EZFS_BADPATH	
+        EZFS_BADPATH
         EZFS_CROSSTARGET
-        EZFS_ZONED	
+        EZFS_ZONED
         EZFS_MOUNTFAILED
         EZFS_UMOUNTFAILED
         EZFS_UNSHARENFSFAILED
         EZFS_SHARENFSFAILED
-        EZFS_PERM	
-        EZFS_NOSPC	
-        EZFS_FAULT	
-        EZFS_IO	
-        EZFS_INTR	
-        EZFS_ISSPARE	
+        EZFS_PERM
+        EZFS_NOSPC
+        EZFS_FAULT
+        EZFS_IO
+        EZFS_INTR
+        EZFS_ISSPARE
         EZFS_INVALCONFIG
-        EZFS_RECURSIVE	
-        EZFS_NOHISTORY	
-        EZFS_POOLPROPS	
+        EZFS_RECURSIVE
+        EZFS_NOHISTORY
+        EZFS_POOLPROPS
         EZFS_POOL_NOTSUP
         EZFS_POOL_INVALARG
         EZFS_NAMETOOLONG
         EZFS_OPENFAILED
-        EZFS_NOCAP	
+        EZFS_NOCAP
         EZFS_LABELFAILED
-        EZFS_BADWHO	
-        EZFS_BADPERM	
+        EZFS_BADWHO
+        EZFS_BADPERM
         EZFS_BADPERMSET
         EZFS_NODELEGATION
         EZFS_UNSHARESMBFAILED
         EZFS_SHARESMBFAILED
-        EZFS_BADCACHE	
-        EZFS_ISL2CACHE	
+        EZFS_BADCACHE
+        EZFS_ISL2CACHE
         EZFS_VDEVNOTSUP
-        EZFS_NOTSUP	
+        EZFS_NOTSUP
         EZFS_ACTIVE_SPARE
         EZFS_UNPLAYED_LOGS
         EZFS_REFTAG_RELE
@@ -591,7 +593,7 @@ cdef extern from "libzfs.h" nogil:
     extern int libzfs_fru_compare(libzfs_handle_t *, const char *, const char *)
     extern int libzfs_fru_notself(libzfs_handle_t *, const char *)
     extern int zpool_fru_set(zpool_handle_t *, uint64_t, const char *)
-    
+
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
 
