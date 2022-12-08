@@ -921,7 +921,7 @@ cdef class ZFS(object):
             simple_handle = (len(props) == 1 and ('name' in props or 'createtxg' in props)) or (len(props) == 2 and ('name' in props and 'createtxg' in props))
             simple_createtxg = simple_handle and 'createtxg' in props
             if simple_createtxg:
-                simple_props = {"createtxg" : libzfs.ZFS_PROP_CREATETXG}
+                simple_props = {"createtxg" : zfs.ZFS_PROP_CREATETXG}
             else:
                 simple_props = {}
             snap_data = {}
