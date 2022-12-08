@@ -393,6 +393,10 @@ IF HAVE_LZC_SEND_FLAG_EMBED_DATA:
         EMBED_DATA = libzfs.LZC_SEND_FLAG_EMBED_DATA
 
 
+class ZFSInvalidCachefileException(OSError):
+    pass
+
+
 class ZFSException(RuntimeError):
     def __init__(self, code, message):
         super(ZFSException, self).__init__(message)
@@ -1231,7 +1235,10 @@ cdef class ZFS(object):
 
         if result is NULL:
             IF HAVE_ZPOOL_SEARCH_IMPORT_LIBZUTIL and HAVE_ZPOOL_SEARCH_IMPORT_PARAMS == 2:
-                raise ZFSException(LpcError(lpch.lpc_error), lpch.lpc_desc)
+                if cachefile:
+                    raise ZFSInvalidCachefileException(LpcError(lpch.lpc_error), lpch.lpc_desc)
+                else:
+                    raise ZFSException(LpcError(lpch.lpc_error), lpch.lpc_desc)
             ELSE:
                 return
 
