@@ -896,7 +896,7 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
-        cdef int prop_id, ret, simple_handle, holds, mounted
+        cdef int prop_id, ret, simple_handle, simple_createtxg, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
         cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
@@ -918,7 +918,12 @@ cdef class ZFS(object):
             min_txg = configuration_data['min_txg']
             max_txg = configuration_data['max_txg']
             properties = {}
-            simple_handle = len(props) == 1 and 'name' in props
+            simple_handle = (len(props) == 1 and ('name' in props or 'createtxg' in props)) or (len(props) == 2 and ('name' in props and 'createtxg' in props))
+            simple_createtxg = simple_handle and 'createtxg' in props
+            if simple_createtxg:
+                simple_props = {"createtxg" : libzfs.ZFS_PROP_CREATETXG}
+            else:
+                simple_props = {}
             snap_data = {}
 
         libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg)
@@ -952,7 +957,7 @@ cdef class ZFS(object):
                     'parsed': value.get('value')
                 }
 
-            for prop_name, prop_id in (props if not simple_handle else {}).items():
+            for prop_name, prop_id in (props if not simple_handle else simple_props).items():
                 csource = zfs.ZPROP_SRC_NONE
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
@@ -1002,7 +1007,7 @@ cdef class ZFS(object):
                         free(mntpt)
 
         with gil:
-            if not simple_handle:
+            if not simple_handle or simple_createtxg :
                 snap_data['properties'] = properties
 
             snap_data.update({
