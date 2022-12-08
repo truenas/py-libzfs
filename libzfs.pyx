@@ -1128,6 +1128,9 @@ cdef class ZFS(object):
             IF HAVE_THREAD_INIT_FINI:
                 thread_fini()
 
+        if iargs.path != NULL:
+            free(iargs.path)
+
         if result is NULL:
             return
 
