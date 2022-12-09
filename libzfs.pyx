@@ -900,7 +900,7 @@ cdef class ZFS(object):
 
     @staticmethod
     cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
-        cdef int prop_id, ret, simple_handle, simple_createtxg, holds, mounted
+        cdef int prop_id, ret, simple_handle, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
         cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
         cdef char cvalue[libzfs.ZFS_MAXPROPLEN + 1]
@@ -923,8 +923,7 @@ cdef class ZFS(object):
             min_txg = configuration_data['min_txg']
             max_txg = configuration_data['max_txg']
             properties = {}
-            simple_handle = (len(props) == 1 and ('name' in props or 'createtxg' in props)) or (len(props) == 2 and ('name' in props and 'createtxg' in props))
-            simple_createtxg = simple_handle and 'createtxg' in props
+            simple_handle = set(props).issubset({'name', 'createtxg'})
             snap_data = {}
 
         libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg)
@@ -1011,19 +1010,17 @@ cdef class ZFS(object):
             if not simple_handle:
                 snap_data['properties'] = properties
 
+            create_txg = libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CREATETXG)
+
             snap_data.update({
                 'pool': pool,
                 'name': name,
                 'type': DatasetType.SNAPSHOT.name,
                 'snapshot_name': name.split('@')[-1],
                 'dataset': name.split('@')[0],
-                'id': name
+                'id': name,
+                'createtxg': str(create_txg)
             })
-            if simple_createtxg:
-                create_txg = libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CREATETXG)
-                snap_data.update({
-                    'createtxg': str(create_txg)
-                })
 
             snap_list.append(snap_data)
 
