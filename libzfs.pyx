@@ -907,6 +907,7 @@ cdef class ZFS(object):
         cdef nvpair.nvlist_t *nvlist
         cdef uint64_t min_txg
         cdef uint64_t max_txg
+        cdef uint64_t create_txg
 
         with gil:
             snap_list = <object> arg
@@ -920,10 +921,6 @@ cdef class ZFS(object):
             properties = {}
             simple_handle = (len(props) == 1 and ('name' in props or 'createtxg' in props)) or (len(props) == 2 and ('name' in props and 'createtxg' in props))
             simple_createtxg = simple_handle and 'createtxg' in props
-            if simple_createtxg:
-                simple_props = {"createtxg" : zfs.ZFS_PROP_CREATETXG}
-            else:
-                simple_props = {}
             snap_data = {}
 
         libzfs.zfs_iter_snapshots(handle, simple_handle, ZFS.__snapshot_details, <void*>snap_list, min_txg, max_txg)
@@ -957,7 +954,7 @@ cdef class ZFS(object):
                     'parsed': value.get('value')
                 }
 
-            for prop_name, prop_id in (props if not simple_handle else simple_props).items():
+            for prop_name, prop_id in (props if not simple_handle else {}).items():
                 csource = zfs.ZPROP_SRC_NONE
                 with nogil:
                     strncpy(cvalue, '', libzfs.ZFS_MAXPROPLEN + 1)
@@ -1007,7 +1004,7 @@ cdef class ZFS(object):
                         free(mntpt)
 
         with gil:
-            if not simple_handle or simple_createtxg :
+            if not simple_handle:
                 snap_data['properties'] = properties
 
             snap_data.update({
@@ -1018,6 +1015,11 @@ cdef class ZFS(object):
                 'dataset': name.split('@')[0],
                 'id': name
             })
+            if simple_createtxg:
+                create_txg = libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CREATETXG)
+                snap_data.update({
+                    'createtxg': str(create_txg)
+                })
 
             snap_list.append(snap_data)
 
