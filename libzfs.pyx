@@ -933,6 +933,7 @@ cdef class ZFS(object):
 
         nvlist = libzfs.zfs_get_user_props(handle)
         name = libzfs.zfs_get_name(handle)
+        create_txg = libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CREATETXG)
 
         with gil:
 
@@ -1009,8 +1010,6 @@ cdef class ZFS(object):
         with gil:
             if not simple_handle:
                 snap_data['properties'] = properties
-
-            create_txg = libzfs.zfs_prop_get_int(handle, zfs.ZFS_PROP_CREATETXG)
 
             snap_data.update({
                 'pool': pool,
