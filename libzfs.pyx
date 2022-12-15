@@ -3529,7 +3529,7 @@ cdef class ZFSResource(ZFSObject):
             with nogil:
                 ret = libzfs.zfs_userspace(self.handle, prop, ZFSResource._userspace_cb, <void*>result)
             if ret:
-                raise self.get_error()
+                raise self.root.get_error()
             results[quota_prop] = result
         return results
 
