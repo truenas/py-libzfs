@@ -1,0 +1,22 @@
+#
+# The zfs_userquota_prop_t enum has a few different variations.
+# We resort to using autoconf for the metaprogramming, because
+# Cython lacks the expressivity to conditionally define enumerators.
+#
+
+cdef extern from "sys/fs/zfs.h" nogil:
+    ctypedef enum zfs_userquota_prop_t:
+        ZFS_PROP_USERUSED
+        ZFS_PROP_USERQUOTA
+        ZFS_PROP_GROUPUSED
+        ZFS_PROP_GROUPQUOTA
+        @ZFS_PROP_USEROBJUSED@
+        @ZFS_PROP_USEROBJQUOTA@
+        @ZFS_PROP_GROUPOBJUSED@
+        @ZFS_PROP_GROUPOBJQUOTA@
+        @ZFS_PROP_PROJECTUSED@
+        @ZFS_PROP_PROJECTQUOTA@
+        @ZFS_PROP_PROJECTOBJUSED@
+        @ZFS_PROP_PROJECTOBJQUOTA@
+
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

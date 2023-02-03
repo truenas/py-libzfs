@@ -649,6 +649,47 @@ LIBOBJS
 HAVE_THREAD_INIT_FINI
 HAVE_NVPAIR_IN_SYS
 HAVE_ZFS_IOCTL_HEADER
+ZFS_PROP_PROJECTOBJQUOTA
+ZFS_PROP_PROJECTOBJUSED
+ZFS_PROP_PROJECTQUOTA
+ZFS_PROP_PROJECTUSED
+SPA_FEATURE_PROJECT_QUOTA
+HAVE_SPA_FEATURE_PROJECT_QUOTA
+ZFS_PROP_GROUPOBJQUOTA
+ZFS_PROP_GROUPOBJUSED
+ZFS_PROP_USEROBJQUOTA
+ZFS_PROP_USEROBJUSED
+SPA_FEATURE_USEROBJ_ACCOUNTING
+HAVE_SPA_FEATURE_USEROBJ_ACCOUNTING
+SPA_FEATURE_BLAKE3
+HAVE_SPA_FEATURE_BLAKE3
+SPA_FEATURE_HEAD_ERRLOG
+HAVE_SPA_FEATURE_HEAD_ERRLOG
+SPA_FEATURE_ZILSAXATTR
+HAVE_SPA_FEATURE_ZILSAXATTR
+SPA_FEATURE_DRAID
+HAVE_SPA_FEATURE_DRAID
+SPA_FEATURE_ZSTD_COMPRESS
+HAVE_SPA_FEATURE_ZSTD_COMPRESS
+SPA_FEATURE_DEVICE_REBUILD
+HAVE_SPA_FEATURE_DEVICE_REBUILD
+SPA_FEATURE_LIVELIST
+HAVE_SPA_FEATURE_LIVELIST
+SPA_FEATURE_LOG_SPACEMAP
+HAVE_SPA_FEATURE_LOG_SPACEMAP
+SPA_FEATURE_BOOKMARK_WRITTEN
+HAVE_SPA_FEATURE_BOOKMARK_WRITTEN
+SPA_FEATURE_REDACTED_DATASETS
+HAVE_SPA_FEATURE_REDACTED_DATASETS
+SPA_FEATURE_REDACTION_BOOKMARKS
+HAVE_SPA_FEATURE_REDACTION_BOOKMARKS
+SPA_FEATURE_BOOKMARK_V2
+HAVE_SPA_FEATURE_BOOKMARK_V2
+SPA_FEATURE_RESILVER_DEFER
+HAVE_SPA_FEATURE_RESILVER_DEFER
+SPA_FEATURE_ENCRYPTION
+HAVE_SPA_FEATURE_ENCRYPTION
+HAVE_ZFEATURE_COMMON_HEADER
 HAVE_LZC_WAIT
 HAVE_LZC_SYNC
 HAVE_LZC_SEND_SPACE
@@ -692,6 +733,12 @@ ZPOOL_STATUS_ERRATA
 HAVE_ZPOOL_STATUS_ERRATA
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_SEND_ONE
+HAVE_ZFS_ITER_CHILDREN
+HAVE_ZFS_ITER_SNAPSHOTS_SORTED
+HAVE_ZFS_ITER_BOOKMARKS
+HAVE_ZFS_ITER_DEPENDENTS
+HAVE_ZFS_ITER_SNAPSPEC
+HAVE_ZFS_ITER_FILESYSTEMS
 HAVE_ZFS_SHARE
 HAVE_ZPOOL_SCAN
 HAVE_ZPOOL_GET_STATUS
@@ -3471,8 +3518,8 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common
--DNEED_SOLARIS_BOOLEAN -D_XPG6"
-
+-DNEED_SOLARIS_BOOLEAN -D_XPG6
+"
 fi
 
 if [ "$build_macos" = "yes" ]; then
@@ -4396,6 +4443,198 @@ else $as_nop
   HAVE_ZFS_SHARE=2
  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 2 params" >&5
 printf "%s\n" "$as_me: 2 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_filesystems" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_filesystems" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_filesystems(NULL, 0, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_FILESYSTEMS=4
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+printf "%s\n" "$as_me: 4 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_FILESYSTEMS=3
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 3 params" >&5
+printf "%s\n" "$as_me: 3 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_snapspec" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_snapspec" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_snapspec(NULL, 0, NULL, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_SNAPSPEC=5
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 5 params" >&5
+printf "%s\n" "$as_me: 5 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_SNAPSPEC=4
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+printf "%s\n" "$as_me: 4 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_dependents" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_dependents" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_dependents(NULL, 0, B_FALSE, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_DEPENDENTS=5
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 5 params" >&5
+printf "%s\n" "$as_me: 5 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_DEPENDENTS=4
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+printf "%s\n" "$as_me: 4 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_bookmarks" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_bookmarks" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_bookmarks(NULL, 0, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_BOOKMARKS=4
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+printf "%s\n" "$as_me: 4 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_BOOKMARKS=3
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 3 params" >&5
+printf "%s\n" "$as_me: 3 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_snapshots_sorted" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_snapshots_sorted" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_snapshots_sorted(NULL, 0, NULL, NULL, 0, 0) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_SNAPSHOTS_SORTED=6
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 6 params" >&5
+printf "%s\n" "$as_me: 6 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_SNAPSHOTS_SORTED=5
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 5 params" >&5
+printf "%s\n" "$as_me: 5 params" >&6;}
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature of zfs_iter_children" >&5
+printf "%s\n" "$as_me: Checking function signature of zfs_iter_children" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			(void) zfs_iter_children(NULL, 0, NULL, NULL) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_ZFS_ITER_CHILDREN=4
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 4 params" >&5
+printf "%s\n" "$as_me: 4 params" >&6;}
+else $as_nop
+  HAVE_ZFS_ITER_CHILDREN=3
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 3 params" >&5
+printf "%s\n" "$as_me: 3 params" >&6;}
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
@@ -5620,6 +5859,563 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
 
 	echo >& 6
+	echo '   RUNNING TESTS ON zfeature_common.h HEADER   ' | sed -e's/./-/g' >&6
+	echo '   RUNNING TESTS ON zfeature_common.h HEADER' >& 6
+	echo '   RUNNING TESTS ON zfeature_common.h HEADER   ' | sed -e's/./-/g' >&6
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Verifying existence of zfeature_common.h" >&5
+printf "%s\n" "$as_me: Verifying existence of zfeature_common.h" >&6;}
+
+       for ac_header in zfeature_common.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "zfeature_common.h" "ac_cv_header_zfeature_common_h" "
+
+"
+if test "x$ac_cv_header_zfeature_common_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_ZFEATURE_COMMON_H 1" >>confdefs.h
+ HAVE_ZFEATURE_COMMON_HEADER=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else $as_nop
+  HAVE_ZFEATURE_COMMON_HEADER=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+fi
+
+done
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking supported SPA features" >&5
+printf "%s\n" "$as_me: Checking supported SPA features" >&6;}
+
+# SPA_FEATURE_CHECK(feature, [success], [failure])
+# ------------------------------------------------
+
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_ENCRYPTION /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_ENCRYPTION=1
+ SPA_FEATURE_ENCRYPTION="SPA_FEATURE_ENCRYPTION"
+
+else $as_nop
+  HAVE_SPA_FEATURE_ENCRYPTION=0
+ SPA_FEATURE_ENCRYPTION="# SPA_FEATURE_ENCRYPTION not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_RESILVER_DEFER /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_RESILVER_DEFER=1
+ SPA_FEATURE_RESILVER_DEFER="SPA_FEATURE_RESILVER_DEFER"
+
+else $as_nop
+  HAVE_SPA_FEATURE_RESILVER_DEFER=0
+ SPA_FEATURE_RESILVER_DEFER="# SPA_FEATURE_RESILVER_DEFER not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_BOOKMARK_V2 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_BOOKMARK_V2=1
+ SPA_FEATURE_BOOKMARK_V2="SPA_FEATURE_BOOKMARK_V2"
+
+else $as_nop
+  HAVE_SPA_FEATURE_BOOKMARK_V2=0
+ SPA_FEATURE_BOOKMARK_V2="# SPA_FEATURE_BOOKMARK_V2 not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_REDACTION_BOOKMARKS /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_REDACTION_BOOKMARKS=1
+ SPA_FEATURE_REDACTION_BOOKMARKS="SPA_FEATURE_REDACTION_BOOKMARKS"
+
+else $as_nop
+  HAVE_SPA_FEATURE_REDACTION_BOOKMARKS=0
+ SPA_FEATURE_REDACTION_BOOKMARKS="# SPA_FEATURE_REDACTION_BOOKMARKS not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_REDACTED_DATASETS /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_REDACTED_DATASETS=1
+ SPA_FEATURE_REDACTED_DATASETS="SPA_FEATURE_REDACTED_DATASETS"
+
+else $as_nop
+  HAVE_SPA_FEATURE_REDACTED_DATASETS=0
+ SPA_FEATURE_REDACTED_DATASETS="# SPA_FEATURE_REDACTED_DATASETS not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_BOOKMARK_WRITTEN /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_BOOKMARK_WRITTEN=1
+ SPA_FEATURE_BOOKMARK_WRITTEN="SPA_FEATURE_BOOKMARK_WRITTEN"
+
+else $as_nop
+  HAVE_SPA_FEATURE_BOOKMARK_WRITTEN=0
+ SPA_FEATURE_BOOKMARK_WRITTEN="# SPA_FEATURE_BOOKMARK_WRITTEN not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_LOG_SPACEMAP /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_LOG_SPACEMAP=1
+ SPA_FEATURE_LOG_SPACEMAP="SPA_FEATURE_LOG_SPACEMAP"
+
+else $as_nop
+  HAVE_SPA_FEATURE_LOG_SPACEMAP=0
+ SPA_FEATURE_LOG_SPACEMAP="# SPA_FEATURE_LOG_SPACEMAP not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_LIVELIST /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_LIVELIST=1
+ SPA_FEATURE_LIVELIST="SPA_FEATURE_LIVELIST"
+
+else $as_nop
+  HAVE_SPA_FEATURE_LIVELIST=0
+ SPA_FEATURE_LIVELIST="# SPA_FEATURE_LIVELIST not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_DEVICE_REBUILD /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_DEVICE_REBUILD=1
+ SPA_FEATURE_DEVICE_REBUILD="SPA_FEATURE_DEVICE_REBUILD"
+
+else $as_nop
+  HAVE_SPA_FEATURE_DEVICE_REBUILD=0
+ SPA_FEATURE_DEVICE_REBUILD="# SPA_FEATURE_DEVICE_REBUILD not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_ZSTD_COMPRESS /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_ZSTD_COMPRESS=1
+ SPA_FEATURE_ZSTD_COMPRESS="SPA_FEATURE_ZSTD_COMPRESS"
+
+else $as_nop
+  HAVE_SPA_FEATURE_ZSTD_COMPRESS=0
+ SPA_FEATURE_ZSTD_COMPRESS="# SPA_FEATURE_ZSTD_COMPRESS not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_DRAID /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_DRAID=1
+ SPA_FEATURE_DRAID="SPA_FEATURE_DRAID"
+
+else $as_nop
+  HAVE_SPA_FEATURE_DRAID=0
+ SPA_FEATURE_DRAID="# SPA_FEATURE_DRAID not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_ZILSAXATTR /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_ZILSAXATTR=1
+ SPA_FEATURE_ZILSAXATTR="SPA_FEATURE_ZILSAXATTR"
+
+else $as_nop
+  HAVE_SPA_FEATURE_ZILSAXATTR=0
+ SPA_FEATURE_ZILSAXATTR="# SPA_FEATURE_ZILSAXATTR not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_HEAD_ERRLOG /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_HEAD_ERRLOG=1
+ SPA_FEATURE_HEAD_ERRLOG="SPA_FEATURE_HEAD_ERRLOG"
+
+else $as_nop
+  HAVE_SPA_FEATURE_HEAD_ERRLOG=0
+ SPA_FEATURE_HEAD_ERRLOG="# SPA_FEATURE_HEAD_ERRLOG not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_BLAKE3 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_BLAKE3=1
+ SPA_FEATURE_BLAKE3="SPA_FEATURE_BLAKE3"
+
+else $as_nop
+  HAVE_SPA_FEATURE_BLAKE3=0
+ SPA_FEATURE_BLAKE3="# SPA_FEATURE_BLAKE3 not defined"
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_USEROBJ_ACCOUNTING /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_USEROBJ_ACCOUNTING=1
+ SPA_FEATURE_USEROBJ_ACCOUNTING="SPA_FEATURE_USEROBJ_ACCOUNTING"
+
+		ZFS_PROP_USEROBJUSED="ZFS_PROP_USEROBJUSED"
+
+		ZFS_PROP_USEROBJQUOTA="ZFS_PROP_USEROBJQUOTA"
+
+		ZFS_PROP_GROUPOBJUSED="ZFS_PROP_GROUPOBJUSED"
+
+		ZFS_PROP_GROUPOBJQUOTA="ZFS_PROP_GROUPOBJQUOTA"
+
+
+else $as_nop
+  HAVE_SPA_FEATURE_USEROBJ_ACCOUNTING=0
+ SPA_FEATURE_USEROBJ_ACCOUNTING="# SPA_FEATURE_USEROBJ_ACCOUNTING not defined"
+
+		ZFS_PROP_USEROBJUSED="# ZFS_PROP_USEROBJUSED not defined"
+
+		ZFS_PROP_USEROBJQUOTA="# ZFS_PROP_USEROBJQUOTA not defined"
+
+		ZFS_PROP_GROUPOBJUSED="# ZFS_PROP_GROUPOBJUSED not defined"
+
+		ZFS_PROP_GROUPOBJQUOTA="# ZFS_PROP_GROUPOBJQUOTA not defined"
+
+
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <zfeature_common.h>
+int
+main (void)
+{
+
+				spa_feature_t f = SPA_FEATURE_PROJECT_QUOTA /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_SPA_FEATURE_PROJECT_QUOTA=1
+ SPA_FEATURE_PROJECT_QUOTA="SPA_FEATURE_PROJECT_QUOTA"
+
+		ZFS_PROP_PROJECTUSED="ZFS_PROP_PROJECTUSED"
+
+		ZFS_PROP_PROJECTQUOTA="ZFS_PROP_PROJECTQUOTA"
+
+		ZFS_PROP_PROJECTOBJUSED="ZFS_PROP_PROJECTOBJUSED"
+
+		ZFS_PROP_PROJECTOBJQUOTA="ZFS_PROP_PROJECTOBJQUOTA"
+
+
+else $as_nop
+  HAVE_SPA_FEATURE_PROJECT_QUOTA=0
+ SPA_FEATURE_PROJECT_QUOTA="# SPA_FEATURE_PROJECT_QUOTA not defined"
+
+		ZFS_PROP_PROJECTUSED="# ZFS_PROP_PROJECTUSED not defined"
+
+		ZFS_PROP_PROJECTQUOTA="# ZFS_PROP_PROJECTQUOTA not defined"
+
+		ZFS_PROP_PROJECTOBJUSED="# ZFS_PROP_PROJECTOBJUSED not defined"
+
+		ZFS_PROP_PROJECTOBJQUOTA="# ZFS_PROP_PROJECTOBJQUOTA not defined"
+
+
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
+
+	echo >& 6
 	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER   ' | sed -e's/./-/g' >&6
 	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER' >& 6
 	echo '   RUNNING TESTS ON zfs_ioctl.h HEADER   ' | sed -e's/./-/g' >&6
@@ -5744,6 +6540,10 @@ fi
 ac_config_files="$ac_config_files pxd/config.pxi"
 
 ac_config_files="$ac_config_files pxd/sendflags.pxi"
+
+ac_config_files="$ac_config_files pxd/spa_features.pxi"
+
+ac_config_files="$ac_config_files pxd/userquota_props.pxi"
 
 ac_config_files="$ac_config_files pxd/zpool_status.pxi"
 
@@ -6454,6 +7254,8 @@ do
   case $ac_config_target in
     "pxd/config.pxi") CONFIG_FILES="$CONFIG_FILES pxd/config.pxi" ;;
     "pxd/sendflags.pxi") CONFIG_FILES="$CONFIG_FILES pxd/sendflags.pxi" ;;
+    "pxd/spa_features.pxi") CONFIG_FILES="$CONFIG_FILES pxd/spa_features.pxi" ;;
+    "pxd/userquota_props.pxi") CONFIG_FILES="$CONFIG_FILES pxd/userquota_props.pxi" ;;
     "pxd/zpool_status.pxi") CONFIG_FILES="$CONFIG_FILES pxd/zpool_status.pxi" ;;
     "config.py") CONFIG_FILES="$CONFIG_FILES config.py" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
