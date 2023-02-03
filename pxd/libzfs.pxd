@@ -393,12 +393,30 @@ cdef extern from "libzfs.h" nogil:
 
     ctypedef int (*zfs_iter_f)(zfs_handle_t *, void *)
     extern int zfs_iter_root(libzfs_handle_t *, zfs_iter_f, void *)
-    extern int zfs_iter_children(zfs_handle_t *, zfs_iter_f, void *)
-    extern int zfs_iter_dependents(zfs_handle_t *, int, zfs_iter_f, void *)
-    extern int zfs_iter_filesystems(zfs_handle_t *, zfs_iter_f, void *)
-    extern int zfs_iter_snapshots_sorted(zfs_handle_t *, zfs_iter_f, void *)
-    extern int zfs_iter_snapspec(zfs_handle_t *, const char *, zfs_iter_f, void *)
-    extern int zfs_iter_bookmarks(zfs_handle_t *, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_CHILDREN == 4:
+        extern int zfs_iter_children(zfs_handle_t *, int, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_children(zfs_handle_t *, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_DEPENDENTS == 5:
+        extern int zfs_iter_dependents(zfs_handle_t *, int, int, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_dependents(zfs_handle_t *, int, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_FILESYSTEMS == 4:
+        extern int zfs_iter_filesystems(zfs_handle_t *, int, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_filesystems(zfs_handle_t *, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_SNAPSHOTS_SORTED == 5:
+        extern int zfs_iter_snapshots_sorted(zfs_handle_t *, int, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_snapshots_sorted(zfs_handle_t *, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_SNAPSPEC == 5:
+        extern int zfs_iter_snapspec(zfs_handle_t *, int, const char *, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_snapspec(zfs_handle_t *, const char *, zfs_iter_f, void *)
+    IF HAVE_ZFS_ITER_BOOKMARKS == 4:
+        extern int zfs_iter_bookmarks(zfs_handle_t *, int, zfs_iter_f, void *)
+    ELSE:
+        extern int zfs_iter_bookmarks(zfs_handle_t *, zfs_iter_f, void *)
     extern int zfs_iter_snapshots(zfs_handle_t *, int, zfs_iter_f, void *, uint64_t, uint64_t)
 
     ctypedef struct get_all_cb_t:

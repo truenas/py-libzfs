@@ -2,6 +2,8 @@
 # cython: language_level=3, c_string_type=unicode, c_string_encoding=default
 
 include "config.pxi"
+include "spa_features.pxi"
+include "userquota_props.pxi"
 
 from types cimport *
 
@@ -222,20 +224,6 @@ cdef extern from "sys/fs/zfs.h" nogil:
         DMU_OST_ANY
         DMU_OST_NUMTYPES
 
-    ctypedef enum zfs_userquota_prop_t:
-        ZFS_PROP_USERUSED
-        ZFS_PROP_USERQUOTA
-        ZFS_PROP_GROUPUSED
-        ZFS_PROP_GROUPQUOTA
-        ZFS_PROP_USEROBJUSED
-        ZFS_PROP_USEROBJQUOTA
-        ZFS_PROP_GROUPOBJUSED
-        ZFS_PROP_GROUPOBJQUOTA
-        ZFS_PROP_PROJECTUSED
-        ZFS_PROP_PROJECTQUOTA
-        ZFS_PROP_PROJECTOBJUSED
-        ZFS_PROP_PROJECTOBJQUOTA
-    
     extern const char *zfs_userquota_prop_prefixes[ZFS_NUM_USERQUOTA_PROPS]
 
     ctypedef enum zprop_source_t:
@@ -571,22 +559,6 @@ IF HAVE_ZFS_IOCTL_HEADER:
 
 
 cdef extern from "zfeature_common.h":
-    ctypedef enum spa_feature_t:
-        SPA_FEATURE_NONE
-        SPA_FEATURE_ASYNC_DESTROY
-        SPA_FEATURE_EMPTY_BPOBJ
-        SPA_FEATURE_LZ4_COMPRESS
-        SPA_FEATURE_MULTI_VDEV_CRASH_DUMP
-        SPA_FEATURE_SPACEMAP_HISTOGRAM
-        SPA_FEATURE_ENABLED_TXG
-        SPA_FEATURE_HOLE_BIRTH
-        SPA_FEATURE_EXTENSIBLE_DATASET
-        SPA_FEATURE_EMBEDDED_DATA
-        SPA_FEATURE_BOOKMARKS
-        SPA_FEATURE_FS_SS_LIMIT
-        SPA_FEATURE_LARGE_BLOCKS
-        SPA_FEATURES
-
     ctypedef enum zfeature_flags_t:
         ZFEATURE_FLAG_READONLY_COMPAT
         ZFEATURE_FLAG_MOS

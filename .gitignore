@@ -5,6 +5,8 @@ dist/
 libzfs.egg-info/
 pxd/config.pxi
 pxd/sendflags.pxi
+pxd/spa_features.pxi
+pxd/userquota_props.pxi
 pxd/zpool_status.pxi
 venv/
 Makefile

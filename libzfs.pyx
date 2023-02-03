@@ -42,14 +42,16 @@ class UserquotaProp(enum.IntEnum):
     USERQUOTA = zfs.ZFS_PROP_USERQUOTA
     GROUPUSED = zfs.ZFS_PROP_GROUPUSED
     GROUPQUOTA = zfs.ZFS_PROP_GROUPQUOTA
-    USEROBJUSED = zfs.ZFS_PROP_USEROBJUSED
-    USEROBJQUOTA = zfs.ZFS_PROP_USEROBJQUOTA
-    GROUPOBJUSED = zfs.ZFS_PROP_GROUPOBJUSED
-    GROUPOBJQUOTA = zfs.ZFS_PROP_GROUPOBJQUOTA
-    PROJECTUSED = zfs.ZFS_PROP_PROJECTUSED
-    PROJECTQUOTA = zfs.ZFS_PROP_PROJECTQUOTA
-    PROJECTOBJUSED = zfs.ZFS_PROP_PROJECTOBJUSED
-    PROJECTOBJQUOTA = zfs.ZFS_PROP_PROJECTOBJQUOTA
+    IF HAVE_SPA_FEATURE_USEROBJ_ACCOUNTING:
+        USEROBJUSED = zfs.ZFS_PROP_USEROBJUSED
+        USEROBJQUOTA = zfs.ZFS_PROP_USEROBJQUOTA
+        GROUPOBJUSED = zfs.ZFS_PROP_GROUPOBJUSED
+        GROUPOBJQUOTA = zfs.ZFS_PROP_GROUPOBJQUOTA
+    IF HAVE_SPA_FEATURE_PROJECT_QUOTA:
+        PROJECTUSED = zfs.ZFS_PROP_PROJECTUSED
+        PROJECTQUOTA = zfs.ZFS_PROP_PROJECTQUOTA
+        PROJECTOBJUSED = zfs.ZFS_PROP_PROJECTOBJUSED
+        PROJECTOBJQUOTA = zfs.ZFS_PROP_PROJECTOBJQUOTA
 
 
 class Error(enum.IntEnum):
@@ -554,6 +556,38 @@ cdef class ZFS(object):
         iter.array[iter.length] = <uintptr_t>handle
         iter.length += 1
 
+    @staticmethod
+    cdef int __iterate_filesystems(libzfs.zfs_handle_t *zhp, int flags, libzfs.zfs_iter_f func, void *data) nogil:
+        IF HAVE_ZFS_ITER_FILESYSTEMS == 4:
+            return libzfs.zfs_iter_filesystems(zhp, flags, func, data)
+        ELSE:
+            # flags are ignored on older zfs
+            return libzfs.zfs_iter_filesystems(zhp, func, data)
+
+    @staticmethod
+    cdef int __iterate_snapspec(libzfs.zfs_handle_t *zhp, int flags, const char *spec_orig, libzfs.zfs_iter_f func, void *arg) nogil:
+        IF HAVE_ZFS_ITER_SNAPSPEC == 5:
+            return libzfs.zfs_iter_snapspec(zhp, flags, spec_orig, func, arg)
+        ELSE:
+            # flags are ignored on older zfs
+            return libzfs.zfs_iter_snapspec(zhp, spec_orig, func, arg)
+
+    @staticmethod
+    cdef int __iterate_dependents(libzfs.zfs_handle_t *zhp, int flags, boolean_t allowrecursion, libzfs.zfs_iter_f func, void *data) nogil:
+        IF HAVE_ZFS_ITER_DEPENDENTS == 5:
+            return libzfs.zfs_iter_dependents(zhp, flags, allowrecursion, func, data)
+        ELSE:
+            # flags are ignored on older zfs
+            return libzfs.zfs_iter_dependents(zhp, allowrecursion, func, data)
+
+    @staticmethod
+    cdef int __iterate_bookmarks(libzfs.zfs_handle_t *zhp, int flags, libzfs.zfs_iter_f func, void *data) nogil:
+        IF HAVE_ZFS_ITER_BOOKMARKS == 4:
+            return libzfs.zfs_iter_bookmarks(zhp, flags, func, data)
+        ELSE:
+            # flags are ignored on older zfs
+            return libzfs.zfs_iter_bookmarks(zhp, func, data)
+
     cdef object get_error(self):
         description = (<bytes>libzfs.libzfs_error_description(self.handle)).decode('utf-8', 'backslashreplace')
         error_action = (<bytes>libzfs.libzfs_error_action(self.handle)).decode('utf-8', 'backslashreplace')
@@ -695,7 +729,7 @@ cdef class ZFS(object):
                 }
 
         if retrieve_children:
-            libzfs.zfs_iter_filesystems(handle, ZFS.__dataset_handles, <void*>child_data)
+            ZFS.__iterate_filesystems(handle, 0, ZFS.__dataset_handles, <void*>child_data)
 
         with gil:
             data[name] = {}
@@ -813,7 +847,7 @@ cdef class ZFS(object):
                 return 0
 
         libzfs.libzfs_add_handle(cb, handle)
-        libzfs.zfs_iter_filesystems(handle, ZFS.__retrieve_mountable_datasets_handles, cb)
+        ZFS.__iterate_filesystems(handle, 0, ZFS.__retrieve_mountable_datasets_handles, cb)
 
     @staticmethod
     cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
@@ -1038,7 +1072,7 @@ cdef class ZFS(object):
 
         if is_dataset:
             if recursive:
-                libzfs.zfs_iter_filesystems(handle, ZFS.__datasets_snapshots, arg)
+                ZFS.__iterate_filesystems(handle, 0, ZFS.__datasets_snapshots, arg)
             if close_handle:
                 libzfs.zfs_close(handle)
 
@@ -3461,7 +3495,7 @@ cdef class ZFSResource(ZFSObject):
                 raise MemoryError()
 
             iter.alloc = 128
-            libzfs.zfs_iter_dependents(self.handle, recursion, self.__iterate, <void*>&iter)
+            ZFS.__iterate_dependents(self.handle, 0, recursion, self.__iterate, <void*>&iter)
 
         try:
             for h in range(0, iter.length):
@@ -3575,7 +3609,7 @@ cdef class ZFSDataset(ZFSResource):
             snap_config = <object> arg
             spec_orig = snap_config['snapshot_specification']
 
-        err = libzfs.zfs_iter_snapspec(handle, spec_orig, ZFSDataset.__snapshots_callback, arg)
+        err = ZFS.__iterate_snapspec(handle, 0, spec_orig, ZFSDataset.__snapshots_callback, arg)
 
         with gil:
             if err not in (0, py_errno.ENOENT):
@@ -3583,7 +3617,7 @@ cdef class ZFSDataset(ZFSResource):
             else:
                 if snap_config['recursive']:
                     with nogil:
-                        err = libzfs.zfs_iter_filesystems(handle, ZFSDataset.__gather_snapshots, arg)
+                        err = ZFS.__iterate_filesystems(handle, 0, ZFSDataset.__gather_snapshots, arg)
                     if err:
                         snap_config['failure'] = True
 
@@ -3663,7 +3697,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                libzfs.zfs_iter_filesystems(self.handle, self.__iterate, <void*>&iter)
+                ZFS.__iterate_filesystems(self.handle, 0, self.__iterate, <void*>&iter)
 
             try:
                 for h in range(0, iter.length):
@@ -3733,7 +3767,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                libzfs.zfs_iter_bookmarks(self.handle, self.__iterate, <void *>&iter)
+                ZFS.__iterate_bookmarks(self.handle, 0, self.__iterate, <void *>&iter)
 
             try:
                 for b in range(0, iter.length):

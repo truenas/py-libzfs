@@ -119,8 +119,8 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libuutil/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs/common
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
--DNEED_SOLARIS_BOOLEAN -D_XPG6"
-
+-DNEED_SOLARIS_BOOLEAN -D_XPG6
+"
 fi
 
 if [[ "$build_macos" = "yes" ]]; then
@@ -493,6 +493,96 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_ZFS_SHARE, 1) AC_MSG_NOTICE([1 param])],
 	[AC_SUBST(HAVE_ZFS_SHARE, 2) AC_MSG_NOTICE([2 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_filesystems
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_filesystems])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_filesystems(NULL, 0, NULL, NULL) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_FILESYSTEMS, 4) AC_MSG_NOTICE([4 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_FILESYSTEMS, 3) AC_MSG_NOTICE([3 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_snapspec
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_snapspec])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_snapspec(NULL, 0, NULL, NULL, NULL) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSPEC, 5) AC_MSG_NOTICE([5 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSPEC, 4) AC_MSG_NOTICE([4 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_dependents
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_dependents])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_dependents(NULL, 0, B_FALSE, NULL, NULL) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_DEPENDENTS, 5) AC_MSG_NOTICE([5 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_DEPENDENTS, 4) AC_MSG_NOTICE([4 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_bookmarks
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_bookmarks])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_bookmarks(NULL, 0, NULL, NULL) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_BOOKMARKS, 4) AC_MSG_NOTICE([4 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_BOOKMARKS, 3) AC_MSG_NOTICE([3 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_snapshots_sorted
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_snapshots_sorted])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_snapshots_sorted(NULL, 0, NULL, NULL, 0, 0) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSHOTS_SORTED, 6) AC_MSG_NOTICE([6 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_SNAPSHOTS_SORTED, 5) AC_MSG_NOTICE([5 params])]
+)
+
+
+dnl Checking function signature of zfs_iter_children
+
+AC_MSG_NOTICE([Checking function signature of zfs_iter_children])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		   [#include <libzfs.h>],
+		   [
+			(void) zfs_iter_children(NULL, 0, NULL, NULL) /* ; */
+		   ]
+	)],
+	[AC_SUBST(HAVE_ZFS_ITER_CHILDREN, 4) AC_MSG_NOTICE([4 params])],
+	[AC_SUBST(HAVE_ZFS_ITER_CHILDREN, 3) AC_MSG_NOTICE([3 params])]
 )
 
 
@@ -1059,6 +1149,90 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 )
 
 
+SECTION_TITLE([RUNNING TESTS ON zfeature_common.h HEADER])
+
+AC_MSG_NOTICE([Verifying existence of zfeature_common.h])
+
+AC_CHECK_HEADERS([zfeature_common.h],
+	[AC_SUBST(HAVE_ZFEATURE_COMMON_HEADER, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_ZFEATURE_COMMON_HEADER, 0) AC_MSG_NOTICE([NOT FOUND])],
+	[]
+)
+
+AC_MSG_NOTICE([Checking supported SPA features])
+
+# SPA_FEATURE_CHECK(feature, [success], [failure])
+# ------------------------------------------------
+AC_DEFUN([SPA_FEATURE_CHECK], [
+	AC_LINK_IFELSE([
+		AC_LANG_PROGRAM(
+			[#include <zfeature_common.h>],
+			[
+				spa_feature_t f = $1 /* ; */
+			]
+		)],
+		[AC_SUBST(HAVE_$1, 1) AC_SUBST($1, "$1") $2],
+		[AC_SUBST(HAVE_$1, 0) AC_SUBST($1, ["# $1 not defined"]) $3]
+	)
+])
+
+dnl This is the list of features that might not be
+dnl supported by the oldest ZFS we support.  We check
+dnl for their presence so we can generate the enum for
+dnl spa_feature_t appropriately.
+dnl
+dnl USEROBJ_ACCOUNTING and PROJECT_QUOTA are separate so
+dnl we can also generate the enum for zfs_userquota_prop_t
+dnl appropriately.
+dnl
+dnl Current oldest supported ZFS is for FreeBSD 12.3
+m4_foreach([feature],
+	   [[SPA_FEATURE_ENCRYPTION],
+	    [SPA_FEATURE_RESILVER_DEFER],
+	    [SPA_FEATURE_BOOKMARK_V2],
+	    [SPA_FEATURE_REDACTION_BOOKMARKS],
+	    [SPA_FEATURE_REDACTED_DATASETS],
+	    [SPA_FEATURE_BOOKMARK_WRITTEN],
+	    [SPA_FEATURE_LOG_SPACEMAP],
+	    [SPA_FEATURE_LIVELIST],
+	    [SPA_FEATURE_DEVICE_REBUILD],
+	    [SPA_FEATURE_ZSTD_COMPRESS],
+	    [SPA_FEATURE_DRAID],
+	    [SPA_FEATURE_ZILSAXATTR],
+	    [SPA_FEATURE_HEAD_ERRLOG],
+	    [SPA_FEATURE_BLAKE3]],
+	   [SPA_FEATURE_CHECK(feature)]
+)
+SPA_FEATURE_CHECK([SPA_FEATURE_USEROBJ_ACCOUNTING],
+	[
+		AC_SUBST(ZFS_PROP_USEROBJUSED, "ZFS_PROP_USEROBJUSED")
+		AC_SUBST(ZFS_PROP_USEROBJQUOTA, "ZFS_PROP_USEROBJQUOTA")
+		AC_SUBST(ZFS_PROP_GROUPOBJUSED, "ZFS_PROP_GROUPOBJUSED")
+		AC_SUBST(ZFS_PROP_GROUPOBJQUOTA, "ZFS_PROP_GROUPOBJQUOTA")
+	],
+	[
+		AC_SUBST(ZFS_PROP_USEROBJUSED, ["# ZFS_PROP_USEROBJUSED not defined"])
+		AC_SUBST(ZFS_PROP_USEROBJQUOTA, ["# ZFS_PROP_USEROBJQUOTA not defined"])
+		AC_SUBST(ZFS_PROP_GROUPOBJUSED, ["# ZFS_PROP_GROUPOBJUSED not defined"])
+		AC_SUBST(ZFS_PROP_GROUPOBJQUOTA, ["# ZFS_PROP_GROUPOBJQUOTA not defined"])
+	]
+)
+SPA_FEATURE_CHECK([SPA_FEATURE_PROJECT_QUOTA],
+	[
+		AC_SUBST(ZFS_PROP_PROJECTUSED, "ZFS_PROP_PROJECTUSED")
+		AC_SUBST(ZFS_PROP_PROJECTQUOTA, "ZFS_PROP_PROJECTQUOTA")
+		AC_SUBST(ZFS_PROP_PROJECTOBJUSED, "ZFS_PROP_PROJECTOBJUSED")
+		AC_SUBST(ZFS_PROP_PROJECTOBJQUOTA, "ZFS_PROP_PROJECTOBJQUOTA")
+	],
+	[
+		AC_SUBST(ZFS_PROP_PROJECTUSED, ["# ZFS_PROP_PROJECTUSED not defined"])
+		AC_SUBST(ZFS_PROP_PROJECTQUOTA, ["# ZFS_PROP_PROJECTQUOTA not defined"])
+		AC_SUBST(ZFS_PROP_PROJECTOBJUSED, ["# ZFS_PROP_PROJECTOBJUSED not defined"])
+		AC_SUBST(ZFS_PROP_PROJECTOBJQUOTA, ["# ZFS_PROP_PROJECTOBJQUOTA not defined"])
+	]
+)
+
+
 SECTION_TITLE([RUNNING TESTS ON zfs_ioctl.h HEADER])
 
 AC_MSG_NOTICE([Verifying existence of zfs_ioctl.h])
@@ -1109,6 +1283,8 @@ SECTION_TITLE([GENERATING FILES])
 
 AC_CONFIG_FILES([pxd/config.pxi])
 AC_CONFIG_FILES([pxd/sendflags.pxi])
+AC_CONFIG_FILES([pxd/spa_features.pxi])
+AC_CONFIG_FILES([pxd/userquota_props.pxi])
 AC_CONFIG_FILES([pxd/zpool_status.pxi])
 AC_CONFIG_FILES([config.py])
 AC_CONFIG_FILES([Makefile])

@@ -1,0 +1,49 @@
+#
+# The spa_feature_t enum has a lot of different variations.
+# We resort to using autoconf for the metaprogramming, because
+# Cython lacks the expressivity to conditionally define enumerators.
+#
+
+cdef extern from "zfeature_common.h":
+    ctypedef enum spa_feature_t:
+        SPA_FEATURE_NONE
+        SPA_FEATURE_ASYNC_DESTROY
+        SPA_FEATURE_EMPTY_BPOBJ
+        SPA_FEATURE_LZ4_COMPRESS
+        SPA_FEATURE_MULTI_VDEV_CRASH_DUMP
+        SPA_FEATURE_SPACEMAP_HISTOGRAM
+        SPA_FEATURE_ENABLED_TXG
+        SPA_FEATURE_HOLE_BIRTH
+        SPA_FEATURE_EXTENSIBLE_DATASET
+        SPA_FEATURE_EMBEDDED_DATA
+        SPA_FEATURE_BOOKMARKS
+        SPA_FEATURE_FS_SS_LIMIT
+        SPA_FEATURE_LARGE_BLOCKS
+        SPA_FEATURE_LARGE_DNODE
+        SPA_FEATURE_SHA512
+        SPA_FEATURE_SKEIN
+        SPA_FEATURE_EDONR
+        @SPA_FEATURE_USEROBJ_ACCOUNTING@
+        @SPA_FEATURE_ENCRYPTION@
+        @SPA_FEATURE_PROJECT_QUOTA@
+        SPA_FEATURE_DEVICE_REMOVAL
+        SPA_FEATURE_OBSOLETE_COUNTS
+        SPA_FEATURE_POOL_CHECKPOINT
+        SPA_FEATURE_SPACEMAP_V2
+        SPA_FEATURE_ALLOCATION_CLASSES
+        @SPA_FEATURE_RESILVER_DEFER@
+        @SPA_FEATURE_BOOKMARK_V2@
+        @SPA_FEATURE_REDACTION_BOOKMARKS@
+        @SPA_FEATURE_REDACTED_DATASETS@
+        @SPA_FEATURE_BOOKMARK_WRITTEN@
+        @SPA_FEATURE_LOG_SPACEMAP@
+        @SPA_FEATURE_LIVELIST@
+        @SPA_FEATURE_DEVICE_REBUILD@
+        @SPA_FEATURE_ZSTD_COMPRESS@
+        @SPA_FEATURE_DRAID@
+        @SPA_FEATURE_ZILSAXATTR@
+        @SPA_FEATURE_HEAD_ERRLOG@
+        @SPA_FEATURE_BLAKE3@
+        SPA_FEATURES
+
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
