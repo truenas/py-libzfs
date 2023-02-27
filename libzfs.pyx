@@ -425,7 +425,7 @@ cdef class ZFS(object):
     cdef char *history_prefix
     proptypes = {}
 
-    def __cinit__(self, history=True, history_prefix='', mnttab_cache=True):
+    def __cinit__(self, history=True, history_prefix='py-libzfs:', mnttab_cache=True):
         cdef zfs.zfs_type_t c_type
         cdef prop_iter_state iter
         self.mnttab_cache_enable=mnttab_cache
