@@ -9,6 +9,13 @@ from types cimport *
 from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 
+try:
+    from collections import Sequence
+except ImportError:
+    # >= py3.10 moved everything into top-level "abc" module
+    # https://docs.python.org/3.9/library/collections.html
+    from collections.abc import Sequence
+
 
 @cython.internal
 cdef class NVList(object):
@@ -247,7 +254,7 @@ cdef class NVList(object):
                 nvpair.nvlist_add_nvlist(self.handle, key, cnvlist.handle)
                 return
 
-        if isinstance(value, collections.Sequence):
+        if isinstance(value, Sequence):
             if typeid == nvpair.DATA_TYPE_STRING_ARRAY:
                 carray = malloc(len(value) * sizeof(char*))
                 for idx, i in enumerate(value):
