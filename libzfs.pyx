@@ -379,7 +379,7 @@ class DiffRecord(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'timestamp': self.timestamp,
             'cmd': self.cmd.name,
@@ -476,8 +476,8 @@ cdef class ZFS(object):
     def __dealloc__(self):
         ZFS.__libzfs_fini(self)
 
-    def __getstate__(self):
-        return [p.__getstate__() for p in self.pools]
+    def asdict(self):
+        return [p.asdict() for p in self.pools]
 
     IF HAVE_ZPOOL_EVENTS_NEXT:
         def zpool_events(self, blocking=True, skip_existing_events=False):
@@ -1729,7 +1729,7 @@ cdef class ZPoolProperty(object):
     def __init__(self):
         raise RuntimeError('ZPoolProperty cannot be instantiated by the user')
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'value': self.value,
             'rawvalue': self.rawvalue,
@@ -1819,7 +1819,7 @@ cdef class ZPoolFeature(object):
     cdef NVList nvlist
     cdef zfs.zfeature_info_t *feature
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'name': self.name,
             'guid': self.guid,
@@ -1878,7 +1878,7 @@ cdef class ZFSProperty(object):
     def __init__(self):
         raise RuntimeError('ZFSProperty cannot be instantiated by the user')
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'value': self.value,
             'rawvalue': self.rawvalue,
@@ -2067,7 +2067,7 @@ cdef class ZFSVdevStats(object):
     cdef zfs.vdev_stat_t *vs;
     cdef uint_t total
 
-    def __getstate__(self):
+    def asdict(self):
         state = {
             'timestamp': self.timestamp,
             'read_errors': self.read_errors,
@@ -2177,18 +2177,18 @@ cdef class ZFSVdev(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self, recursive=True):
+    def asdict(self, recursive=True):
         ret = {
             'name': self.name,
             'type': self.type,
             'path': self.path,
             'guid': str(self.guid),
             'status': self.status,
-            'stats': self.stats.__getstate__()
+            'stats': self.stats.asdict()
         }
 
         if recursive:
-            ret['children'] = [i.__getstate__() for i in self.children]
+            ret['children'] = [i.asdict() for i in self.children]
 
         return ret
 
@@ -2575,7 +2575,7 @@ cdef class ZPoolScrub(object):
 
             return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'function': self.function.name if self.function else None,
             'state': self.state.name if self.stats != NULL else None,
@@ -2615,9 +2615,9 @@ cdef class ZFSPool(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self, datasets_recursive=True):
+    def asdict(self, datasets_recursive=True):
         try:
-            root_ds = self.root_dataset.__getstate__(datasets_recursive)
+            root_ds = self.root_dataset.asdict(datasets_recursive)
         except (ZFSException, AttributeError):
             root_ds = None
 
@@ -2633,21 +2633,21 @@ cdef class ZFSPool(object):
             'warning': self.warning,
             'error_count': self.error_count,
             'root_dataset': root_ds,
-            'properties': {k: p.__getstate__() for k, p in self.properties.items()} if self.properties else None,
-            'features': [i.__getstate__() for i in self.features] if self.features else None,
-            'scan': self.scrub.__getstate__(),
-            'root_vdev': self.root_vdev.__getstate__(False),
+            'properties': {k: p.asdict() for k, p in self.properties.items()} if self.properties else None,
+            'features': [i.asdict() for i in self.features] if self.features else None,
+            'scan': self.scrub.asdict(),
+            'root_vdev': self.root_vdev.asdict(False),
             'groups': {
-                'data': [i.__getstate__() for i in self.data_vdevs if i.type not in filter_vdevs],
-                'log': [i.__getstate__() for i in self.log_vdevs if i.type not in filter_vdevs],
-                'cache': [i.__getstate__() for i in self.cache_vdevs if i.type not in filter_vdevs],
-                'spare': [i.__getstate__() for i in self.spare_vdevs if i.type not in filter_vdevs],
+                'data': [i.asdict() for i in self.data_vdevs if i.type not in filter_vdevs],
+                'log': [i.asdict() for i in self.log_vdevs if i.type not in filter_vdevs],
+                'cache': [i.asdict() for i in self.cache_vdevs if i.type not in filter_vdevs],
+                'spare': [i.asdict() for i in self.spare_vdevs if i.type not in filter_vdevs],
             },
         }
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             state['groups'].update({
-                'special': [i.__getstate__() for i in self.special_vdevs if i.type not in filter_vdevs],
-                'dedup': [i.__getstate__() for i in self.dedup_vdevs if i.type not in filter_vdevs],
+                'special': [i.asdict() for i in self.special_vdevs if i.type not in filter_vdevs],
+                'dedup': [i.asdict() for i in self.dedup_vdevs if i.type not in filter_vdevs],
             })
 
         if self.handle != NULL:
@@ -3362,13 +3362,13 @@ cdef class ZFSObject(object):
     def __repr__(self):
         return str(self)
 
-    def __getstate__(self):
+    def asdict(self):
         return {
             'id': self.name,
             'name': self.name,
             'pool': self.pool.name,
             'type': self.type.name,
-            'properties': {k: p.__getstate__() for k, p in self.properties.items()},
+            'properties': {k: p.asdict() for k, p in self.properties.items()},
         }
 
     property name:
@@ -3569,18 +3569,18 @@ cdef class ZFSResource(ZFSObject):
 
 
 cdef class ZFSDataset(ZFSResource):
-    def __getstate__(self, recursive=True, snapshots=False, snapshots_recursive=False):
-        ret = super(ZFSDataset, self).__getstate__()
+    def asdict(self, recursive=True, snapshots=False, snapshots_recursive=False):
+        ret = super(ZFSDataset, self).asdict()
         ret['mountpoint'] = self.mountpoint
 
         if recursive:
-            ret['children'] = [i.__getstate__() for i in self.children]
+            ret['children'] = [i.asdict() for i in self.children]
 
         if snapshots:
-            ret['snapshots'] = [s.__getstate__() for s in self.snapshots]
+            ret['snapshots'] = [s.asdict() for s in self.snapshots]
 
         if snapshots_recursive:
-            ret['snapshots_recursive'] = [s.__getstate__() for s in self.snapshots_recursive]
+            ret['snapshots_recursive'] = [s.asdict() for s in self.snapshots_recursive]
 
         IF HAVE_ZFS_ENCRYPTION:
             root = self.encryption_root
@@ -4159,8 +4159,8 @@ cdef class ZFSDataset(ZFSResource):
 
 
 cdef class ZFSSnapshot(ZFSResource):
-    def __getstate__(self):
-        ret = super(ZFSSnapshot, self).__getstate__()
+    def asdict(self):
+        ret = super(ZFSSnapshot, self).asdict()
         ret.update({
             'holds': self.holds,
             'dataset': self.parent.name,
@@ -4355,8 +4355,8 @@ cdef class ZFSSnapshot(ZFSResource):
             raise NotImplementedError()
 
 cdef class ZFSBookmark(ZFSObject):
-    def __getstate__(self):
-        ret = super(ZFSBookmark, self).__getstate__()
+    def asdict(self):
+        ret = super(ZFSBookmark, self).asdict()
         ret.update({
             'dataset': self.parent.name,
             'bookmark_name': self.bookmark_name
