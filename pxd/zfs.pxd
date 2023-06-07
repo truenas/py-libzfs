@@ -61,6 +61,10 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_DDT_OBJ_STATS
     const char* ZPOOL_CONFIG_LOAD_INFO
     const char* ZPOOL_CONFIG_UNSUP_FEAT
+    const char* ZPOOL_CONFIG_DRAID_NDATA
+    const char* ZPOOL_CONFIG_DRAID_NSPARES
+    const char* ZPOOL_CONFIG_DRAID_NGROUPS
+    const char* VDEV_TYPE_DRAID
 
     IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
         const char* ZPOOL_CONFIG_ALLOCATION_BIAS
@@ -389,6 +393,11 @@ cdef extern from "sys/fs/zfs.h" nogil:
         ZPOOL_EXTREME_REWIND
         ZPOOL_REWIND_MASK
         ZPOOL_REWIND_POLICIES
+
+    enum:
+        VDEV_DRAID_MAXPARITY
+        VDEV_DRAID_MIN_CHILDREN
+        VDEV_DRAID_MAX_CHILDREN
 
     ctypedef struct zpool_rewind_policy_t:
         uint32_t	zrp_request
