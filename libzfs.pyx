@@ -360,6 +360,68 @@ cdef validate_zfs_resource_name(str name, int r_type):
     return bool(ret)
 
 
+def validate_draid_configuration(children, draid_parity, draid_spare_disks, draid_data_disks):
+    draid_data_disks = zfs.VDEV_DRAID_MAX_CHILDREN if draid_data_disks is None else draid_data_disks
+    # Validation added from
+    # https://github.com/truenas/zfs/blob/2bb9ef45772886bffcc93b59cfd62594f478cc83/cmd/zpool/zpool_vdev.c#L1369
+
+    if draid_data_disks == zfs.VDEV_DRAID_MAX_CHILDREN:
+        if children > draid_spare_disks + draid_parity:
+            draid_data_disks = min(children - draid_spare_disks - draid_parity, 8)
+        else:
+            raise ZFSException(
+                py_errno.EINVAL,
+                f'Request number of distributed spares {draid_spare_disks} and parity level {draid_parity}\n'
+                'leaves no disks available for data'
+            )
+
+    if draid_data_disks == 0 or (draid_data_disks + draid_parity) > (children - draid_spare_disks):
+        raise ZFSException(
+            py_errno.EINVAL,
+            f'Requested number of dRAID data disks per group {draid_data_disks} is too high, at'
+            f' most {children - draid_spare_disks - draid_parity} disks are available for data'
+        )
+
+    if draid_parity == 0 or draid_parity > zfs.VDEV_DRAID_MAXPARITY:
+        raise ZFSException(
+            py_errno.EINVAL,
+            f'Invalid dRAID parity level {draid_parity}; must be between 1 and {zfs.VDEV_DRAID_MAXPARITY}'
+        )
+
+    if draid_spare_disks > 100 or draid_spare_disks > (children - (draid_data_disks + draid_parity)):
+        raise ZFSException(
+            py_errno.EINVAL,
+            f'Invalid number of dRAID spares {draid_spare_disks}. Additional disks would be required'
+        )
+
+    if children < (draid_data_disks + draid_parity + draid_spare_disks):
+        raise ZFSException(
+            py_errno.EINVAL,
+            f'{children} disks were provided, but at least '
+            f'{draid_data_disks + draid_parity + draid_spare_disks} disks are required for this config'
+        )
+
+    if children > zfs.VDEV_DRAID_MAX_CHILDREN:
+        raise ZFSException(
+            py_errno.EINVAL,
+            f'{children} disks were provided, but dRAID only supports up to {zfs.VDEV_DRAID_MAX_CHILDREN} disks'
+        )
+    return draid_data_disks
+
+def update_draid_config(nvlist, children, draid_parity=1, draid_spare_disks=0, draid_data_disks=None):
+    draid_data_disks = validate_draid_configuration(children, draid_parity, draid_spare_disks, draid_data_disks)
+
+    ngroups = 1
+    while (ngroups * (draid_data_disks + draid_parity)) % (children - draid_spare_disks) != 0:
+        ngroups += 1
+
+    # Store the basic dRAID configuration.
+    nvlist[zfs.ZPOOL_CONFIG_NPARITY] = draid_parity
+    nvlist[zfs.ZPOOL_CONFIG_DRAID_NDATA] = draid_data_disks
+    nvlist[zfs.ZPOOL_CONFIG_DRAID_NSPARES] = draid_spare_disks
+    nvlist[zfs.ZPOOL_CONFIG_DRAID_NGROUPS] = ngroups
+
+
 class DiffRecord(object):
     def __init__(self, raw):
         timestamp, cmd, typ, rest = raw.split(maxsplit=3)
@@ -640,6 +702,14 @@ cdef class ZFS(object):
                 IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
                     vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_LOG
                 root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
+
+        if 'draid' in topology:
+            children = len(topology['draid'])
+            for draid in topology['draid']:
+                vdev = <ZFSVdev>draid['disk']
+                update_draid_config(vdev.nvlist, **draid['parameters'])
+                root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
+
 
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             if 'special' in topology:
@@ -2390,7 +2460,8 @@ cdef class ZFSVdev(object):
                 'raidz1',
                 'raidz2',
                 'raidz3',
-                zfs.VDEV_TYPE_MIRROR
+                zfs.VDEV_TYPE_MIRROR,
+                zfs.VDEV_TYPE_DRAID,
             ):
                 raise ValueError('Invalid vdev type')
 
