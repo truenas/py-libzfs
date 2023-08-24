@@ -4567,3 +4567,63 @@ def clear_label(device):
         raise OSError(errno, f'Failed to clear zpool label for {device}: {os.strerror(errno)}')
 
     os.close(fd)
+
+
+cpdef aggregate_metrics(data, allowed_aggregations):
+    # Initialize the aggregation dictionary
+    aggregations = {}
+    all_aggregation_values = {
+        'min': float('inf'),
+        'max': float('-inf'),
+        'mean': 0.0,
+        'total_points': 0
+    }
+    default_aggregation_values = {
+        key: all_aggregation_values[key] for key in set(allowed_aggregations) | {'total_points'}
+    }
+    final_aggregated_values = {k: {} for k in allowed_aggregations}
+    for legend in data['legend'][1:]:
+        aggregations[legend] = default_aggregation_values.copy()
+
+    # Traverse the data matrix and calculate aggregations
+    data_length = len(data['data'])
+    for index, row in enumerate(data['data']):
+        for idx, legend in enumerate(data['legend'][1:], start=1):
+            value = row[idx]
+
+            # Skip None values
+            if value is None:
+                continue
+
+            # Update the aggregation values
+            # When using built in min/max functions, a lag of 5 secs was seen when doing this math for
+            # 1200 disks, so we are doing it manually here with if/else clauses
+            if 'min' in final_aggregated_values:
+                if aggregations[legend]['min'] > value:
+                    aggregations[legend]['min'] = value
+            if 'max' in final_aggregated_values:
+                if aggregations[legend]['max'] < value:
+                    aggregations[legend]['max'] = value
+            if 'mean' in final_aggregated_values:
+                aggregations[legend]['mean'] += value
+
+            aggregations[legend]['total_points'] += 1
+
+            # Reason for doing this here is to avoid another loop because with 1200 disks adding another loop
+            # even just for legends is an expensive operation
+            if index == data_length - 1:
+                # Calculate the final mean for each metric
+                if 'max' in final_aggregated_values:
+                    final_aggregated_values['max'][legend] = aggregations[legend]['max']
+                if 'min' in final_aggregated_values:
+                    final_aggregated_values['min'][legend] = aggregations[legend]['min']
+                if 'mean' in final_aggregated_values:
+                    if aggregations[legend]['total_points'] > 0:
+                        aggregations[legend]['mean'] /= aggregations[legend]['total_points']
+                    else:
+                        aggregations[legend]['mean'] = 0.0
+
+                    final_aggregated_values['mean'][legend] = aggregations[legend]['mean']
+
+    data['aggregations'] = final_aggregated_values
+    return data
