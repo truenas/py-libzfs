@@ -4070,14 +4070,20 @@ cdef class ZFSDataset(ZFSResource):
     def mount(self):
         cdef int ret
 
-        if self.properties['mounted'].value == 'no':
-            with nogil:
-                ret = libzfs.zfs_mount(self.handle, NULL, 0)
+        try:
+            mounted = self.properties['mounted']
+        except KeyError:
+            # zvols don't have a mounted property
+            return
+        else:
+            if mounted.value == 'no':
+                with nogil:
+                    ret = libzfs.zfs_mount(self.handle, NULL, 0)
 
-            if ret != 0:
-                raise self.root.get_error()
+                if ret != 0:
+                    raise self.root.get_error()
 
-            self.root.write_history('zfs mount', self.name)
+                self.root.write_history('zfs mount', self.name)
 
     IF HAVE_ZFS_ENCRYPTION:
         def mount_recursive(self, ignore_errors=False, skip_unloaded_keys=True):
