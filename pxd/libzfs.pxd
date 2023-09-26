@@ -171,7 +171,7 @@ cdef extern from "libzfs.h" nogil:
 
     extern libzfs_handle_t *zpool_get_handle(zpool_handle_t *)
     extern libzfs_handle_t *zfs_get_handle(zfs_handle_t *)
-    extern int zfs_prop_set_list(zfs_handle_t *,  nvpair.nvlist_t *);
+    extern int zfs_prop_set_list(zfs_handle_t *,  nvpair.nvlist_t *, int);
 
     extern void libzfs_print_on_error(libzfs_handle_t *, int)
 

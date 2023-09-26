@@ -3615,7 +3615,7 @@ cdef class ZFSResource(ZFSObject):
             raise ZFSException(Error.BADPROP, f'Malformed values provided for {", ".join(invalid_values)!r}')
 
         with nogil:
-            ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
+            ret = libzfs.zfs_prop_set_list(self.handle, props.handle, 0)
 
         if ret != 0:
             raise self.root.get_error()
