@@ -3617,7 +3617,12 @@ cdef class ZFSResource(ZFSObject):
         with nogil:
             ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
 
-        if ret != 0:
+        if ret != 0 or self.root.errno != 0:
+            # setting the propert(y/ies) failed or
+            # the propert(y/ies) was/were changed successfully
+            # but the extended behavior that comes after failed
+            # (i.e. sharenfs=on will update files in exports/conf.d
+            #   which can fail for a myriad of reasons)
             raise self.root.get_error()
 
     @staticmethod
