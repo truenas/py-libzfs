@@ -2626,6 +2626,11 @@ cdef class ZPoolScrub(object):
             if self.stats != NULL:
                 return self.stats.pss_pass_issued
 
+    property bytes_skipped:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pss_skipped
+
     property pause:
         def __get__(self):
             if self.state == ScanState.SCANNING and self.stats.pss_pass_scrub_pause != 0:
@@ -2644,7 +2649,7 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            return (<float>self.bytes_issued / <float>self.bytes_to_scan) * 100
+            return (<float>self.bytes_issued / (<float>self.bytes_to_scan - <float>self.bytes_skipped)) * 100
 
     def asdict(self):
         return {
