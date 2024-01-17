@@ -2649,7 +2649,11 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            return (<float>self.bytes_issued / (<float>self.bytes_to_scan - <float>self.bytes_skipped)) * 100
+            bytes_total = self.bytes_to_scan - self.bytes_skipped
+            if bytes_total == 0:
+                return 0
+
+            return (<float>self.bytes_issued / <float>bytes_total) * 100
 
     def asdict(self):
         return {
