@@ -21,7 +21,6 @@ from libc.stdlib cimport realloc
 import errno as py_errno
 import urllib.parse
 
-GLOBAL_CONTEXT_LOCK = threading.Lock()
 logger = logging.getLogger(__name__)
 
 
@@ -519,24 +518,14 @@ cdef class ZFS(object):
                 self.proptypes[t] = proptypes
 
     def __enter__(self):
-        GLOBAL_CONTEXT_LOCK.acquire()
         return self
 
     def __exit__(self, exc_type, value, traceback):
-        self.__libzfs_fini()
-        GLOBAL_CONTEXT_LOCK.release()
-        if exc_type is not None:
-            raise
-
-    def __libzfs_fini(self):
-        if self.handle:
-            with nogil:
-                libzfs.libzfs_fini(self.handle)
-
-            self.handle = NULL
+        pass
 
     def __dealloc__(self):
-        ZFS.__libzfs_fini(self)
+        with nogil:
+            libzfs.libzfs_fini(self.handle)
 
     def asdict(self):
         return [p.asdict() for p in self.pools]
