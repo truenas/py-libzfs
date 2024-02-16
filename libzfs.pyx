@@ -2909,7 +2909,7 @@ cdef class ZFSPool(object):
 
     property healthy:
         def __get__(self):
-            return self.status_code in [PoolStatus.OK] + self.__warning_statuses()
+            return self.status_code in [PoolStatus.OK, PoolStatus.INCOMPATIBLE_FEAT] + self.__warning_statuses()
 
     property warning:
         def __get__(self):
