@@ -3181,13 +3181,14 @@ cdef class ZFSPool(object):
             hopts = self.root.generate_history_opts(fsopts, '-o')
             self.root.write_history('zfs create', hopts, name)
 
-    def attach_vdevs(self, vdevs_tree):
+    def attach_vdevs(self, vdevs_tree, check_ashift=0):
         cdef const char *command = 'zpool add'
         cdef ZFSVdev vd = self.root.make_vdev_tree(vdevs_tree, {'ashift': self.properties['ashift'].parsed})
         cdef int ret
+        cdef boolean_t ashift = check_ashift
 
         with nogil:
-            ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
+            ret = libzfs.zpool_add(self.handle, vd.nvlist.handle, ashift)
 
         if ret != 0:
             raise self.root.get_error()
