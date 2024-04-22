@@ -475,6 +475,11 @@ class ZFSVdevStatsException(ZFSException):
         super(ZFSVdevStatsException, self).__init__(code, 'Failed to fetch ZFS Vdev Stats')
 
 
+class ZFSPoolRaidzExpandStatsException(ZFSException):
+    def __init__(self, code):
+        super(ZFSPoolRaidzExpandStatsException, self).__init__(code, 'Failed to retrieve ZFS pool scan stats')
+
+
 class ZFSPoolScanStatsException(ZFSException):
     def __init__(self, code):
         super(ZFSPoolScanStatsException, self).__init__(code, 'Failed to retrieve ZFS pool scan stats')
@@ -2280,19 +2285,20 @@ cdef class ZFSVdev(object):
         cdef int rv
         cdef boolean_t rebuild = False
 
-        if self.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE):
+        if self.type not in (zfs.VDEV_TYPE_MIRROR, zfs.VDEV_TYPE_DISK, zfs.VDEV_TYPE_FILE, 'raidz1', 'raidz2', 'raidz3'):
             raise ZFSException(Error.NOTSUP, "Can attach disks to mirrors and stripes only")
 
         if self.type == zfs.VDEV_TYPE_MIRROR:
-            first_child = next(self.children)
+            first_child_path = next(self.children).path
+        elif self.type in ('raidz1', 'raidz2', 'raidz3'):
+            first_child_path = self.name
         else:
-            first_child = self
+            first_child_path = self.path
 
         root = self.root.make_vdev_tree({
             'data': [vdev]
         }, {'ashift': self.zpool.properties['ashift'].parsed})
 
-        first_child_path = first_child.path
         new_vdev_path = vdev.path
 
         cdef const char* c_first_child_path = first_child_path
@@ -2311,7 +2317,7 @@ cdef class ZFSVdev(object):
         if rv != 0:
             raise self.root.get_error()
 
-        self.root.write_history(command, self.zpool.name, first_child.path, vdev.path)
+        self.root.write_history(command, self.zpool.name, first_child_path, vdev.path)
 
     def replace(self, ZFSVdev vdev):
         cdef const char *command = 'zpool replace'
@@ -2552,6 +2558,102 @@ cdef class ZFSVdev(object):
                 return result
 
 
+cdef class ZPoolRaidzExpand(object):
+    cdef readonly ZFS root
+    cdef readonly ZFSPool pool
+    cdef zfs.pool_raidz_expand_stat_t *stats
+
+    def __init__(self, ZFS root, ZFSPool pool):
+        self.root = root
+        self.pool = pool
+        self.stats = NULL
+        cdef NVList config
+        cdef NVList nvroot = pool.get_raw_config().get_raw(zfs.ZPOOL_CONFIG_VDEV_TREE)
+        cdef int ret
+        cdef uint_t total
+        if zfs.ZPOOL_CONFIG_SCAN_STATS not in nvroot:
+            return
+
+        ret = nvroot.nvlist_lookup_uint64_array(
+            <nvpair.nvlist_t*>nvroot.handle, zfs.ZPOOL_CONFIG_RAIDZ_EXPAND_STATS, <uint64_t **>&self.stats, &total
+        )
+        if ret != 0:
+            raise ZFSPoolRaidzExpandStatsException(ret)
+
+    property state:
+        def __get__(self):
+            if self.stats != NULL:
+                return ScanState(self.stats.pres_state)
+
+    property expanding_vdev:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pres_expanding_vdev
+
+    property start_time:
+        def __get__(self):
+            if self.stats != NULL:
+                return datetime.utcfromtimestamp(self.stats.pres_start_time)
+
+    property end_time:
+        def __get__(self):
+            if self.stats != NULL and self.state != ScanState.SCANNING:
+                return datetime.utcfromtimestamp(self.stats.pres_end_time)
+
+    property bytes_to_reflow:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pres_to_reflow
+
+    property bytes_reflowed:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pres_reflowed
+
+    property waiting_for_resilver:
+        def __get__(self):
+            if self.stats != NULL:
+                return self.stats.pres_waiting_for_resilver
+
+    property total_secs_left:
+        def __get__(self):
+            if self.state != ScanState.SCANNING:
+                return
+
+            copied = self.bytes_reflowed
+            total = self.bytes_to_reflow or 1
+            fraction_done = <float>copied / <float>total
+
+            elapsed = time.time() - self.stats.pres_start_time
+            elapsed = elapsed or 1
+            rate = <float>copied / <float>elapsed
+            rate = rate or 1
+            return int((total - copied) / rate)
+
+    property percentage:
+        def __get__(self):
+            if self.stats == NULL:
+                return
+
+            copied = self.bytes_reflowed
+            total = self.bytes_to_reflow or 1
+
+            return (<float>copied / <float>total) * 100
+
+    def asdict(self):
+        return {
+            'state': self.state.name if self.stats != NULL else None,
+            'expanding_vdev': self.expanding_vdev,
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'bytes_to_reflow': self.bytes_to_reflow,
+            'bytes_reflowed': self.bytes_reflowed,
+            'waiting_for_resilver': self.waiting_for_resilver,
+            'total_secs_left': self.total_secs_left,
+            'percentage': self.percentage,
+        }
+
+
 cdef class ZPoolScrub(object):
     cdef readonly ZFS root
     cdef readonly ZFSPool pool
@@ -2716,6 +2818,7 @@ cdef class ZFSPool(object):
             'properties': {k: p.asdict() for k, p in self.properties.items()} if self.properties else None,
             'features': [i.asdict() for i in self.features] if self.features else None,
             'scan': self.scrub.asdict(),
+            'expand': self.expand.asdict(),
             'root_vdev': self.root_vdev.asdict(False),
             'groups': {
                 'data': [i.asdict() for i in self.data_vdevs if i.type not in filter_vdevs],
@@ -3056,6 +3159,10 @@ cdef class ZFSPool(object):
     property scrub:
         def __get__(self):
             return ZPoolScrub(self.root, self)
+
+    property expand:
+        def __get__(self):
+            return ZPoolRaidzExpand(self.root, self)
 
     IF HAVE_LZC_WAIT:
         def wait(self, operation_type):
