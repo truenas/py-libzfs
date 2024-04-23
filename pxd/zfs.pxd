@@ -39,6 +39,7 @@ cdef extern from "sys/fs/zfs.h" nogil:
     const char* ZPOOL_CONFIG_ASHIFT
     const char* ZPOOL_CONFIG_ASIZE
     const char* ZPOOL_CONFIG_DTL
+    const char* ZPOOL_CONFIG_RAIDZ_EXPAND_STATS
     const char* ZPOOL_CONFIG_SCAN_STATS
     const char* ZPOOL_CONFIG_VDEV_STATS
     const char* ZPOOL_CONFIG_WHOLE_DISK
@@ -523,6 +524,15 @@ cdef extern from "sys/fs/zfs.h" nogil:
         uint64_t	vs_logical_ashift
         uint64_t	vs_physical_ashift
         uint64_t	vs_fragmentation
+
+    ctypedef struct pool_raidz_expand_stat_t:
+        uint64_t    pres_state # dsl_scan_state_t
+        uint64_t    pres_expanding_vdev
+        uint64_t    pres_start_time
+        uint64_t    pres_end_time
+        uint64_t    pres_to_reflow # bytes that need to be moved
+        uint64_t    pres_reflowed # bytes moved so far
+        uint64_t    pres_waiting_for_resilver
 
     ctypedef struct pool_scan_stat_t:
         uint64_t    pss_func # pool_scan_func_t
