@@ -3731,10 +3731,38 @@ cdef class ZFSResource(ZFSObject):
         if invalid_values:
             raise ZFSException(Error.BADPROP, f'Malformed values provided for {", ".join(invalid_values)!r}')
 
+        # we capture what the current self.root.errno is set to
+        # because `self.root` is a readonly property defined in
+        # the parent ZFS class. This means we can't overwrite it
+        # by simply doing "self.root.errno = 0". It's important
+        # that we capture the previous errno BEFORE calling
+        # zfs_prop_set_list(). The reason why we do this is
+        # because this python module allows users to instantiate
+        # a "long-lived" handle on a zfs resource. If we don't
+        # keep track of this errno, someone might fat-finger
+        # updating a property of a zvol (for example). When that
+        # happens, self.root.errno is set. However, if they try
+        # to set the proper value after correcting the typo, they
+        # will be presented with the errno that was set previously.
+        # Here is an interactive python example showing the issue
+        # >>> import libzfs
+        # >>> zzzvol = libzfs.ZFS().get_object('dozer/zzzvol')
+        # >>> zzzvol.update_properties({'volthreading': {'value': 'on'}})
+        # >>> zzzvol.update_properties({'volthreading': {'value': 'o'}})
+        # Traceback (most recent call last):
+        #   File "<stdin>", line 1, in <module>
+        #   File "libzfs.pyx", line 3743, in libzfs.ZFSResource.update_properties
+        # libzfs.ZFSException: cannot set property for 'dozer/zzzvol': 'volthreading' must be one of 'on | off'
+        # >>> zzzvol.update_properties({'volthreading': {'value': 'on'}})
+        # Traceback (most recent call last):
+        #   File "<stdin>", line 1, in <module>
+        #   File "libzfs.pyx", line 3743, in libzfs.ZFSResource.update_properties
+        # libzfs.ZFSException: cannot set property for 'dozer/zzzvol': 'volthreading' must be one of 'on | off'
+        prev_errno = self.root.errno
         with nogil:
             ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
 
-        if ret != 0 or self.root.errno != 0:
+        if ret != 0 or (prev_errno != self.root.errno and self.root.errno != 0):
             # setting the propert(y/ies) failed or
             # the propert(y/ies) was/were changed successfully
             # but the extended behavior that comes after failed
