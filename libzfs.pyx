@@ -471,18 +471,18 @@ class ZFSException(RuntimeError):
 
 
 class ZFSVdevStatsException(ZFSException):
-    def __init__(self, code):
-        super(ZFSVdevStatsException, self).__init__(code, 'Failed to fetch ZFS Vdev Stats')
+    def __init__(self, code, message='Failed to fetch ZFS Vdev Stats'):
+        super(ZFSVdevStatsException, self).__init__(code, message)
 
 
 class ZFSPoolRaidzExpandStatsException(ZFSException):
-    def __init__(self, code):
-        super(ZFSPoolRaidzExpandStatsException, self).__init__(code, 'Failed to retrieve ZFS pool scan stats')
+    def __init__(self, code, message='Failed to retrieve ZFS pool scan stats'):
+        super(ZFSPoolRaidzExpandStatsException, self).__init__(code, message)
 
 
 class ZFSPoolScanStatsException(ZFSException):
-    def __init__(self, code):
-        super(ZFSPoolScanStatsException, self).__init__(code, 'Failed to retrieve ZFS pool scan stats')
+    def __init__(self, code, message='Failed to retrieve ZFS pool scan stats'):
+        super(ZFSPoolScanStatsException, self).__init__(code, message)
 
 
 cdef class ZFS(object):
@@ -2805,6 +2805,16 @@ cdef class ZFSPool(object):
 
         filter_vdevs = [zfs.VDEV_TYPE_HOLE, zfs.VDEV_TYPE_INDIRECT]
 
+        try:
+            scan = self.scrub.asdict()
+        except ZFSPoolScanStatsException:
+            scan = None
+
+        try:
+            expand = self.expand.asdict()
+        except ZFSPoolRaidzExpandStatsException:
+            expand = None
+
         state = {
             'name': self.name,
             'id': self.name,
@@ -2817,8 +2827,8 @@ cdef class ZFSPool(object):
             'root_dataset': root_ds,
             'properties': {k: p.asdict() for k, p in self.properties.items()} if self.properties else None,
             'features': [i.asdict() for i in self.features] if self.features else None,
-            'scan': self.scrub.asdict(),
-            'expand': self.expand.asdict(),
+            'scan': scan,
+            'expand': expand,
             'root_vdev': self.root_vdev.asdict(False),
             'groups': {
                 'data': [i.asdict() for i in self.data_vdevs if i.type not in filter_vdevs],
