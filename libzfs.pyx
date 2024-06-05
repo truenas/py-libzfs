@@ -4246,13 +4246,13 @@ cdef class ZFSDataset(ZFSResource):
                 self.root.write_history('zfs mount', self.name)
 
     IF HAVE_ZFS_ENCRYPTION:
-        def mount_recursive(self, ignore_errors=False, skip_unloaded_keys=True):
-            return self._mount_recursive(ignore_errors, skip_unloaded_keys)
+        def mount_recursive(self, ignore_errors=False, skip_unloaded_keys=True, force_mount=False):
+            return self._mount_recursive(ignore_errors, skip_unloaded_keys, force_mount)
     ELSE:
-        def mount_recursive(self, ignore_errors=False):
-            return self._mount_recursive(ignore_errors, False)
+        def mount_recursive(self, ignore_errors=False, force_mount=False):
+            return self._mount_recursive(ignore_errors, False, force_mount)
 
-    def _mount_recursive(self, ignore_errors, skip_unloaded_keys):
+    def _mount_recursive(self, ignore_errors, skip_unloaded_keys, force_mount):
         if self.type != DatasetType.FILESYSTEM:
             return
 
@@ -4260,7 +4260,7 @@ cdef class ZFSDataset(ZFSResource):
             if self.encrypted and not self.key_loaded and skip_unloaded_keys:
                 return
 
-        if self.properties['canmount'].value == 'on':
+        if self.properties['canmount'].value == 'on' or force_mount:
             try:
                 self.mount()
             except:
@@ -4268,7 +4268,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise
 
         for i in self.children:
-            i._mount_recursive(ignore_errors, skip_unloaded_keys)
+            i._mount_recursive(ignore_errors, skip_unloaded_keys, force_mount)
 
     def umount(self, force=False):
         cdef int flags = 0
