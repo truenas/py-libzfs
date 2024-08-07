@@ -2711,10 +2711,10 @@ cdef class ZPoolScrub(object):
             if self.state != ScanState.SCANNING:
                 return
 
-            total = self.bytes_to_scan
+            total = self.bytes_to_scan - self.stats.pss_skipped
             issued = self.bytes_issued
             elapsed = ((int(time.time()) - self.stats.pss_pass_start) - self.stats.pss_pass_scrub_spent_paused) or 1
-            pass_issued = self.stats.pss_pass_issued or 1
+            pass_issued = self.stats.pss_pass_issued
             issue_rate = pass_issued / elapsed
             return int((total - issued) / issue_rate)
 
