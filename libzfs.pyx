@@ -2252,7 +2252,7 @@ cdef class ZFSVdev(object):
     def __repr__(self):
         return str(self)
 
-    def asdict(self, recursive=True):
+    def asdict(self, recursive=True, spares_cache=None):
         ret = {
             'name': self.name,
             'type': self.type,
@@ -2263,7 +2263,10 @@ cdef class ZFSVdev(object):
         }
 
         if recursive:
-            ret['children'] = [i.asdict() for i in self.children]
+            ret['children'] = [i.asdict(spares_cache=spares_cache) for i in self.children]
+
+        if self.group == 'data' and self.path is None and self.type == 'spare' and spares_cache and recursive:
+            ret['path'] = next((c['path'] for c in ret['children'] if c['name'] in spares_cache), None)
 
         return ret
 
@@ -2815,6 +2818,7 @@ cdef class ZFSPool(object):
         except ZFSPoolRaidzExpandStatsException:
             expand = None
 
+        spares = [i.asdict() for i in self.spare_vdevs if i.type not in filter_vdevs]
         state = {
             'name': self.name,
             'id': self.name,
@@ -2831,10 +2835,13 @@ cdef class ZFSPool(object):
             'expand': expand,
             'root_vdev': self.root_vdev.asdict(False),
             'groups': {
-                'data': [i.asdict() for i in self.data_vdevs if i.type not in filter_vdevs],
+                'data': [
+                    i.asdict(spares_cache=[s['name'] for s in spares]) for i in self.data_vdevs
+                    if i.type not in filter_vdevs
+                ],
                 'log': [i.asdict() for i in self.log_vdevs if i.type not in filter_vdevs],
                 'cache': [i.asdict() for i in self.cache_vdevs if i.type not in filter_vdevs],
-                'spare': [i.asdict() for i in self.spare_vdevs if i.type not in filter_vdevs],
+                'spare': spares,
             },
         }
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
