@@ -2806,8 +2806,6 @@ cdef class ZFSPool(object):
         except (ZFSException, AttributeError):
             root_ds = None
 
-        filter_vdevs = [zfs.VDEV_TYPE_HOLE, zfs.VDEV_TYPE_INDIRECT]
-
         try:
             scan = self.scrub.asdict()
         except ZFSPoolScanStatsException:
@@ -2818,10 +2816,7 @@ cdef class ZFSPool(object):
         except ZFSPoolRaidzExpandStatsException:
             expand = None
 
-        spares = [i.asdict() for i in self.spare_vdevs if i.type not in filter_vdevs]
         state = {
-            'name': self.name,
-            'id': self.name,
             'guid': str(self.guid),
             'hostname': self.hostname,
             'status': self.status,
@@ -2834,6 +2829,22 @@ cdef class ZFSPool(object):
             'scan': scan,
             'expand': expand,
             'root_vdev': self.root_vdev.asdict(False),
+            **self.groups_asdict(),
+        }
+
+        if self.handle != NULL:
+            state.update({
+                'status_code': self.status_code.name,
+                'status_detail': self.status_detail
+            })
+
+        return state
+
+    def groups_asdict(self):
+        filter_vdevs = [zfs.VDEV_TYPE_HOLE, zfs.VDEV_TYPE_INDIRECT]
+        spares = [i.asdict() for i in self.spare_vdevs if i.type not in filter_vdevs]
+        name = self.name
+        state = {
             'groups': {
                 'data': [
                     i.asdict(spares_cache=[s['name'] for s in spares]) for i in self.data_vdevs
@@ -2843,20 +2854,16 @@ cdef class ZFSPool(object):
                 'cache': [i.asdict() for i in self.cache_vdevs if i.type not in filter_vdevs],
                 'spare': spares,
             },
+            'name': name,
+            'id': name,
         }
         IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
             state['groups'].update({
                 'special': [i.asdict() for i in self.special_vdevs if i.type not in filter_vdevs],
                 'dedup': [i.asdict() for i in self.dedup_vdevs if i.type not in filter_vdevs],
             })
-
-        if self.handle != NULL:
-            state.update({
-                'status_code': self.status_code.name,
-                'status_detail': self.status_detail
-            })
-
         return state
+
 
     @staticmethod
     cdef int __iterate_props(int proptype, void* arg) nogil:
