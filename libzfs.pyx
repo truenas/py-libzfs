@@ -3000,8 +3000,7 @@ cdef class ZFSPool(object):
 
     property status:
         def __get__(self):
-            stats = self.config[zfs.ZPOOL_CONFIG_VDEV_TREE][zfs.ZPOOL_CONFIG_VDEV_STATS]
-            return libzfs.zpool_state_to_name(stats[1], stats[2])
+            return libzfs.zpool_get_state_str(self.handle)
 
     property status_code:
         def __get__(self):
