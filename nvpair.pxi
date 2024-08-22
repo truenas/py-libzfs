@@ -59,7 +59,7 @@ cdef class NVList(object):
         datatype = nvpair.nvpair_type(pair)
 
         if datatype == nvpair.DATA_TYPE_STRING:
-            nvpair.nvpair_value_string(pair, &cstr)
+            nvpair.nvpair_value_string(pair, <const char**>&cstr)
             return (<bytes>cstr).decode('utf-8')
 
         if datatype == nvpair.DATA_TYPE_BOOLEAN:
@@ -139,7 +139,7 @@ cdef class NVList(object):
             return [x for x in (<uint64_t *>carray)[:carraylen]]
 
         if datatype == nvpair.DATA_TYPE_STRING_ARRAY:
-            nvpair.nvpair_value_string_array(pair, <char***>&carray, &carraylen)
+            nvpair.nvpair_value_string_array(pair, <const char***>&carray, &carraylen)
             return [x for x in (<char**>carray)[:carraylen]]
 
         if datatype == nvpair.DATA_TYPE_NVLIST:
@@ -255,7 +255,7 @@ cdef class NVList(object):
                 for idx, i in enumerate(value):
                     (<char**>carray)[idx] = i
 
-                nvpair.nvlist_add_string_array(self.handle, key, <char**>carray, len(value))
+                nvpair.nvlist_add_string_array(self.handle, key, <const char * const *>carray, len(value))
 
             if typeid == nvpair.DATA_TYPE_BOOLEAN_ARRAY:
                 carray = malloc(len(value) * sizeof(char*))
@@ -334,7 +334,7 @@ cdef class NVList(object):
                     cnvlist = <NVList>i
                     (<uintptr_t*>carray)[idx] = <uintptr_t>cnvlist.handle
 
-                nvpair.nvlist_add_nvlist_array(self.handle, key, <nvpair.nvlist_t**>carray, len(value))
+                nvpair.nvlist_add_nvlist_array(self.handle, key, <const nvpair.nvlist_t* const *>carray, len(value))
 
             if carray != NULL:
                 free(carray)
