@@ -22,6 +22,7 @@ import errno as py_errno
 import urllib.parse
 
 GLOBAL_CONTEXT_LOCK = threading.Lock()
+IGNORED_FEATURES = {'fast_dedup'}
 logger = logging.getLogger(__name__)
 
 
@@ -1540,6 +1541,10 @@ cdef class ZFS(object):
             opts = opts.copy()
             for i in range(0, zfs.SPA_FEATURES):
                 feat = &zfs.spa_feature_table[i]
+
+                if feat.fi_uname in IGNORED_FEATURES:
+                    continue
+
                 opts['feature@{}'.format(feat.fi_uname)] = 'enabled'
 
         copts = NVList(otherdict=opts)
@@ -3151,6 +3156,10 @@ cdef class ZFSPool(object):
 
             for i in range(0, zfs.SPA_FEATURES):
                 feat = &zfs.spa_feature_table[i]
+
+                if feat.fi_uname in IGNORED_FEATURES:
+                    continue
+
                 f = ZPoolFeature.__new__(ZPoolFeature)
                 f.feature = feat
                 f.pool = self
