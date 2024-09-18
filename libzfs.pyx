@@ -3022,7 +3022,10 @@ cdef class ZFSPool(object):
 
     property healthy:
         def __get__(self):
-            return self.status_code in [PoolStatus.OK] + self.__warning_statuses()
+            healthy_statuses = [PoolStatus.OK]
+            if self.name in ['boot-pool', 'freenas-boot']:
+                healthy_statuses.append(PoolStatus.INCOMPATIBLE_FEAT)
+            return self.status_code in healthy_statuses + self.__warning_statuses()
 
     property warning:
         def __get__(self):
