@@ -110,7 +110,7 @@ ZFS_PROPERTY_CONVERTERS = {
     'setuid': ZfsConverter(bool),
     'readonly': ZfsConverter(bool),
     'jailed': ZfsConverter(bool),
-    'snapdir': ZfsConverter(bool, off='hidden', on='visible'),
+    'snapdir': ZfsConverter(str),
     'aclmode': ZfsConverter(str),
     'aclinherit': ZfsConverter(str),
     'canmount': ZfsConverter(bool),
