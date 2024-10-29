@@ -629,6 +629,9 @@ cdef extern from "libzfs.h" nogil:
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
 
+    extern int zpool_prefetch(zpool_handle_t *, zfs.zpool_prefetch_type_t);
+    extern int zpool_ddt_prune(zpool_handle_t *, zfs.zpool_ddt_prune_unit_t, uint64_t)
+
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
         extern void zfs_foreach_mountpoint(
             libzfs_handle_t *, zfs_handle_t **, size_t, zfs_iter_f, void*, boolean_t

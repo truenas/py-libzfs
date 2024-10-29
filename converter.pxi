@@ -77,6 +77,8 @@ ZPOOL_PROPERTY_CONVERTERS = {
     'failmode': ZfsConverter(str, nullable=True),
     'listsnapshots': ZfsConverter(bool, nullable=True),
     'autoexpand': ZfsConverter(bool, nullable=True),
+    'dedup_table_size': ZfsConverter(int, readonly=True, nullable=True),
+    'dedupcached': ZfsConverter(int, readonly=True, nullable=True),
     'dedupditto': ZfsConverter(int, readonly=True, nullable=True),
     'dedupratio': ZfsConverter(str, readonly=True, nullable=True),
     'free': ZfsConverter(int, readonly=True, nullable=True),
