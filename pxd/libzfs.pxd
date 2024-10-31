@@ -178,6 +178,7 @@ cdef extern from "libzfs.h" nogil:
         EZFS_RESUME_EXISTS
         EZFS_SHAREFAILED
         EZFS_RAIDZ_EXPAND_IN_PROGRESS
+        EZFS_ASHIFT_MISMATCH
         EZFS_UNKNOWN
 
     IF HAVE_ZFS_ENCRYPTION:
