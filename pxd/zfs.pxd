@@ -115,6 +115,15 @@ cdef extern from "sys/fs/zfs.h" nogil:
             ZPOOL_WAIT_TRIM,
             ZPOOL_WAIT_NUM_ACTIVITIES
 
+    ctypedef enum zpool_prefetch_type_t:
+        ZPOOL_PREFETCH_NONE
+        ZPOOL_PREFETCH_DDT
+
+    ctypedef enum zpool_ddt_prune_unit_t:
+        ZPOOL_DDT_PRUNE_NONE
+        ZPOOL_DDT_PRUNE_AGE
+        ZPOOL_DDT_PRUNE_PERCENTAGE
+
     enum:
         ZIO_TYPES
         ZFS_NUM_USERQUOTA_PROPS

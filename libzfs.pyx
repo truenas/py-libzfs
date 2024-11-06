@@ -3396,6 +3396,40 @@ cdef class ZFSPool(object):
 
         self.root.write_history('zpool upgrade', self.name)
 
+    def ddt_prefetch(self):
+        cdef int ret
+
+        with nogil:
+            ret = libzfs.zpool_prefetch(self.handle, zfs.ZPOOL_PREFETCH_DDT)
+
+        if ret != 0:
+            raise self.root.get_error()
+
+        self.root.write_history('zpool prefetch -t ddt', self.name)
+
+    def ddt_prune(self, percentage=None, days=None):
+        cdef int ret
+        cdef zfs.zpool_ddt_prune_unit_t arg
+        cdef uint64_t value
+
+        if percentage is not None and days is not None:
+            raise ZFSException(py_errno.EINVAL, 'Only one of "days" or "percentage" should be defined, not both')
+        elif percentage is not None and (percentage > 100 or percentage < 1):
+            raise ZFSException(py_errno.EINVAL, 'Invalid percentage value it must be between 1 to 100')
+        elif days is not None and days < 1:
+            raise ZFSException(py_errno.EINVAL, 'Invalid number of days they must be greater than 1')
+
+        arg = zfs.ZPOOL_DDT_PRUNE_PERCENTAGE if percentage else zfs.ZPOOL_DDT_PRUNE_AGE
+        value = percentage or days
+
+        with nogil:
+            ret = libzfs.zpool_ddt_prune(self.handle, arg, value)
+
+        if ret != 0:
+            raise self.root.get_error()
+
+        self.root.write_history('zpool ddt-prune', {'-p' if percentage else '-d'}, {percentage or days}, self.name)
+
 
 cdef class ZFSImportablePool(ZFSPool):
     cdef NVList nvlist
