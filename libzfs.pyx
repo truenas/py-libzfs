@@ -3127,7 +3127,7 @@ cdef class ZFSPool(object):
             result = {}
 
             with nogil:
-                libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, True, True, zfs.ZFS_TYPE_POOL)
+                libzfs.zprop_iter(self.__iterate_props, <void*>proptypes, False, True, zfs.ZFS_TYPE_POOL)
 
             for x in proptypes:
                 prop = ZPoolProperty.__new__(ZPoolProperty)
