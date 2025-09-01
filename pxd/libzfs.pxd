@@ -279,9 +279,9 @@ cdef extern from "libzfs.h" nogil:
         extern int zpool_events_next(libzfs_handle_t *, nvpair.nvlist_t **, int *, unsigned, int);
 
     IF HAVE_ZPOOL_GET_STATUS == 3 and HAVE_ZPOOL_ERRATA_T_ENUM:
-        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **, zfs.zpool_errata_t *)
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, const char **, zfs.zpool_errata_t *)
     ELSE:
-        extern zpool_status_t zpool_get_status(zpool_handle_t *, char **)
+        extern zpool_status_t zpool_get_status(zpool_handle_t *, const char **)
 
     extern zpool_status_t zpool_import_status(nvpair.nvlist_t *, char **)
     extern void zpool_dump_ddt(const zfs.ddt_stat_t *dds, const zfs.ddt_histogram_t *ddh)
@@ -513,7 +513,7 @@ cdef extern from "libzfs.h" nogil:
     ELSE:
         extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
-    ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t) # XXX: uint32_t should be uid_t
+    ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t, uint64_t) # XXX: uint32_t should be uid_t
 
     extern int zfs_userspace(zfs_handle_t *, zfs.zfs_userquota_prop_t, zfs_userspace_cb_t, void *)
 

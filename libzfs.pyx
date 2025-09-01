@@ -3005,7 +3005,7 @@ cdef class ZFSPool(object):
 
     property status_code:
         def __get__(self):
-            cdef char* msg_id
+            cdef const char* msg_id
             if self.handle != NULL:
                 IF HAVE_ZPOOL_GET_STATUS == 3:
                     return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id, NULL))
@@ -3818,10 +3818,10 @@ cdef class ZFSResource(ZFSObject):
             raise self.root.get_error()
 
     @staticmethod
-    cdef int _userspace_cb(void *data, const char *domain, uint32_t rid, uint64_t space) noexcept nogil:
+    cdef int _userspace_cb(void *data, const char *domain, uint32_t rid, uint64_t space, uint64_t default_quota) noexcept nogil:
         with gil:
             result = <list>data
-            result.append({'domain': domain, 'rid': rid, 'space': space})
+            result.append({'domain': domain, 'rid': rid, 'space': space, 'default_quota': default_quota})
 
     def userspace(self, quota_props):
         results = {}
