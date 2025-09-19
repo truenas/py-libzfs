@@ -585,7 +585,7 @@ cdef class ZFS(object):
                 return retval
 
     @staticmethod
-    cdef int __iterate_props(int proptype, void *arg) nogil:
+    cdef int __iterate_props(int proptype, void *arg) noexcept nogil:
         cdef prop_iter_state *iter
         cdef boolean_t ret = False
 
@@ -605,7 +605,7 @@ cdef class ZFS(object):
             return zfs.ZPROP_CONT
 
     @staticmethod
-    cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg) nogil:
+    cdef int __iterate_pools(libzfs.zpool_handle_t *handle, void *arg) noexcept nogil:
         cdef iter_state *iter
         cdef iter_state new
 
@@ -733,7 +733,7 @@ cdef class ZFS(object):
         return root
 
     @staticmethod
-    cdef int __dataset_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+    cdef int __dataset_handles(libzfs.zfs_handle_t* handle, void *arg) noexcept nogil:
         cdef int prop_id
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
         cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
@@ -897,7 +897,7 @@ cdef class ZFS(object):
                 yield dataset[1][ds_name]
 
     @staticmethod
-    cdef int __retrieve_mountable_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) nogil:
+    cdef int __retrieve_mountable_datasets_handles(libzfs.zfs_handle_t* handle, void *arg) noexcept nogil:
         cdef libzfs.get_all_cb_t *cb = <libzfs.get_all_cb_t*>arg
         if libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_FILESYSTEM:
             libzfs.zfs_close(handle)
@@ -925,7 +925,7 @@ cdef class ZFS(object):
         ZFS.__iterate_filesystems(handle, 0, ZFS.__retrieve_mountable_datasets_handles, cb)
 
     @staticmethod
-    cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+    cdef int mount_dataset(libzfs.zfs_handle_t *zhp, void *arg) noexcept nogil:
         cdef int ret
         cdef nvpair.nvlist_t* mount_data = <nvpair.nvlist_t*>arg
         IF HAVE_ZFS_ENCRYPTION:
@@ -938,7 +938,7 @@ cdef class ZFS(object):
         return ret
 
     @staticmethod
-    cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) nogil:
+    cdef int share_one_dataset(libzfs.zfs_handle_t *zhp, void *arg) noexcept nogil:
         cdef int ret
         IF HAVE_ZFS_SHARE == 1:
             ret = libzfs.zfs_share(zhp)
@@ -1008,7 +1008,7 @@ cdef class ZFS(object):
                     raise ZFSException(Error.MOUNTFAILED, error_str)
 
     @staticmethod
-    cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) nogil:
+    cdef int __snapshot_details(libzfs.zfs_handle_t *handle, void *arg) noexcept nogil:
         cdef int prop_id, ret, simple_handle, holds, mounted
         cdef char csrcstr[MAX_DATASET_NAME_LEN + 1]
         cdef char crawvalue[libzfs.ZFS_MAXPROPLEN + 1]
@@ -1135,7 +1135,7 @@ cdef class ZFS(object):
         libzfs.zfs_close(handle)
 
     @staticmethod
-    cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) nogil:
+    cdef int __datasets_snapshots(libzfs.zfs_handle_t *handle, void *arg) noexcept nogil:
         cdef boolean_t close_handle, recursive, is_dataset
 
         is_dataset = libzfs.zfs_get_type(handle) != zfs.ZFS_TYPE_SNAPSHOT
@@ -2852,7 +2852,7 @@ cdef class ZFSPool(object):
         return state
 
     @staticmethod
-    cdef int __iterate_props(int proptype, void* arg) nogil:
+    cdef int __iterate_props(int proptype, void* arg) noexcept nogil:
         with gil:
             proptypes = <object>arg
             proptypes.append(proptype)
@@ -3005,7 +3005,7 @@ cdef class ZFSPool(object):
 
     property status_code:
         def __get__(self):
-            cdef char* msg_id
+            cdef const char* msg_id
             if self.handle != NULL:
                 IF HAVE_ZPOOL_GET_STATUS == 3:
                     return PoolStatus(libzfs.zpool_get_status(self.handle, &msg_id, NULL))
@@ -3698,7 +3698,7 @@ cdef class ZFSObject(object):
 cdef class ZFSResource(ZFSObject):
 
     @staticmethod
-    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) nogil:
+    cdef int __iterate(libzfs.zfs_handle_t* handle, void *arg) noexcept nogil:
         cdef iter_state *iter
         cdef iter_state new
 
@@ -3818,10 +3818,10 @@ cdef class ZFSResource(ZFSObject):
             raise self.root.get_error()
 
     @staticmethod
-    cdef int _userspace_cb(void *data, const char *domain, uint32_t rid, uint64_t space) nogil:
+    cdef int _userspace_cb(void *data, const char *domain, uint32_t rid, uint64_t space, uint64_t default_quota) noexcept nogil:
         with gil:
             result = <list>data
-            result.append({'domain': domain, 'rid': rid, 'space': space})
+            result.append({'domain': domain, 'rid': rid, 'space': space, 'default_quota': default_quota})
 
     def userspace(self, quota_props):
         results = {}
@@ -3861,7 +3861,7 @@ cdef class ZFSDataset(ZFSResource):
         return ret
 
     @staticmethod
-    cdef int __snapshots_callback(libzfs.zfs_handle_t * handle, void *arg) nogil:
+    cdef int __snapshots_callback(libzfs.zfs_handle_t * handle, void *arg) noexcept nogil:
         cdef const char *name = libzfs.zfs_get_name(handle)
         with gil:
             snap_config = <object> arg
@@ -3869,7 +3869,7 @@ cdef class ZFSDataset(ZFSResource):
         libzfs.zfs_close(handle)
 
     @staticmethod
-    cdef int __gather_snapshots(libzfs.zfs_handle_t * handle, void *arg) nogil:
+    cdef int __gather_snapshots(libzfs.zfs_handle_t * handle, void *arg) noexcept nogil:
         cdef char *spec_orig
         cdef int err
 
@@ -3956,8 +3956,10 @@ cdef class ZFSDataset(ZFSResource):
         def __get__(self):
             cdef ZFSDataset dataset
             cdef iter_state iter
+            cdef libzfs.zfs_iter_f iterate_func
 
             datasets = []
+            iterate_func = <libzfs.zfs_iter_f>ZFSResource.__iterate
             with nogil:
                 iter.length = 0
                 iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
@@ -3965,7 +3967,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                ZFS.__iterate_filesystems(self.handle, 0, self.__iterate, <void*>&iter)
+                ZFS.__iterate_filesystems(self.handle, 0, iterate_func, <void*>&iter)
 
             try:
                 for h in range(0, iter.length):
@@ -3994,7 +3996,9 @@ cdef class ZFSDataset(ZFSResource):
         def __get__(self):
             cdef ZFSSnapshot snapshot
             cdef iter_state iter
+            cdef libzfs.zfs_iter_f iterate_func
 
+            iterate_func = <libzfs.zfs_iter_f>ZFSResource.__iterate
             with nogil:
                 iter.length = 0
                 iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
@@ -4002,7 +4006,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                libzfs.zfs_iter_snapshots(self.handle, False, self.__iterate, <void*>&iter, 0, 0)
+                libzfs.zfs_iter_snapshots(self.handle, False, iterate_func, <void*>&iter, 0, 0)
 
             try:
                 for h in range(0, iter.length):
@@ -4027,7 +4031,9 @@ cdef class ZFSDataset(ZFSResource):
         def __get__(self):
             cdef ZFSBookmark bookmark
             cdef iter_state iter
+            cdef libzfs.zfs_iter_f iterate_func
 
+            iterate_func = <libzfs.zfs_iter_f>ZFSResource.__iterate
             with nogil:
                 iter.length = 0
                 iter.array = <uintptr_t *>malloc(128 * sizeof(uintptr_t))
@@ -4035,7 +4041,7 @@ cdef class ZFSDataset(ZFSResource):
                     raise MemoryError()
 
                 iter.alloc = 128
-                ZFS.__iterate_bookmarks(self.handle, 0, self.__iterate, <void *>&iter)
+                ZFS.__iterate_bookmarks(self.handle, 0, iterate_func, <void *>&iter)
 
             try:
                 for b in range(0, iter.length):
