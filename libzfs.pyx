@@ -674,8 +674,10 @@ cdef class ZFS(object):
             cdef char vpath[zfs.MAXPATHLEN + 1]
             cdef boolean_t whole_disk
             IF IS_OPENZFS:
+                if ashift_value:
+                    (<ZFSVdev>vdev).set_ashift(ashift_value)
                 # Each leaf vdev is supposed to have the wholedisk
-                # and ashift properties in its nvlist
+                # property in its nvlist
                 if vdev.type != 'disk':
                     for child in vdev.children:
                         add_properties_to_vdev(child)
@@ -684,8 +686,6 @@ cdef class ZFS(object):
                     with nogil:
                         whole_disk = zfs_dev_is_whole_disk(vpath)
                     (<ZFSVdev>vdev).set_whole_disk(whole_disk)
-                    if ashift_value:
-                        (<ZFSVdev>vdev).set_ashift(ashift_value)
             return vdev
 
         root = <ZFSVdev>add_properties_to_vdev(root)
