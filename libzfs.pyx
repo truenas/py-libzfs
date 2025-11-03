@@ -712,6 +712,10 @@ cdef class ZFS(object):
             children = len(topology['draid'])
             for draid in topology['draid']:
                 vdev = <ZFSVdev>draid['disk']
+                IF HAVE_ZPOOL_CONFIG_ALLOCATION_BIAS:
+                    if draid['parameters'].pop('special_vdev', False):
+                        vdev.nvlist[zfs.ZPOOL_CONFIG_IS_LOG] = False
+                        vdev.nvlist[zfs.ZPOOL_CONFIG_ALLOCATION_BIAS] = zfs.VDEV_ALLOC_BIAS_SPECIAL
                 update_draid_config(vdev.nvlist, **draid['parameters'])
                 root.add_child_vdev((<ZFSVdev>add_properties_to_vdev(vdev)))
 
