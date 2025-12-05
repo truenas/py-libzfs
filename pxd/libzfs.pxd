@@ -511,7 +511,10 @@ cdef extern from "libzfs.h" nogil:
     ELSE:
         extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
-    ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t, uint64_t) # XXX: uint32_t should be uid_t
+    IF HAVE_ZFS_USERSPACE_CB_T == 5:
+        ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t, uint64_t) # XXX: uint32_t should be uid_t
+    ELSE:
+        ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t) # XXX: uint32_t should be uid_t
 
     extern int zfs_userspace(zfs_handle_t *, zfs.zfs_userquota_prop_t, zfs_userspace_cb_t, void *)
 
@@ -628,8 +631,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
 
-    extern int zpool_prefetch(zpool_handle_t *, zfs.zpool_prefetch_type_t);
-    extern int zpool_ddt_prune(zpool_handle_t *, zfs.zpool_ddt_prune_unit_t, uint64_t)
+    IF HAVE_ZPOOL_PREFETCH:
+        extern int zpool_prefetch(zpool_handle_t *, zfs.zpool_prefetch_type_t);
+    IF HAVE_ZPOOL_DDT_PRUNE:
+        extern int zpool_ddt_prune(zpool_handle_t *, zfs.zpool_ddt_prune_unit_t, uint64_t)
 
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
         extern void zfs_foreach_mountpoint(

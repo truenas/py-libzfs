@@ -242,6 +242,17 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_LOAD_POLICY_T, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
+AC_MSG_NOTICE([Checking existence of pool_raidz_expand_stat_t])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			pool_raidz_expand_stat_t *f = NULL;
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_RAIDZ_EXPAND_STAT_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_RAIDZ_EXPAND_STAT_T, 0) AC_MSG_NOTICE([Not found])]
+)
 
 
 
@@ -348,6 +359,33 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZFS_FOREACH_MOUNTPOINT, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
 
+dnl Checking for existence of zpool_ddt_prune function
+
+AC_MSG_NOTICE([Checking for existence of zpool_ddt_prune])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_ddt_prune(NULL, 0, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_DDT_PRUNE, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_DDT_PRUNE, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
+
+dnl Checking for existence of zpool_prefetch function
+
+AC_MSG_NOTICE([Checking for existence of zpool_prefetch])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_prefetch(NULL, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_PREFETCH, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_PREFETCH, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
 
 dnl Checking parameters of zvol_volsize_to_reservation function
 
@@ -613,6 +651,21 @@ else
 	)
 fi
 
+dnl Checking function signature of zfs_userspace_cb_t
+# This function type gained a fifth argument in FreeBSD 15
+
+AC_MSG_NOTICE([Checking function signature of zfs_userspace_cb_t])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+		 int f(void *, const char *, uid_t, uint64_t, uint64_t);
+		 zfs_userspace_cb_t g = f;
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_USERSPACE_CB_T, 5) AC_MSG_NOTICE([5 params])],
+	[AC_SUBST(HAVE_ZFS_USERSPACE_CB_T, 4) AC_MSG_NOTICE([4 params])]
+)
 
 dnl Checking existence of an enum value
 
