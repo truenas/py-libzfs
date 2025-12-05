@@ -242,6 +242,17 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZPOOL_LOAD_POLICY_T, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
+AC_MSG_NOTICE([Checking existence of pool_raidz_expand_stat_t])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <sys/fs/zfs.h>],
+		[
+			pool_raidz_expand_stat_t *f = NULL;
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_RAIDZ_EXPAND_STAT_T, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_RAIDZ_EXPAND_STAT_T, 0) AC_MSG_NOTICE([Not found])]
+)
 
 
 
@@ -348,6 +359,33 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_ZFS_FOREACH_MOUNTPOINT, 0) AC_MSG_NOTICE(NOT FOUND)]
 )
 
+dnl Checking for existence of zpool_ddt_prune function
+
+AC_MSG_NOTICE([Checking for existence of zpool_ddt_prune])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_ddt_prune(NULL, 0, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_DDT_PRUNE, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_DDT_PRUNE, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
+
+dnl Checking for existence of zpool_prefetch function
+
+AC_MSG_NOTICE([Checking for existence of zpool_prefetch])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_prefetch(NULL, 0);
+		],
+	)],
+	[AC_SUBST(HAVE_ZPOOL_PREFETCH, 1) AC_MSG_NOTICE(OK)],
+	[AC_SUBST(HAVE_ZPOOL_PREFETCH, 0) AC_MSG_NOTICE(NOT FOUND)]
+)
 
 dnl Checking parameters of zvol_volsize_to_reservation function
 
@@ -361,6 +399,21 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS, 3) AC_MSG_NOTICE([3 PARAMS])],
 	[AC_SUBST(HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS, 2) AC_MSG_NOTICE([2 PARAMS])]
+)
+
+
+dnl Checking parameters of zpool_add function
+
+AC_MSG_NOTICE([Checking function signature zpool_add])
+
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			zpool_add(NULL, NULL, 0) /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_ZPOOL_ADD, 3) AC_MSG_NOTICE([3 PARAMS])],
+	[AC_SUBST(HAVE_ZPOOL_ADD, 2) AC_MSG_NOTICE([2 PARAMS])]
 )
 
 
@@ -613,6 +666,21 @@ else
 	)
 fi
 
+dnl Checking function signature of zfs_userspace_cb_t
+# This function type gained a fifth argument in FreeBSD 15
+
+AC_MSG_NOTICE([Checking function signature of zfs_userspace_cb_t])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+		 int f(void *, const char *, uid_t, uint64_t, uint64_t);
+		 zfs_userspace_cb_t g = f;
+		]
+	)],
+	[AC_SUBST(HAVE_ZFS_USERSPACE_CB_T, 5) AC_MSG_NOTICE([5 params])],
+	[AC_SUBST(HAVE_ZFS_USERSPACE_CB_T, 4) AC_MSG_NOTICE([4 params])]
+)
 
 dnl Checking existence of an enum value
 
@@ -626,6 +694,94 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	)],
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_EZFS_SCRUB_PAUSED, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+
+# NB: the ERRORSCRUBBING, ERRORSCRUB_PAUSED, and SCRUB_PAUSED_TO_CANCEL symbols
+# were all added to OpenZFS by a single commit.
+AC_MSG_NOTICE([Checking EZFS_ERRORSCRUBBING presence])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_ERRORSCRUBBING == EZFS_ERRORSCRUBBING /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_ERRORSCRUBBING, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_ERRORSCRUBBING, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_VDEV_NOTSUP presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_VDEV_NOTSUP == EZFS_VDEV_NOTSUP /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_VDEV_NOTSUP, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_VDEV_NOTSUP, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_NOT_USER_NAMESPACE presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_NOT_USER_NAMESPACE == EZFS_NOT_USER_NAMESPACE /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_NOT_USER_NAMESPACE, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_NOT_USER_NAMESPACE, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_RESUME_EXISTS presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_RESUME_EXISTS == EZFS_RESUME_EXISTS /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_RESUME_EXISTS, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_RESUME_EXISTS, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_SHAREFAILED presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_SHAREFAILED == EZFS_SHAREFAILED /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_SHAREFAILED, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_SHAREFAILED, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_RAIDZ_EXPAND_IN_PROGRESS presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_RAIDZ_EXPAND_IN_PROGRESS == EZFS_RAIDZ_EXPAND_IN_PROGRESS /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
+dnl Checking existence of an enum value
+AC_MSG_NOTICE([Checking EZFS_ASHIFT_MISMATCH presence])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			EZFS_ASHIFT_MISMATCH == EZFS_ASHIFT_MISMATCH /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_EZFS_ASHIFT_MISMATCH, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_EZFS_ASHIFT_MISMATCH, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
 
 
@@ -860,6 +1016,22 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 1) AC_MSG_NOTICE([OK])],
 	[AC_SUBST(HAVE_RECVFLAGS_T_RESUMABLE, 0) AC_MSG_NOTICE([NOT FOUND])]
 )
+
+dnl Checking for pss_skipped in struct pool_scan_stat
+
+AC_MSG_NOTICE([Checking for pss_skipped member in pool_scan_stat struct])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		[#include <libzfs.h>],
+		[
+			pool_scan_stat t;
+			t.pss_skipped = 1 /* ; */
+		]
+	)],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_PSS_SKIPPED, 1) AC_MSG_NOTICE([OK])],
+	[AC_SUBST(HAVE_POOL_SCAN_STAT_PSS_SKIPPED, 0) AC_MSG_NOTICE([NOT FOUND])]
+)
+
 
 
 dnl Checking typedef sendflags_t in zfs header
