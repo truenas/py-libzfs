@@ -704,6 +704,7 @@ HAVE_SENDFLAGS_T_DEDUP
 SENDFLAGS_T_VERBOSITY
 HAVE_SENDFLAGS_T_VERBOSITY
 HAVE_SENDFLAGS_T_TYPEDEF
+HAVE_POOL_SCAN_STAT_PSS_SKIPPED
 HAVE_RECVFLAGS_T_RESUMABLE
 HAVE_ZPOOL_MAXNAMELEN
 HAVE_RENAMEFLAGS_T_RECURSE
@@ -724,6 +725,13 @@ ZPOOL_STATUS_REBUILDING
 HAVE_ZPOOL_STATUS_REBUILDING
 ZPOOL_STATUS_ERRATA
 HAVE_ZPOOL_STATUS_ERRATA
+HAVE_EZFS_ASHIFT_MISMATCH
+HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS
+HAVE_EZFS_SHAREFAILED
+HAVE_EZFS_RESUME_EXISTS
+HAVE_EZFS_NOT_USER_NAMESPACE
+HAVE_EZFS_VDEV_NOTSUP
+HAVE_EZFS_ERRORSCRUBBING
 HAVE_EZFS_SCRUB_PAUSED
 HAVE_ZFS_USERSPACE_CB_T
 HAVE_ZFS_SEND_ONE
@@ -741,6 +749,7 @@ HAVE_ZFS_ENCRYPTION
 HAVE_ZPOOL_READ_LABEL_LIBZFS
 HAVE_ZPOOL_EVENTS_NEXT
 HAVE_ZPOOL_SEARCH_IMPORT_LIBZFS
+HAVE_ZPOOL_ADD
 HAVE_ZVOLSIZE_TO_RESERVATION_PARAMS
 HAVE_ZPOOL_PREFETCH
 HAVE_ZPOOL_DDT_PRUNE
@@ -4323,6 +4332,40 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
 
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking function signature zpool_add" >&5
+printf "%s\n" "$as_me: Checking function signature zpool_add" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			zpool_add(NULL, NULL, 0) /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  HAVE_ZPOOL_ADD=3
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 3 PARAMS" >&5
+printf "%s\n" "$as_me: 3 PARAMS" >&6;}
+else case e in #(
+  e) HAVE_ZPOOL_ADD=2
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: 2 PARAMS" >&5
+printf "%s\n" "$as_me: 2 PARAMS" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking existence of zpool_search_import in libzfs.h header" >&5
 printf "%s\n" "$as_me: Checking existence of zpool_search_import in libzfs.h header" >&6;}
 
@@ -4948,6 +4991,220 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
+# NB: the ERRORSCRUBBING, ERRORSCRUB_PAUSED, and SCRUB_PAUSED_TO_CANCEL symbols
+# were all added to OpenZFS by a single commit.
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_ERRORSCRUBBING presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_ERRORSCRUBBING presence" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_ERRORSCRUBBING == EZFS_ERRORSCRUBBING /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_ERRORSCRUBBING=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_ERRORSCRUBBING=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_VDEV_NOTSUP presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_VDEV_NOTSUP presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_VDEV_NOTSUP == EZFS_VDEV_NOTSUP /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_VDEV_NOTSUP=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_VDEV_NOTSUP=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_NOT_USER_NAMESPACE presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_NOT_USER_NAMESPACE presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_NOT_USER_NAMESPACE == EZFS_NOT_USER_NAMESPACE /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_NOT_USER_NAMESPACE=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_NOT_USER_NAMESPACE=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_RESUME_EXISTS presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_RESUME_EXISTS presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_RESUME_EXISTS == EZFS_RESUME_EXISTS /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_RESUME_EXISTS=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_RESUME_EXISTS=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_SHAREFAILED presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_SHAREFAILED presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_SHAREFAILED == EZFS_SHAREFAILED /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_SHAREFAILED=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_SHAREFAILED=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_RAIDZ_EXPAND_IN_PROGRESS presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_RAIDZ_EXPAND_IN_PROGRESS presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_RAIDZ_EXPAND_IN_PROGRESS == EZFS_RAIDZ_EXPAND_IN_PROGRESS /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking EZFS_ASHIFT_MISMATCH presence" >&5
+printf "%s\n" "$as_me: Checking EZFS_ASHIFT_MISMATCH presence" >&6;}
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			EZFS_ASHIFT_MISMATCH == EZFS_ASHIFT_MISMATCH /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_EZFS_ASHIFT_MISMATCH=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_EZFS_ASHIFT_MISMATCH=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking ZPOOL_STATUS_ERRATA presence" >&5
 printf "%s\n" "$as_me: Checking ZPOOL_STATUS_ERRATA presence" >&6;}
@@ -5524,6 +5781,40 @@ printf "%s\n" "$as_me: NOT FOUND" >&6;}
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking for pss_skipped member in pool_scan_stat struct" >&5
+printf "%s\n" "$as_me: Checking for pss_skipped member in pool_scan_stat struct" >&6;}
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libzfs.h>
+int
+main (void)
+{
+
+			pool_scan_stat t;
+			t.pss_skipped = 1 /* ; */
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  HAVE_POOL_SCAN_STAT_PSS_SKIPPED=1
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: OK" >&5
+printf "%s\n" "$as_me: OK" >&6;}
+else case e in #(
+  e) HAVE_POOL_SCAN_STAT_PSS_SKIPPED=0
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: NOT FOUND" >&5
+printf "%s\n" "$as_me: NOT FOUND" >&6;}
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
 
 
 

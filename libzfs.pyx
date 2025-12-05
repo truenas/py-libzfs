@@ -54,6 +54,40 @@ class UserquotaProp(enum.IntEnum):
         PROJECTOBJQUOTA = zfs.ZFS_PROP_PROJECTOBJQUOTA
 
 
+IF HAVE_EZFS_SCRUB_PAUSED == 1:
+    class Error(enum.IntEnum):
+        SCRUB_PAUSED = libzfs.EZFS_SCRUB_PAUSED
+
+IF HAVE_EZFS_ERRORSCRUBBING == 1:
+    class Error(enum.IntEnum):
+        ERRORSCRUBBING = libzfs.EZFS_ERRORSCRUBBING
+        ERRORSCRUB_PAUSED = libzfs.EZFS_ERRORSCRUB_PAUSED
+        SCRUB_PAUSED_TO_CANCEL = libzfs.EZFS_SCRUB_PAUSED_TO_CANCEL
+
+IF HAVE_EZFS_VDEV_NOTSUP == 1:
+    class Error(enum.IntEnum):
+        VDEVNOTSUP = libzfs.EZFS_VDEV_NOTSUP
+
+IF HAVE_EZFS_NOT_USER_NAMESPACE == 1:
+    class Error(enum.IntEnum):
+        NOT_USER_NAMESPACE = libzfs.EZFS_NOT_USER_NAMESPACE
+
+IF HAVE_EZFS_RESUME_EXISTS == 1:
+    class Error(enum.IntEnum):
+        RESUME_EXISTS = libzfs.EZFS_RESUME_EXISTS
+
+IF HAVE_EZFS_SHAREFAILED == 1:
+    class Error(enum.IntEnum):
+        SHAREFAILED = libzfs.EZFS_SHAREFAILED
+
+IF HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS == 1:
+    class Error(enum.IntEnum):
+        RAIDZ_EXPAND_IN_PROGRESS = libzfs.EZFS_RAIDZ_EXPAND_IN_PROGRESS
+
+IF HAVE_EZFS_ASHIFT_MISMATCH == 1:    
+    class Error(enum.IntEnum):
+        ASHIFT_MISMATCH = libzfs.EZFS_ASHIFT_MISMATCH
+
 class Error(enum.IntEnum):
     SUCCESS = libzfs.EZFS_SUCCESS
     NOMEM = libzfs.EZFS_NOMEM
@@ -122,14 +156,10 @@ class Error(enum.IntEnum):
     THREADCREATEFAILED = libzfs.EZFS_THREADCREATEFAILED
     ONLINE = libzfs.EZFS_POSTSPLIT_ONLINE
     SCRUBBING = libzfs.EZFS_SCRUBBING
-    ERRORSCRUBBING = libzfs.EZFS_ERRORSCRUBBING
-    ERRORSCRUB_PAUSED = libzfs.EZFS_ERRORSCRUB_PAUSED
     SCRUB = libzfs.EZFS_NO_SCRUB
     DIFF = libzfs.EZFS_DIFF
     DIFFDATA = libzfs.EZFS_DIFFDATA
     POOLREADONLY = libzfs.EZFS_POOLREADONLY
-    SCRUB_PAUSED = libzfs.EZFS_SCRUB_PAUSED
-    SCRUB_PAUSED_TO_CANCEL = libzfs.EZFS_SCRUB_PAUSED_TO_CANCEL
     ACTIVE_POOL = libzfs.EZFS_ACTIVE_POOL
     CRYPTO_FAILED = libzfs.EZFS_CRYPTOFAILED
     NO_PENDING = libzfs.EZFS_NO_PENDING
@@ -149,13 +179,7 @@ class Error(enum.IntEnum):
     NO_RESILVER_DEFER = libzfs.EZFS_NO_RESILVER_DEFER
     EXPORT_IN_PROGRESS = libzfs.EZFS_EXPORT_IN_PROGRESS
     REBUILDING = libzfs.EZFS_REBUILDING
-    VDEV_NOTSUP = libzfs.EZFS_VDEV_NOTSUP
-    NOT_USER_NAMESPACE = libzfs.EZFS_NOT_USER_NAMESPACE
     CKSUM = libzfs.EZFS_CKSUM
-    RESUME_EXISTS = libzfs.EZFS_RESUME_EXISTS
-    SHAREFAILED = libzfs.EZFS_SHAREFAILED
-    RAIDZ_EXPAND_IN_PROGRESS = libzfs.EZFS_RAIDZ_EXPAND_IN_PROGRESS
-    ASHIFT_MISMATCH = libzfs.EZFS_ASHIFT_MISMATCH
     UNKNOWN = libzfs.EZFS_UNKNOWN
 
 
@@ -2744,7 +2768,10 @@ cdef class ZPoolScrub(object):
             if self.state != ScanState.SCANNING:
                 return
 
-            total = self.bytes_to_scan - self.stats.pss_skipped
+            IF HAVE_POOL_SCAN_STAT_PSS_SKIPPED:
+                total = self.bytes_to_scan - self.stats.pss_skipped
+            ELSE:
+                total = self.bytes_to_scan 
             issued = self.bytes_issued
             elapsed = ((int(time.time()) - self.stats.pss_pass_start) - self.stats.pss_pass_scrub_spent_paused) or 1
             pass_issued = self.stats.pss_pass_issued or 1
@@ -2761,10 +2788,11 @@ cdef class ZPoolScrub(object):
             if self.stats != NULL:
                 return self.stats.pss_pass_issued
 
-    property bytes_skipped:
-        def __get__(self):
-            if self.stats != NULL:
-                return self.stats.pss_skipped
+    IF HAVE_POOL_SCAN_STAT_PSS_SKIPPED:
+        property bytes_skipped:
+            def __get__(self):
+                if self.stats != NULL:
+                    return self.stats.pss_skipped
 
     property pause:
         def __get__(self):
@@ -2784,7 +2812,10 @@ cdef class ZPoolScrub(object):
             if not self.bytes_to_scan:
                 return 0
 
-            bytes_total = self.bytes_to_scan - self.bytes_skipped
+            IF HAVE_POOL_SCAN_STAT_PSS_SKIPPED:
+                bytes_total = self.bytes_to_scan - self.bytes_skipped
+            ELSE:
+                bytes_total = self.bytes_to_scan
             if bytes_total == 0:
                 return 0
 
@@ -3336,7 +3367,10 @@ cdef class ZFSPool(object):
         cdef boolean_t ashift = check_ashift
 
         with nogil:
-            ret = libzfs.zpool_add(self.handle, vd.nvlist.handle, ashift)
+            IF HAVE_ZPOOL_ADD == 3:
+                ret = libzfs.zpool_add(self.handle, vd.nvlist.handle, ashift)
+            ELSE:
+                ret = libzfs.zpool_add(self.handle, vd.nvlist.handle)
 
         if ret != 0:
             raise self.root.get_error()

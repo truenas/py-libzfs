@@ -74,6 +74,29 @@ cdef extern from "libzfs.h" nogil:
     IF HAVE_EZFS_SCRUB_PAUSED:
         cdef enum:
             EZFS_SCRUB_PAUSED
+    IF HAVE_EZFS_ERRORSCRUBBING:
+        cdef enum:
+            EZFS_ERRORSCRUBBING
+            EZFS_ERRORSCRUB_PAUSED
+            EZFS_SCRUB_PAUSED_TO_CANCEL
+    IF HAVE_EZFS_VDEV_NOTSUP:
+        cdef enum:
+            EZFS_VDEV_NOTSUP
+    IF HAVE_EZFS_NOT_USER_NAMESPACE:
+        cdef enum:
+            EZFS_NOT_USER_NAMESPACE
+    IF HAVE_EZFS_RESUME_EXISTS:
+        cdef enum:
+            EZFS_RESUME_EXISTS
+    IF HAVE_EZFS_SHAREFAILED:
+        cdef enum:
+            EZFS_SHAREFAILED
+    IF HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS:
+        cdef enum:
+            EZFS_RAIDZ_EXPAND_IN_PROGRESS
+    IF HAVE_EZFS_ASHIFT_MISMATCH:
+        cdef enum:
+            EZFS_ASHIFT_MISMATCH
 
     enum:
         ZFS_MAXPROPLEN
@@ -147,14 +170,11 @@ cdef extern from "libzfs.h" nogil:
         EZFS_THREADCREATEFAILED
         EZFS_POSTSPLIT_ONLINE
         EZFS_SCRUBBING
-        EZFS_ERRORSCRUBBING
-        EZFS_ERRORSCRUB_PAUSED
         EZFS_NO_SCRUB
         EZFS_DIFF
         EZFS_DIFFDATA
         EZFS_POOLREADONLY
         EZFS_SCRUB_PAUSED
-        EZFS_SCRUB_PAUSED_TO_CANCEL
         EZFS_ACTIVE_POOL
         EZFS_CRYPTOFAILED
         EZFS_NO_PENDING
@@ -174,13 +194,7 @@ cdef extern from "libzfs.h" nogil:
         EZFS_NO_RESILVER_DEFER
         EZFS_EXPORT_IN_PROGRESS
         EZFS_REBUILDING
-        EZFS_VDEV_NOTSUP
-        EZFS_NOT_USER_NAMESPACE
         EZFS_CKSUM
-        EZFS_RESUME_EXISTS
-        EZFS_SHAREFAILED
-        EZFS_RAIDZ_EXPAND_IN_PROGRESS
-        EZFS_ASHIFT_MISMATCH
         EZFS_UNKNOWN
 
     ctypedef struct libzfs_handle_t:
@@ -227,7 +241,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_create(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
         nvpair.nvlist_t *, nvpair.nvlist_t *)
     extern int zpool_destroy(zpool_handle_t *, const char *)
-    extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *, boolean_t)
+    IF HAVE_ZPOOL_ADD == 3:
+        extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *, boolean_t)
+    ELSE:
+        extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *)
 
     IF HAVE_ZPOOL_SCAN == 3:
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t, zfs.pool_scrub_cmd_t)
