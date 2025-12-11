@@ -3763,6 +3763,8 @@ cdef class ZFSResource(ZFSObject):
         cdef NVList props = NVList()
         cdef int ret
         invalid_values = []
+        makes_rw = False
+
         for prop_name, prop_details in all_properties.items():
             cur_prop = self.properties.get(prop_name)
             if prop_details.get('source') == 'INHERIT' and cur_prop:
@@ -3774,6 +3776,9 @@ cdef class ZFSResource(ZFSObject):
                     props[prop_name] = serialize_zfs_prop(prop_name, prop_details['parsed'])
                 else:
                     invalid_values.append(prop_name)
+
+                if prop_name == 'readonly' and props[prop_name] == 'off':
+                    makes_rw = True
 
         if invalid_values:
             raise ZFSException(Error.BADPROP, f'Malformed values provided for {", ".join(invalid_values)!r}')
@@ -3808,6 +3813,11 @@ cdef class ZFSResource(ZFSObject):
         prev_errno = self.root.errno
         with nogil:
             ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
+
+        if ret != 0 and libzfs.libzfs_errno(self.root.handle) == libzfs.EZFS_DSREADONLY and makes_rw:
+            prev_errno = self.root.errno
+            with nogil:
+                ret = libzfs.zfs_prop_set_list(self.handle, props.handle)
 
         if ret != 0 or (prev_errno != self.root.errno and self.root.errno != 0):
             # setting the propert(y/ies) failed or
