@@ -41,7 +41,7 @@ case "${host_os}" in
 esac
 
 CFLAGS="-DCYTHON_FALLTHROUGH"
-LIBS="-lzfs -lnvpair -lzfs_core -luutil"
+LIBS="-lzfs -lnvpair -lzfs_core"
 
 if [[ "${build_freebsd}" = "yes" ]]; then
 	LIBS="-lgeom ${LIBS}"
@@ -121,6 +121,12 @@ else
 -I${freebsd_src}/cddl/contrib/opensolaris/lib/libzfs_core/common 
 -DNEED_SOLARIS_BOOLEAN -D_XPG6
 "
+fi
+
+if [[ -f "$header_prefix/include/libuutil.h" ]]; then
+	LIBS="-luutil ${LIBS}"
+else
+	LIBS="-lpthread ${LIBS}"
 fi
 
 if [[ "$build_macos" = "yes" ]]; then
