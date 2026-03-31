@@ -23,6 +23,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
+import os
 import platform
 import sys
 from collections import namedtuple
@@ -43,10 +44,13 @@ except ImportError:
         config = namedtuple('config', ['CFLAGS', 'CPPFLAGS', 'LDFLAGS'])([], [], [])
 
 
-libraries = ['nvpair', 'zfs', 'zfs_core', 'uutil']
+libraries = ['nvpair', 'zfs', 'zfs_core']
 if platform.system().lower() == 'freebsd':
     libraries.append('geom')
-
+if os.path.exists('/usr/lib/libuutil.so') or os.path.exists('/lib/libuutil.so'):
+    libraries.append('uutil')
+else:
+    libraries.append('pthread')
 
 setup(
     name='libzfs',
