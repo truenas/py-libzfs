@@ -74,6 +74,29 @@ cdef extern from "libzfs.h" nogil:
     IF HAVE_EZFS_SCRUB_PAUSED:
         cdef enum:
             EZFS_SCRUB_PAUSED
+    IF HAVE_EZFS_ERRORSCRUBBING:
+        cdef enum:
+            EZFS_ERRORSCRUBBING
+            EZFS_ERRORSCRUB_PAUSED
+            EZFS_SCRUB_PAUSED_TO_CANCEL
+    IF HAVE_EZFS_VDEV_NOTSUP:
+        cdef enum:
+            EZFS_VDEV_NOTSUP
+    IF HAVE_EZFS_NOT_USER_NAMESPACE:
+        cdef enum:
+            EZFS_NOT_USER_NAMESPACE
+    IF HAVE_EZFS_RESUME_EXISTS:
+        cdef enum:
+            EZFS_RESUME_EXISTS
+    IF HAVE_EZFS_SHAREFAILED:
+        cdef enum:
+            EZFS_SHAREFAILED
+    IF HAVE_EZFS_RAIDZ_EXPAND_IN_PROGRESS:
+        cdef enum:
+            EZFS_RAIDZ_EXPAND_IN_PROGRESS
+    IF HAVE_EZFS_ASHIFT_MISMATCH:
+        cdef enum:
+            EZFS_ASHIFT_MISMATCH
 
     enum:
         ZFS_MAXPROPLEN
@@ -147,14 +170,11 @@ cdef extern from "libzfs.h" nogil:
         EZFS_THREADCREATEFAILED
         EZFS_POSTSPLIT_ONLINE
         EZFS_SCRUBBING
-        EZFS_ERRORSCRUBBING
-        EZFS_ERRORSCRUB_PAUSED
         EZFS_NO_SCRUB
         EZFS_DIFF
         EZFS_DIFFDATA
         EZFS_POOLREADONLY
         EZFS_SCRUB_PAUSED
-        EZFS_SCRUB_PAUSED_TO_CANCEL
         EZFS_ACTIVE_POOL
         EZFS_CRYPTOFAILED
         EZFS_NO_PENDING
@@ -174,13 +194,7 @@ cdef extern from "libzfs.h" nogil:
         EZFS_NO_RESILVER_DEFER
         EZFS_EXPORT_IN_PROGRESS
         EZFS_REBUILDING
-        EZFS_VDEV_NOTSUP
-        EZFS_NOT_USER_NAMESPACE
         EZFS_CKSUM
-        EZFS_RESUME_EXISTS
-        EZFS_SHAREFAILED
-        EZFS_RAIDZ_EXPAND_IN_PROGRESS
-        EZFS_ASHIFT_MISMATCH
         EZFS_UNKNOWN
 
     ctypedef struct libzfs_handle_t:
@@ -227,7 +241,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zpool_create(libzfs_handle_t *, const char *, nvpair.nvlist_t *,
         nvpair.nvlist_t *, nvpair.nvlist_t *)
     extern int zpool_destroy(zpool_handle_t *, const char *)
-    extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *, boolean_t)
+    IF HAVE_ZPOOL_ADD == 3:
+        extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *, boolean_t)
+    ELSE:
+        extern int zpool_add(zpool_handle_t *, nvpair.nvlist_t *)
 
     IF HAVE_ZPOOL_SCAN == 3:
         extern int zpool_scan(zpool_handle_t *, zfs.pool_scan_func_t, zfs.pool_scrub_cmd_t)
@@ -511,7 +528,10 @@ cdef extern from "libzfs.h" nogil:
     ELSE:
         extern uint64_t zvol_volsize_to_reservation(uint64_t, nvpair.nvlist_t *)
 
-    ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t, uint64_t) # XXX: uint32_t should be uid_t
+    IF HAVE_ZFS_USERSPACE_CB_T == 5:
+        ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t, uint64_t) # XXX: uint32_t should be uid_t
+    ELSE:
+        ctypedef int (*zfs_userspace_cb_t)(void *, const char *, uint32_t, uint64_t) # XXX: uint32_t should be uid_t
 
     extern int zfs_userspace(zfs_handle_t *, zfs.zfs_userquota_prop_t, zfs_userspace_cb_t, void *)
 
@@ -628,8 +648,10 @@ cdef extern from "libzfs.h" nogil:
     extern int zmount(const char *, const char *, int, char *, char *, int, char *,
         int)
 
-    extern int zpool_prefetch(zpool_handle_t *, zfs.zpool_prefetch_type_t);
-    extern int zpool_ddt_prune(zpool_handle_t *, zfs.zpool_ddt_prune_unit_t, uint64_t)
+    IF HAVE_ZPOOL_PREFETCH:
+        extern int zpool_prefetch(zpool_handle_t *, zfs.zpool_prefetch_type_t);
+    IF HAVE_ZPOOL_DDT_PRUNE:
+        extern int zpool_ddt_prune(zpool_handle_t *, zfs.zpool_ddt_prune_unit_t, uint64_t)
 
     IF HAVE_ZFS_FOREACH_MOUNTPOINT:
         extern void zfs_foreach_mountpoint(
