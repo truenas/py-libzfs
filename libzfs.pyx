@@ -527,12 +527,14 @@ cdef class ZFS(object):
     cdef boolean_t mnttab_cache_enable
     cdef int history
     cdef char *history_prefix
+    cdef boolean_t show_all_props
     proptypes = {}
 
-    def __cinit__(self, history=True, history_prefix='py-libzfs:', mnttab_cache=True):
+    def __cinit__(self, history=True, history_prefix='py-libzfs:', mnttab_cache=True, show_all_props=False):
         cdef zfs.zfs_type_t c_type
         cdef prop_iter_state iter
         self.mnttab_cache_enable=mnttab_cache
+        self.show_all_props=show_all_props
 
         with nogil:
             self.handle = libzfs.libzfs_init()
@@ -554,7 +556,7 @@ cdef class ZFS(object):
             iter.type = c_type
             iter.props = <void *>proptypes
             with nogil:
-                libzfs.zprop_iter(self.__iterate_props, <void*>&iter, True, True, c_type)
+                libzfs.zprop_iter(self.__iterate_props, <void*>&iter, self.show_all_props, True, c_type)
 
             props = self.proptypes.setdefault(t, [])
             if set(proptypes) != set(props):
