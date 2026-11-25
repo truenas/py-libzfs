@@ -2740,15 +2740,22 @@ cdef class ZPoolScrub(object):
 
     property total_secs_left:
         def __get__(self):
-            if self.state != ScanState.SCANNING:
+            # Like zpool status, give no estimate while paused, before a scrub has issued
+            # or a resilver has repaired anything, or below 10 MiB/s.
+            if self.state != ScanState.SCANNING or self.stats.pss_pass_scrub_pause != 0:
                 return
 
             total = self.bytes_to_scan - self.stats.pss_skipped
             issued = self.bytes_issued
             elapsed = ((int(time.time()) - self.stats.pss_pass_start) - self.stats.pss_pass_scrub_spent_paused) or 1
-            pass_issued = self.stats.pss_pass_issued or 1
-            issue_rate = pass_issued / elapsed
-            return int((total - issued) / issue_rate)
+            issue_rate = self.stats.pss_pass_issued // elapsed
+            if self.function == ScanFunction.RESILVER:
+                started = self.stats.pss_processed > 0
+            else:
+                started = issued > 0
+            if not started or total < issued or issue_rate < 10 * 1024 * 1024:
+                return
+            return (total - issued) // issue_rate
 
     property bytes_issued:
         def __get__(self):
